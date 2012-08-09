@@ -1,0 +1,58 @@
+{
+    "comment" : {
+        "_index" : { "enabled" : true },
+        "properties" : {
+
+            "document_url" : { "type" : "string", "store" : "yes", "index" : "not_analyzed", "null_value" : "#na", "include_in_all" : "false", "omit_norms" : "true", "omit_term_freq_and_positions" : "true" },
+            "project"      : { "type" : "string", "store" : "no",  "index" : "not_analyzed", "null_value" : "na",  "include_in_all" : "false", "omit_norms" : "true", "omit_term_freq_and_positions" : "true" },
+            "mail_list"    : { "type" : "string", "store" : "yes",  "index" : "not_analyzed", "null_value" : "na",  "include_in_all" : "false", "omit_norms" : "true", "omit_term_freq_and_positions" : "true" },
+            "message_id"   : { "type" : "string", "store" : "yes", "index" : "not_analyzed", "null_value" : "na",  "include_in_all" : "false", "omit_norms" : "true", "omit_term_freq_and_positions" : "true" },
+            "message_id_original" : { "type" : "string", "store" : "yes", "index" : "not_analyzed", "null_value" : "na",  "include_in_all" : "false" },
+            "in_reply_to"  : { "type" : "string", "store" : "yes", "index" : "not_analyzed", "null_value" : "na",  "include_in_all" : "false" },
+            "references"   : { "type" : "string", "store" : "yes", "index" : "not_analyzed", "null_value" : "na",  "include_in_all" : "false" },
+
+            "subject_original" : { "type" : "string", "store" : "yes", "term_vector" : "with_positions_offsets", "analyzer" : "kstem", "include_in_all" : "false" },
+            "subject" : {
+                "type" : "multi_field",
+                "fields" : {
+                    "subject" : { "type" : "string", "store" : "yes", "term_vector" : "with_positions_offsets", "analyzer" : "kstem" },
+                    "suggestions" : { "type" : "string", "store" : "no", "analyzer" : "subject_shingle", "include_in_all" : "false" },
+                    "keyword" : { "type" : "string", "store" : "no", "analyzer" : "keyword", "include_in_all" : "false" }
+                }
+            },
+
+            "message_snippet" : { "type" : "string", "store" : "yes", "index" : "no", "include_in_all" : "false" },
+
+            "first_text_message_without_quotes" : { "type" : "string", "store" : "yes", "term_vector" : "with_positions_offsets", "analyzer" : "kstem" },
+
+            "first_text_message" : { "type" : "string", "store" : "yes", "term_vector" : "with_positions_offsets", "analyzer" : "kstem" },
+            "first_html_message" : { "type" : "string", "store" : "yes", "term_vector" : "with_positions_offsets", "analyzer" : "kstem_html_strip" },
+
+            "text_messages"  : { "type" : "string", "store" : "yes", "term_vector" : "with_positions_offsets", "analyzer" : "kstem" },
+            "html_messages"  : { "type" : "string", "store" : "yes", "term_vector" : "with_positions_offsets", "analyzer" : "kstem_html_strip" },
+
+            "text_messages_cnt" : { "type" : "integer", "include_in_all" : "false" },
+            "html_messages_cnt" : { "type" : "integer", "include_in_all" : "false" },
+
+            "message_attachments" : {
+                "type" : "attachment",
+                "fields" : {
+                    "message_attachments" : { "store" : "yes", "analyzer" : "kstem" }
+                }
+            },
+
+            "message_attachments_cnt" : { "type" : "integer", "include_in_all" : "false" },
+
+            "date" : { "type" : "date", "store" : "yes" },
+            "author" : {
+                "type"   : "multi_field",
+                "fields" : {
+                    "author"       : { "type" : "string" },
+                    "not_analyzed" : { "type" : "string", "index" : "not_analyzed", "store" : "yes" }
+                }
+            },
+            "to" : { "type" : "string", "include_in_all" : "false" }
+        },
+        "_all" : { "analyzer" : "kstem_html_strip" }
+    }
+}
