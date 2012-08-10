@@ -21,7 +21,9 @@ Creating the twitter river can be done using:
 	{
 	    "type" : "jira",
 	    "jira" : {
-	        "urlBase" : "https://issues.jboss.org",
+	        "urlBase"  : "https://issues.jboss.org",
+                "username" : "jira_username",
+                "pwd"      : "jira_user_password",
 	    },
 	    "index" : {
 	        "index" : "my_jira_index",
@@ -30,14 +32,15 @@ Creating the twitter river can be done using:
 	'
 
 The above lists all the options controlling the creation of a JIRA river. 
-The urlBase parameter is required in order to connect to the JIRA REST API.
-The index defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited.
+The `jira/urlBase` is required in order to connect to the JIRA REST API.
+The `jira/username` and `jira/pwd` are optional, if not send then Anonymous access to JIRA is used
+
+The `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited.
 
 TODO List
 ---------
 * Configurable period for JIRA changes checking to be indexed
 * Configurable list of JIRA project keys which may be indexed. All projects indexed if 'include' list not defined with possibility of 'exclude' list.
-* Credentials for JIRA authentication used for indexation - Anonymous access if not defined
 * Credentials for http proxy authentication used for indexation
 * Configurable number of parallel threads used for JIRA indexation to speed it up a little but not to DOS JIRA instance.
 * Configurable list of additional JIRA issue fields indexed for fulltext search (some basic fields as Summaty and Description will be indexed by default)
@@ -50,7 +53,8 @@ License
 
     This software is licensed under the Apache 2 license, quoted below.
 
-    Copyright 2012 RedHat <http://www.redhat.com> and other contributors 
+    Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors as indicated by the @authors tag. 
+    All rights reserved.
 
     Licensed under the Apache License, Version 2.0 (the "License"); you may not
     use this file except in compliance with the License. You may obtain a copy of

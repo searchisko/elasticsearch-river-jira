@@ -7,7 +7,9 @@ package org.jboss.elasticsearch.river.jira;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +28,7 @@ import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 
 /**
- * Class used to call necessary JIRA functions over REST API.
+ * Class used to call JIRA 5 functions to obtain JIRA content over REST API.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -38,15 +40,17 @@ public class JIRA5RestClient {
 
   protected boolean isAuthConfigured = true;
 
-  // TODO configure this
+  // TODO read this from River Configuration
   protected int listJIRAIssuesMax = -1;
 
   /**
    * Constructor to create and configure remote JIRA REST API client.
    * 
    * @param jiraRestAPIUrlBase JIRA API URL used to call JIRA (see {@link #prepareAPIURLFromBaseURL(String)})
+   * @param jiraUsername optional username to authenticate into JIRA
+   * @param jiraPassword optional password to authenticate into JIRA
    */
-  public JIRA5RestClient(String jiraUrlBase) {
+  public JIRA5RestClient(String jiraUrlBase, String jiraUsername, String jiraPassword) {
 
     jiraRestAPIUrlBase = prepareAPIURLFromBaseURL(jiraUrlBase);
     if (jiraRestAPIUrlBase == null) {
@@ -72,13 +76,12 @@ public class JIRA5RestClient {
     httpclient = new HttpClient(connectionManager);
     httpclient.getParams().setParameter("http.protocol.content-charset", "UTF-8");
 
-    // TODO prepare basic http authentication if configured
-    if (false) {
+    if (jiraUsername != null && !"".equals(jiraUsername.trim())) {
       httpclient.getState().setCredentials(new AuthScope(url.getHost(), -1, null),
-          new UsernamePasswordCredentials("username", "password"));
+          new UsernamePasswordCredentials(jiraUsername, jiraPassword));
       isAuthConfigured = true;
     }
-    // TODO Proxy authentication
+    // TODO HTTP Proxy authentication
   }
 
   /**
@@ -98,33 +101,47 @@ public class JIRA5RestClient {
 
   /**
    * Get list of issues from remote JIRA instance and parse them into <code>Map of Maps</code> structure. Issues are
-   * ascending ordered by date of last change performed on issue. List is limited to only some number of issues (given
+   * ascending ordered by date of last update performed on issue. List is limited to only some number of issues (given
    * by both JIRA and this client configuration).
    * 
-   * @param projectKey key of JIRA project to get issues for
+   * @param projectKey mandatory key of JIRA project to get issues for
+   * @param updatedAfter optional parameter to return issues updated only after given date.
+   * @param updatedBefore optional parameter to return issues updated only before given date.
    * @return List of issues informations parsed from JIRA reply into <code>Map of Maps</code> structure.
    * @throws Exception
    */
   @SuppressWarnings("unchecked")
-  public List<Map<String, Object>> getJIRAChangedIssues(String projectKey) throws Exception {
-    byte[] responseData = performJIRAChangedIssuesREST(projectKey);
+  public List<Map<String, Object>> getJIRAChangedIssues(String projectKey, Date updatedAfter, Date updatedBefore)
+      throws Exception {
+    byte[] responseData = performJIRAChangedIssuesREST(projectKey, updatedAfter, updatedBefore);
+    // System.out.println(new String(responseData));
     XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
-    return (List<Map<String, Object>>) parser.mapAndClose().get("issues");
+    Map<String, Object> responseParsed = parser.mapAndClose();
+    // TODO return all values
+    String startAt = (String) responseParsed.get("startAt");
+    String maxResults = (String) responseParsed.get("maxResults");
+    String total = (String) responseParsed.get("total");
+    List<Map<String, Object>> issues = (List<Map<String, Object>>) responseParsed.get("issues");
+    return issues;
   }
 
   /**
    * Performs JIRA REST call for {@link #getJIRAChangedIssues(String)}.
    * 
-   * @param projectKey
-   * @return
+   * @param projectKey mandatory key of JIRA project to get issues for
+   * @param updatedAfter optional parameter to return issues updated only after given date.
+   * @param updatedBefore optional parameter to return issues updated only before given date.
+   * @return data returned from JIRA REST call (JSON formatted)
    * @throws Exception
    * @see {@link #getJIRAChangedIssues(String)}
    */
-  protected byte[] performJIRAChangedIssuesREST(String projectKey) throws Exception {
+  protected byte[] performJIRAChangedIssuesREST(String projectKey, Date updatedAfter, Date updatedBefore)
+      throws Exception {
     List<NameValuePair> params = new ArrayList<NameValuePair>();
-    params.add(new NameValuePair("jql", "project='" + projectKey + "' ORDER BY updated ASC"));
+    params.add(new NameValuePair("jql", prepareJIRAChangedIssuesJQL(projectKey, updatedAfter, updatedBefore)));
     if (listJIRAIssuesMax > 0)
       params.add(new NameValuePair("maxResults", "" + listJIRAIssuesMax));
+
     // TODO add additional indexed issue fields from River configuration
     params.add(new NameValuePair("fields", "key,created,updated,reporter,assignee,summary,description"));
 
@@ -132,9 +149,52 @@ public class JIRA5RestClient {
   }
 
   /**
+   * Prepare JQL (JIRA Query Language) query text used to implement {@link #getJIRAChangedIssues(String, Date)}
+   * operation.
+   * 
+   * @param projectKey mandatory key of JIRA project to get issues for
+   * @param updatedAfter optional parameter to return issues updated only after given date.
+   * @param updatedBefore optional parameter to return issues updated only before given date.
+   * @return JQL string for given conditions
+   * @throws IllegalArgumentException if some input parameter is illegal
+   * @see #getJIRAChangedIssues(String, Date)
+   * @see #performJIRAChangedIssuesREST(String, Date)
+   */
+  protected String prepareJIRAChangedIssuesJQL(String projectKey, Date updatedAfter, Date updatedBefore) {
+    if (projectKey == null || "".equals(projectKey.trim())) {
+      throw new IllegalArgumentException("projectKey must be defined");
+    }
+    StringBuilder sb = new StringBuilder();
+    sb.append("project='").append(projectKey).append("'");
+    if (updatedAfter != null) {
+      sb.append(" and updatedDate >= \"").append(formatJQLDate(updatedAfter)).append("\"");
+    }
+    if (updatedBefore != null) {
+      sb.append(" and updatedDate <= \"").append(formatJQLDate(updatedBefore)).append("\"");
+    }
+    sb.append(" ORDER BY updated ASC");
+    return sb.toString();
+  }
+
+  private SimpleDateFormat JQL_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+
+  /**
+   * Format {@link Date} to {@link String} to be used in JQL (JIRA Query Language).
+   * 
+   * @param date to format
+   * @return formatted date
+   */
+  protected synchronized String formatJQLDate(Date date) {
+    String ret = null;
+    if (date != null)
+      ret = JQL_DATE_FORMAT.format(date);
+    return ret;
+  }
+
+  /**
    * Perform defined REST call to remote JIRA REST API.
    * 
-   * @param restOperation name of rest operation to call on API
+   * @param restOperation name of REST operation to call on JIRA API (eg. 'search' or 'project' )
    * @param params GEP parameters used for call
    * @return response from server if successful
    * @throws Exception in case of unsuccessful call

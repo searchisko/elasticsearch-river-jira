@@ -7,6 +7,7 @@ import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.block.ClusterBlockException;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
@@ -39,12 +40,17 @@ public class JiraRiver extends AbstractRiverComponent implements River {
     this.client = client;
 
     String url = null;
+
     if (settings.settings().containsKey("jira")) {
-      Map<String, Object> wikipediaSettings = (Map<String, Object>) settings.settings().get("jira");
-      url = XContentMapValues.nodeStringValue(wikipediaSettings.get("urlBase"), null);
+      Map<String, Object> jiraSettings = (Map<String, Object>) settings.settings().get("jira");
+      url = XContentMapValues.nodeStringValue(jiraSettings.get("urlBase"), null);
+      jiraClient = new JIRA5RestClient(url, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
+          XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null));
+    } else {
+      throw new SettingsException("jira configuration structure not found");
     }
 
-    jiraClient = new JIRA5RestClient(url);
+    // TODO read JIRA http authentication from River Config
 
     logger.info("creating JIRA River for JIRA base URL  [{}]", url);
 
