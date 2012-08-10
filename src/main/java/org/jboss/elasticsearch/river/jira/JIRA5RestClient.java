@@ -28,7 +28,8 @@ import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 
 /**
- * Class used to call JIRA 5 functions to obtain JIRA content over REST API.
+ * Class used to call JIRA 5 functions to obtain JIRA content over REST API. One instance of this class is used to
+ * access one instance of JIRA.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -100,6 +101,29 @@ public class JIRA5RestClient {
       baseURL = baseURL + "/";
     }
     return baseURL + "rest/api/2/";
+  }
+
+  /**
+   * Get projectKeys of all projects in configured JIRA instance.
+   * 
+   * @return list of project keys
+   * @throws Exception
+   */
+  @SuppressWarnings("unchecked")
+  public List<String> getAllJIRAProjects() throws Exception {
+
+    byte[] responseData = performJIRAGetRESTCall("project", null);
+    StringBuilder sb = new StringBuilder();
+    sb.append("{ \"projects\" : ").append(new String(responseData, "UTF-8")).append("}");
+    responseData = sb.toString().getBytes("UTF-8");
+    XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
+    Map<String, Object> responseParsed = parser.mapAndClose();
+    List<String> ret = new ArrayList<String>();
+
+    for (Map<String, Object> mk : (List<Map<String, Object>>) responseParsed.get("projects")) {
+      ret.add((String) mk.get("key"));
+    }
+    return ret;
   }
 
   /**

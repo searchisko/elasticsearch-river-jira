@@ -39,9 +39,14 @@ public class JIRA5RestClientTest {
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
+
     JIRA5RestClient tested = new JIRA5RestClient("https://issues.jboss.org", null, null);
-    ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", null, null);
-    System.out.println(ret);
+
+    List<String> projects = tested.getAllJIRAProjects();
+    System.out.println(projects);
+
+    // ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", null, null);
+    // System.out.println(ret);
   }
 
   @Test
@@ -76,6 +81,25 @@ public class JIRA5RestClientTest {
 
     tested = new JIRA5RestClient(TEST_JIRA_URL, "uname", "pwd");
     Assert.assertTrue(tested.isAuthConfigured);
+  }
+
+  @Test
+  public void getAllJIRAProjects() throws Exception {
+
+    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
+      protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
+        Assert.assertEquals("project", restOperation);
+        Assert.assertNull(params);
+        return ("[{\"key\": \"ORG\", \"name\": \"ORG project\"},{\"key\": \"PPP\"}]").getBytes("UTF-8");
+      };
+
+    };
+
+    List<String> ret = tested.getAllJIRAProjects();
+    Assert.assertNotNull(ret);
+    Assert.assertEquals(2, ret.size());
+    Assert.assertTrue(ret.contains("ORG"));
+    Assert.assertTrue(ret.contains("PPP"));
   }
 
   @Test
