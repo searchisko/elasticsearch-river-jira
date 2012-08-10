@@ -132,41 +132,44 @@ public class JIRA5RestClient {
    * by both JIRA and this client configuration).
    * 
    * @param projectKey mandatory key of JIRA project to get issues for
+   * @param startAt the index of the first issue to return (0-based)
    * @param updatedAfter optional parameter to return issues updated only after given date.
    * @param updatedBefore optional parameter to return issues updated only before given date.
    * @return List of issues informations parsed from JIRA reply into <code>Map of Maps</code> structure.
    * @throws Exception
    */
   @SuppressWarnings("unchecked")
-  public ChangedIssuesResults getJIRAChangedIssues(String projectKey, Date updatedAfter, Date updatedBefore)
+  public ChangedIssuesResults getJIRAChangedIssues(String projectKey, int startAt, Date updatedAfter, Date updatedBefore)
       throws Exception {
-    byte[] responseData = performJIRAChangedIssuesREST(projectKey, updatedAfter, updatedBefore);
+    byte[] responseData = performJIRAChangedIssuesREST(projectKey, startAt, updatedAfter, updatedBefore);
     // System.out.println(new String(responseData));
     XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
     Map<String, Object> responseParsed = parser.mapAndClose();
-    Integer startAt = (Integer) responseParsed.get("startAt");
+    Integer startAtRet = (Integer) responseParsed.get("startAt");
     Integer maxResults = (Integer) responseParsed.get("maxResults");
     Integer total = (Integer) responseParsed.get("total");
     List<Map<String, Object>> issues = (List<Map<String, Object>>) responseParsed.get("issues");
-    return new ChangedIssuesResults(issues, startAt, maxResults, total);
+    return new ChangedIssuesResults(issues, startAtRet, maxResults, total);
   }
 
   /**
    * Performs JIRA REST call for {@link #getJIRAChangedIssues(String)}.
    * 
    * @param projectKey mandatory key of JIRA project to get issues for
+   * @param startAt the index of the first issue to return (0-based)
    * @param updatedAfter optional parameter to return issues updated only after given date.
    * @param updatedBefore optional parameter to return issues updated only before given date.
    * @return data returned from JIRA REST call (JSON formatted)
    * @throws Exception
    * @see {@link #getJIRAChangedIssues(String)}
    */
-  protected byte[] performJIRAChangedIssuesREST(String projectKey, Date updatedAfter, Date updatedBefore)
+  protected byte[] performJIRAChangedIssuesREST(String projectKey, int startAt, Date updatedAfter, Date updatedBefore)
       throws Exception {
     List<NameValuePair> params = new ArrayList<NameValuePair>();
     params.add(new NameValuePair("jql", prepareJIRAChangedIssuesJQL(projectKey, updatedAfter, updatedBefore)));
     if (listJIRAIssuesMax > 0)
       params.add(new NameValuePair("maxResults", "" + listJIRAIssuesMax));
+    params.add(new NameValuePair("startAt", startAt + ""));
 
     // TODO add additional indexed issue fields from River configuration (include unit test)
     params.add(new NameValuePair("fields", "key,created,updated,reporter,assignee,summary,description"));

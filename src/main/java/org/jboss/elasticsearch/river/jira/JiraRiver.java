@@ -23,6 +23,8 @@ import org.elasticsearch.river.RiverSettings;
  */
 public class JiraRiver extends AbstractRiverComponent implements River {
 
+  private static final int coordinatorThreadWaits = 1000;
+
   private final Client client;
 
   private final JIRA5RestClient jiraClient;
@@ -80,8 +82,8 @@ public class JiraRiver extends AbstractRiverComponent implements River {
       }
     }
 
-    thread = EsExecutors.daemonThreadFactory(settings.globalSettings(), "jira_slurper").newThread(
-        new JIRAProjectIndexer());
+    thread = EsExecutors.daemonThreadFactory(settings.globalSettings(), "jira_slurper_coordinator").newThread(
+        new JIRAProjectIndexerCoordinator());
     thread.start();
   }
 
@@ -94,23 +96,35 @@ public class JiraRiver extends AbstractRiverComponent implements River {
     }
   }
 
-  private class JIRAProjectIndexer implements Runnable {
+  public boolean isClosed() {
+    return closed;
+  }
 
-    private JIRAProjectIndexer() {
-    }
+  public class JIRAProjectIndexerCoordinator implements Runnable {
 
     @Override
     public void run() {
-      try {
-        // TODO process JIRA updated
-        // TODO wait a while if nothing found
-      } catch (Exception e) {
+      logger.info("JIRA river coordinator task started");
+      while (true) {
         if (closed) {
+          logger.info("JIRA river coordinator task stopped");
           return;
         }
-        logger.error("failed to parse JIRA update", e);
+
+        try {
+          // TODO check which JIRA projects need index updates and coordinate parallel threads to do this.
+        } catch (Exception e) {
+          if (closed)
+            return;
+          logger.error("Failed to process JIRA update coordination task " + e.getMessage(), e);
+        }
+        try {
+          if (logger.isDebugEnabled())
+            logger.debug("JIRA river coordinator task is going to sleep for {} ms", coordinatorThreadWaits);
+          Thread.sleep(coordinatorThreadWaits);
+        } catch (InterruptedException e1) {
+        }
       }
     }
   }
-
 }

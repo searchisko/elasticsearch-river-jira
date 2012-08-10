@@ -42,11 +42,11 @@ public class JIRA5RestClientTest {
 
     JIRA5RestClient tested = new JIRA5RestClient("https://issues.jboss.org", null, null);
 
-    List<String> projects = tested.getAllJIRAProjects();
-    System.out.println(projects);
+    // List<String> projects = tested.getAllJIRAProjects();
+    // System.out.println(projects);
 
-    // ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", null, null);
-    // System.out.println(ret);
+    ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", 0, null, null);
+    System.out.println(ret);
   }
 
   @Test
@@ -87,6 +87,7 @@ public class JIRA5RestClientTest {
   public void getAllJIRAProjects() throws Exception {
 
     JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
+      @Override
       protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
         Assert.assertEquals("project", restOperation);
         Assert.assertNull(params);
@@ -108,17 +109,19 @@ public class JIRA5RestClientTest {
     final Date ub = new Date();
 
     JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
-      protected byte[] performJIRAChangedIssuesREST(String projectKey, Date updatedAfter, Date updatedBefore)
-          throws Exception {
+      @Override
+      protected byte[] performJIRAChangedIssuesREST(String projectKey, int startAt, Date updatedAfter,
+          Date updatedBefore) throws Exception {
         Assert.assertEquals("ORG", projectKey);
         Assert.assertEquals(ua, updatedAfter);
         Assert.assertEquals(ub, updatedBefore);
+        Assert.assertEquals(10, startAt);
         return "{\"startAt\": 5, \"maxResults\" : 10, \"total\" : 50, \"issues\" : [{\"key\" : \"ORG-45\"}]}"
             .getBytes("UTF-8");
       };
     };
 
-    ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", ua, ub);
+    ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", 10, ua, ub);
     Assert.assertEquals(5, ret.getStartAt());
     Assert.assertEquals(10, ret.getMaxResults());
     Assert.assertEquals(50, ret.getTotal());
@@ -132,11 +135,13 @@ public class JIRA5RestClientTest {
     final Date ub = new Date();
 
     JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
+      @Override
       protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
         Assert.assertEquals("search", restOperation);
         Assert.assertNotNull(params);
         String mr = "-1";
         String fields = "";
+        String startAt = "";
         for (NameValuePair param : params) {
           if (param.getName().equals("maxResults")) {
             mr = param.getValue();
@@ -144,16 +149,19 @@ public class JIRA5RestClientTest {
             Assert.assertEquals("JQL string", param.getValue());
           } else if (param.getName().equals("fields")) {
             fields = param.getValue();
+          } else if (param.getName().equals("startAt")) {
+            startAt = param.getValue();
           }
         }
 
         if ("-1".equals(mr)) {
-          Assert.assertEquals(2, params.size());
-        } else {
           Assert.assertEquals(3, params.size());
+        } else {
+          Assert.assertEquals(4, params.size());
         }
 
-        return ("{\"maxResults\": " + mr + ", \"fields\" : \"" + fields + "\" }").getBytes("UTF-8");
+        return ("{\"maxResults\": " + mr + ", \"startAt\": " + startAt + ", \"fields\" : \"" + fields + "\" }")
+            .getBytes("UTF-8");
       };
 
       @Override
@@ -165,16 +173,18 @@ public class JIRA5RestClientTest {
       }
     };
 
-    byte[] ret = tested.performJIRAChangedIssuesREST("ORG", ua, ub);
-    Assert.assertEquals(
-        "{\"maxResults\": -1, \"fields\" : \"key,created,updated,reporter,assignee,summary,description\" }",
-        new String(ret, "UTF-8"));
+    byte[] ret = tested.performJIRAChangedIssuesREST("ORG", 10, ua, ub);
+    Assert
+        .assertEquals(
+            "{\"maxResults\": -1, \"startAt\": 10, \"fields\" : \"key,created,updated,reporter,assignee,summary,description\" }",
+            new String(ret, "UTF-8"));
 
     tested.listJIRAIssuesMax = 10;
-    ret = tested.performJIRAChangedIssuesREST("ORG", ua, ub);
-    Assert.assertEquals(
-        "{\"maxResults\": 10, \"fields\" : \"key,created,updated,reporter,assignee,summary,description\" }",
-        new String(ret, "UTF-8"));
+    ret = tested.performJIRAChangedIssuesREST("ORG", 20, ua, ub);
+    Assert
+        .assertEquals(
+            "{\"maxResults\": 10, \"startAt\": 20, \"fields\" : \"key,created,updated,reporter,assignee,summary,description\" }",
+            new String(ret, "UTF-8"));
 
   }
 
