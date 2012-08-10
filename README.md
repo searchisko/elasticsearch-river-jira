@@ -22,8 +22,8 @@ Creating the twitter river can be done using:
 	    "type" : "jira",
 	    "jira" : {
 	        "urlBase"  : "https://issues.jboss.org",
-                "username" : "jira_username",
-                "pwd"      : "jira_user_password",
+	        "username" : "jira_username",
+	        "pwd"      : "jira_user_password",
 	    },
 	    "index" : {
 	        "index" : "my_jira_index",
@@ -32,18 +32,20 @@ Creating the twitter river can be done using:
 	'
 
 The above lists all the options controlling the creation of a JIRA river. 
-The `jira/urlBase` is required in order to connect to the JIRA REST API.
-The `jira/username` and `jira/pwd` are optional, if not send then Anonymous access to JIRA is used
+The `jira/urlBase` is required in order to connect to the JIRA REST API. It's only base URL, path to REST API is added automatically.
+The `jira/username` and `jira/pwd` are optional, Anonymous access to JIRA is used if not provided.
 
 The `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited.
 
 TODO List
 ---------
-* Configurable period for JIRA changes checking to be indexed
+* Initial full indexing of all issues
+* Incremental JIRA issue adds/edits indexing (pooling used with configurable changes checking period)
+* Incremental JIRA issue delete indexing ()
 * Configurable list of JIRA project keys which may be indexed. All projects indexed if 'include' list not defined with possibility of 'exclude' list.
 * Credentials for http proxy authentication used for indexation
 * Configurable number of parallel threads used for JIRA indexation to speed it up a little but not to DOS JIRA instance.
-* Configurable list of additional JIRA issue fields indexed for fulltext search (some basic fields as Summaty and Description will be indexed by default)
+* Configurable list of additional JIRA issue fields indexed (some basic fields as Reporter, Assignee, Created, Updsated, Summary and Description will be indexed by default)
 * Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)
 * Implement some mechanism which allows to initiate full reindex of all issues for defined JIRA project (calleable over REST)
 

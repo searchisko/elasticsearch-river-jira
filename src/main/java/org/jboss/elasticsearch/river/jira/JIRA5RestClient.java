@@ -38,7 +38,7 @@ public class JIRA5RestClient {
 
   protected String jiraRestAPIUrlBase;
 
-  protected boolean isAuthConfigured = true;
+  protected boolean isAuthConfigured = false;
 
   // TODO read this from River Configuration
   protected int listJIRAIssuesMax = -1;
@@ -77,7 +77,9 @@ public class JIRA5RestClient {
     httpclient.getParams().setParameter("http.protocol.content-charset", "UTF-8");
 
     if (jiraUsername != null && !"".equals(jiraUsername.trim())) {
-      httpclient.getState().setCredentials(new AuthScope(url.getHost(), -1, null),
+      httpclient.getParams().setAuthenticationPreemptive(true);
+      String host = url.getHost();
+      httpclient.getState().setCredentials(new AuthScope(host, -1, null),
           new UsernamePasswordCredentials(jiraUsername, jiraPassword));
       isAuthConfigured = true;
     }
@@ -118,9 +120,9 @@ public class JIRA5RestClient {
     XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
     Map<String, Object> responseParsed = parser.mapAndClose();
     // TODO return all values
-    String startAt = (String) responseParsed.get("startAt");
-    String maxResults = (String) responseParsed.get("maxResults");
-    String total = (String) responseParsed.get("total");
+    Integer startAt = (Integer) responseParsed.get("startAt");
+    Integer maxResults = (Integer) responseParsed.get("maxResults");
+    Integer total = (Integer) responseParsed.get("total");
     List<Map<String, Object>> issues = (List<Map<String, Object>>) responseParsed.get("issues");
     return issues;
   }
