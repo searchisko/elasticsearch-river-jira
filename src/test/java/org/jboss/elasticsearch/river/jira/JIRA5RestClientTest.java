@@ -8,10 +8,10 @@ package org.jboss.elasticsearch.river.jira;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.apache.commons.httpclient.NameValuePair;
 import org.elasticsearch.common.settings.SettingsException;
 import org.junit.Test;
 
@@ -40,7 +40,7 @@ public class JIRA5RestClientTest {
    */
   public static void main(String[] args) throws Exception {
     JIRA5RestClient tested = new JIRA5RestClient("https://issues.jboss.org", null, null);
-    List<Map<String, Object>> ret = tested.getJIRAChangedIssues("ORG", null, null);
+    ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", null, null);
     System.out.println(ret);
   }
 
@@ -69,6 +69,88 @@ public class JIRA5RestClientTest {
     Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL("http://issues.jboss.org"), tested.jiraRestAPIUrlBase);
     tested = new JIRA5RestClient(TEST_JIRA_URL, null, null);
     Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL(TEST_JIRA_URL), tested.jiraRestAPIUrlBase);
+    Assert.assertFalse(tested.isAuthConfigured);
+
+    tested = new JIRA5RestClient(TEST_JIRA_URL, "", "pwd");
+    Assert.assertFalse(tested.isAuthConfigured);
+
+    tested = new JIRA5RestClient(TEST_JIRA_URL, "uname", "pwd");
+    Assert.assertTrue(tested.isAuthConfigured);
+  }
+
+  @Test
+  public void getJIRAChangedIssues() throws Exception {
+    final Date ua = new Date();
+    final Date ub = new Date();
+
+    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
+      protected byte[] performJIRAChangedIssuesREST(String projectKey, Date updatedAfter, Date updatedBefore)
+          throws Exception {
+        Assert.assertEquals("ORG", projectKey);
+        Assert.assertEquals(ua, updatedAfter);
+        Assert.assertEquals(ub, updatedBefore);
+        return "{\"startAt\": 5, \"maxResults\" : 10, \"total\" : 50, \"issues\" : [{\"key\" : \"ORG-45\"}]}"
+            .getBytes("UTF-8");
+      };
+    };
+
+    ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", ua, ub);
+    Assert.assertEquals(5, ret.getStartAt());
+    Assert.assertEquals(10, ret.getMaxResults());
+    Assert.assertEquals(50, ret.getTotal());
+    Assert.assertNotNull(ret.getIssues());
+    Assert.assertEquals(1, ret.getIssuesCount());
+  }
+
+  @Test
+  public void performJIRAChangedIssuesREST() throws Exception {
+    final Date ua = new Date();
+    final Date ub = new Date();
+
+    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
+      protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
+        Assert.assertEquals("search", restOperation);
+        Assert.assertNotNull(params);
+        String mr = "-1";
+        String fields = "";
+        for (NameValuePair param : params) {
+          if (param.getName().equals("maxResults")) {
+            mr = param.getValue();
+          } else if (param.getName().equals("jql")) {
+            Assert.assertEquals("JQL string", param.getValue());
+          } else if (param.getName().equals("fields")) {
+            fields = param.getValue();
+          }
+        }
+
+        if ("-1".equals(mr)) {
+          Assert.assertEquals(2, params.size());
+        } else {
+          Assert.assertEquals(3, params.size());
+        }
+
+        return ("{\"maxResults\": " + mr + ", \"fields\" : \"" + fields + "\" }").getBytes("UTF-8");
+      };
+
+      @Override
+      protected String prepareJIRAChangedIssuesJQL(String projectKey, Date updatedAfter, Date updatedBefore) {
+        Assert.assertEquals("ORG", projectKey);
+        Assert.assertEquals(ua, updatedAfter);
+        Assert.assertEquals(ub, updatedBefore);
+        return "JQL string";
+      }
+    };
+
+    byte[] ret = tested.performJIRAChangedIssuesREST("ORG", ua, ub);
+    Assert.assertEquals(
+        "{\"maxResults\": -1, \"fields\" : \"key,created,updated,reporter,assignee,summary,description\" }",
+        new String(ret, "UTF-8"));
+
+    tested.listJIRAIssuesMax = 10;
+    ret = tested.performJIRAChangedIssuesREST("ORG", ua, ub);
+    Assert.assertEquals(
+        "{\"maxResults\": 10, \"fields\" : \"key,created,updated,reporter,assignee,summary,description\" }",
+        new String(ret, "UTF-8"));
 
   }
 
@@ -85,7 +167,6 @@ public class JIRA5RestClientTest {
 
   @Test
   public void formatJQLDate() throws Exception {
-
     JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null);
     Assert.assertNull(tested.formatJQLDate(null));
     Assert.assertEquals("2012-08-10 10:52", tested.formatJQLDate(JQL_DATE_FORMAT.parse("2012-08-10 10:52")));

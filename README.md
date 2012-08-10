@@ -41,7 +41,7 @@ TODO List
 ---------
 * Initial full indexing of all issues
 * Incremental JIRA issue adds/edits indexing (pooling used with configurable changes checking period)
-* Incremental JIRA issue delete indexing ()
+* Incremental JIRA issue delete indexing (all keys list comparation with configurable checking period)
 * Configurable list of JIRA project keys which may be indexed. All projects indexed if 'include' list not defined with possibility of 'exclude' list.
 * Credentials for http proxy authentication used for indexation
 * Configurable number of parallel threads used for JIRA indexation to speed it up a little but not to DOS JIRA instance.

@@ -83,6 +83,7 @@ public class JIRA5RestClient {
           new UsernamePasswordCredentials(jiraUsername, jiraPassword));
       isAuthConfigured = true;
     }
+
     // TODO HTTP Proxy authentication
   }
 
@@ -113,18 +114,17 @@ public class JIRA5RestClient {
    * @throws Exception
    */
   @SuppressWarnings("unchecked")
-  public List<Map<String, Object>> getJIRAChangedIssues(String projectKey, Date updatedAfter, Date updatedBefore)
+  public ChangedIssuesResults getJIRAChangedIssues(String projectKey, Date updatedAfter, Date updatedBefore)
       throws Exception {
     byte[] responseData = performJIRAChangedIssuesREST(projectKey, updatedAfter, updatedBefore);
     // System.out.println(new String(responseData));
     XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
     Map<String, Object> responseParsed = parser.mapAndClose();
-    // TODO return all values
     Integer startAt = (Integer) responseParsed.get("startAt");
     Integer maxResults = (Integer) responseParsed.get("maxResults");
     Integer total = (Integer) responseParsed.get("total");
     List<Map<String, Object>> issues = (List<Map<String, Object>>) responseParsed.get("issues");
-    return issues;
+    return new ChangedIssuesResults(issues, startAt, maxResults, total);
   }
 
   /**
@@ -144,7 +144,7 @@ public class JIRA5RestClient {
     if (listJIRAIssuesMax > 0)
       params.add(new NameValuePair("maxResults", "" + listJIRAIssuesMax));
 
-    // TODO add additional indexed issue fields from River configuration
+    // TODO add additional indexed issue fields from River configuration (include unit test)
     params.add(new NameValuePair("fields", "key,created,updated,reporter,assignee,summary,description"));
 
     return performJIRAGetRESTCall("search", params);
@@ -220,6 +220,10 @@ public class JIRA5RestClient {
     } finally {
       method.releaseConnection();
     }
+  }
+
+  public void setListJIRAIssuesMax(int listJIRAIssuesMax) {
+    this.listJIRAIssuesMax = listJIRAIssuesMax;
   }
 
 }
