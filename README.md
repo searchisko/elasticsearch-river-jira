@@ -33,6 +33,18 @@ The above lists all the options controlling the creation of a JIRA river.
 The urlBase parameter is required in order to connect to the JIRA REST API.
 The index defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited.
 
+TODO List
+---------
+* Configurable period for JIRA changes checking to be indexed
+* Configurable list of JIRA project keys which may be indexed. All projects indexed if 'include' list not defined with possibility of 'exclude' list.
+* Credentials for JIRA authentication used for indexation - Anonymous access if not defined
+* Credentials for http proxy authentication used for indexation
+* Configurable number of parallel threads used for JIRA indexation to speed it up a little but not to DOS JIRA instance.
+* Configurable list of additional JIRA issue fields indexed for fulltext search (some basic fields as Summaty and Description will be indexed by default)
+* Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)
+* Implement some mechanism which allows to initiate full reindex of all issues for defined JIRA project (calleable over REST)
+
+
 License
 -------
 
