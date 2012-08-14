@@ -4,8 +4,12 @@ import static org.elasticsearch.client.Requests.indexRequest;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.ExceptionsHelper;
@@ -32,17 +36,22 @@ import org.elasticsearch.river.RiverSettings;
  */
 public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration {
 
-  private static final int coordinatorThreadWaits = 1000;
+  protected static final int coordinatorThreadWaits = 1000;
 
-  private final Client client;
+  /**
+   * How often is project list refreshed from JIRA instance [ms].
+   */
+  protected static final long JIRA_PROJECTS_REFRESH_TIME = 30 * 60 * 1000;
 
-  private final IJIRAClient jiraClient;
+  protected Client client;
 
-  private final String indexName;
+  protected IJIRAClient jiraClient;
 
-  private volatile Thread thread;
+  protected final String indexName;
 
-  private volatile boolean closed = false;
+  protected Thread thread;
+
+  protected volatile boolean closed = false;
 
   @SuppressWarnings({ "unchecked" })
   @Inject
@@ -56,20 +65,32 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       Map<String, Object> jiraSettings = (Map<String, Object>) settings.settings().get("jira");
       url = XContentMapValues.nodeStringValue(jiraSettings.get("urlBase"), null);
       Integer timeout = null;
-      try {
-        timeout = new Integer(XContentMapValues.nodeIntegerValue(jiraSettings.get("timeout")));
-      } catch (NumberFormatException e) {
-        logger.warn("timeout parameter is not valid number");
+      if (jiraSettings.get("timeout") != null) {
+        try {
+          timeout = new Integer(XContentMapValues.nodeIntegerValue(jiraSettings.get("timeout")));
+        } catch (NumberFormatException e) {
+          logger.warn("timeout parameter is not valid number");
+        }
       }
       jiraClient = new JIRA5RestClient(url, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
           XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
-      // TODO read this from River Configuration
       jiraClient.setListJIRAIssuesMax(XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIssuesPerRequest"), 50));
+      if (jiraSettings.containsKey("projectKeysIndexed")) {
+        allIndexedProjectsKeys = parseCsvString(XContentMapValues.nodeStringValue(
+            jiraSettings.get("projectKeysIndexed"), null));
+        if (allIndexedProjectsKeys != null) {
+          // stop loading from JIRA
+          allIndexedProjectsKeysNextRefresh = Long.MAX_VALUE;
+        }
+      }
+      if (jiraSettings.containsKey("projectKeysExcluded")) {
+        projectKeysExcluded = parseCsvString(XContentMapValues.nodeStringValue(jiraSettings.get("projectKeysExcluded"),
+            null));
+      }
+
     } else {
       throw new SettingsException("jira configuration structure not found");
     }
-
-    // TODO read JIRA http authentication from River Config
 
     logger.info("creating JIRA River for JIRA base URL  [{}]", url);
 
@@ -79,6 +100,35 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     } else {
       indexName = riverName.name();
     }
+  }
+
+  /**
+   * Parse comma separated string into list of tokens. Tokens are trimmed, empty tokens are not in result.
+   * 
+   * @param toParse String to parse
+   * @return List of tokens if at least one token exists, null otherwise.
+   */
+  protected static List<String> parseCsvString(String toParse) {
+    if (toParse == null || toParse.length() == 0) {
+      return null;
+    }
+    String[] t = toParse.split(",");
+    if (t.length == 0) {
+      return null;
+    }
+    List<String> ret = new ArrayList<String>();
+    for (String s : t) {
+      if (s != null) {
+        s = s.trim();
+        if (s.length() > 0) {
+          ret.add(s);
+        }
+      }
+    }
+    if (ret.isEmpty())
+      return null;
+    else
+      return ret;
   }
 
   @Override
@@ -119,17 +169,41 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     return closed;
   }
 
+  protected List<String> allIndexedProjectsKeys = null;
+  protected List<String> projectKeysExcluded = null;
+  protected long allIndexedProjectsKeysNextRefresh = 0;
+  protected Queue<String> projectKeysToIndexQueue = new LinkedBlockingQueue<String>();
+  protected volatile ArrayList<JIRAProjectIndexer> projectIndexers;
+
+  /**
+   * Get JIRA project keys for all projects which needs to be indexed. Is loaded from river configuration or from JIRA
+   * instance - depends on river configuration.
+   * 
+   * @return list of project keys.
+   * @throws Exception
+   */
+  protected List<String> getAllIndexedProjectsKeys() throws Exception {
+    if (allIndexedProjectsKeys == null || allIndexedProjectsKeysNextRefresh < System.currentTimeMillis()) {
+      allIndexedProjectsKeys = jiraClient.getAllJIRAProjects();
+      if (projectKeysExcluded != null) {
+        allIndexedProjectsKeys.removeAll(projectKeysExcluded);
+      }
+      allIndexedProjectsKeysNextRefresh = System.currentTimeMillis() + JIRA_PROJECTS_REFRESH_TIME;
+    }
+
+    return allIndexedProjectsKeys;
+  }
+
   public class JIRAProjectIndexerCoordinator implements Runnable {
 
     @Override
     public void run() {
-      logger.info("JIRA river coordinator task started");
+      logger.info("JIRA river projects indexing coordinator task started");
       while (true) {
         if (closed) {
-          logger.info("JIRA river coordinator task stopped");
+          logger.info("JIRA river projects indexing coordinator task stopped");
           return;
         }
-
         try {
           // TODO check which JIRA projects need index updates and coordinate parallel threads to do this.
         } catch (Exception e) {
