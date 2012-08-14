@@ -19,8 +19,10 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 /**
  * Unit test for {@link JIRAProjectIndexer}.
@@ -54,36 +56,56 @@ public class JIRAProjectIndexerTest {
   public void processUpdate_Basic() throws Exception {
 
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, null);
+    IESIntegration esIntegrationMock = mock(IESIntegration.class);
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
 
-    // test case with empty result list
-    when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
+    // test case with empty result list from JIRA search method
+    // test case of 'last update date' reading from store and passing to the JIRA search method
+    Date mockDateAfter = new Date();
+    when(esIntegrationMock.getLastIssueUpdatedDate("ORG")).thenReturn(mockDateAfter);
+    when(jiraClientMock.getJIRAChangedIssues("ORG", 0, mockDateAfter, null)).thenReturn(
         new ChangedIssuesResults(issues, 0, 50, 0));
-    Assert.assertEquals(0, tested.processUpdate());
-    verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
-    // TODO UNITTEST assert results and persistence of latestUpdate field
 
-    // test case with one "page" of results
+    Assert.assertEquals(0, tested.processUpdate());
+    verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, mockDateAfter, null);
+    verify(esIntegrationMock, times(1)).getLastIssueUpdatedDate(Mockito.any(String.class));
+    verify(esIntegrationMock, times(0)).getESBulkRequestBuilder();
+    verify(esIntegrationMock, times(0)).storeLastIssueUpdatedDate(Mockito.any(BulkRequestBuilder.class),
+        Mockito.any(String.class), Mockito.any(Date.class));
+    verify(esIntegrationMock, times(0)).executeESBulkRequestBuilder(Mockito.any(BulkRequestBuilder.class));
+
+    // test case with one "page" of results from JIRA search method
+    // test case with 'last update date' storing
+    reset(esIntegrationMock);
     reset(jiraClientMock);
+    when(esIntegrationMock.getLastIssueUpdatedDate("ORG")).thenReturn(null);
     addIssueMock(issues, "ORG-45", "2012-08-14T08:00:00.000-0400");
     addIssueMock(issues, "ORG-46", "2012-08-14T08:01:00.000-0400");
     addIssueMock(issues, "ORG-47", "2012-08-14T08:02:00.000-0400");
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
         new ChangedIssuesResults(issues, 0, 50, 3));
+    when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+
     Assert.assertEquals(3, tested.processUpdate());
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
-    // TODO UNITTEST assert results and persistence of latestUpdate field
+    verify(esIntegrationMock, times(1)).getLastIssueUpdatedDate(Mockito.any(String.class));
+    verify(esIntegrationMock, times(1)).getESBulkRequestBuilder();
+    verify(esIntegrationMock, times(1)).storeLastIssueUpdatedDate(Mockito.any(BulkRequestBuilder.class),
+        Mockito.eq("ORG"),
+        Mockito.eq(ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:02:00.000-0400").toDate()));
+    verify(esIntegrationMock, times(1)).executeESBulkRequestBuilder(Mockito.any(BulkRequestBuilder.class));
 
   }
 
   @Test
   public void processUpdate_PagedByDate() throws Exception {
 
-    // test case with more than one "page" of results with different updated dates
+    // test case with more than one "page" of results from JIRA search method with different updated dates
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, null);
+    IESIntegration esIntegrationMock = mock(IESIntegration.class);
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
     addIssueMock(issues, "ORG-45", "2012-08-14T08:00:00.000-0400");
@@ -98,25 +120,43 @@ public class JIRAProjectIndexerTest {
     List<Map<String, Object>> issues3 = new ArrayList<Map<String, Object>>();
     addIssueMock(issues3, "ORG-4", "2012-08-14T08:06:00.000-0400");
     addIssueMock(issues3, "ORG-91", "2012-08-14T08:07:00.000-0400");
+    when(esIntegrationMock.getLastIssueUpdatedDate("ORG")).thenReturn(null);
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
         new ChangedIssuesResults(issues, 0, 3, 8));
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, after2, null)).thenReturn(
         new ChangedIssuesResults(issues2, 0, 3, 5));
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, after3, null)).thenReturn(
         new ChangedIssuesResults(issues3, 0, 3, 2));
+    when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+
     Assert.assertEquals(8, tested.processUpdate());
+    verify(esIntegrationMock, times(1)).getLastIssueUpdatedDate(Mockito.any(String.class));
+    verify(esIntegrationMock, times(3)).getESBulkRequestBuilder();
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, after2, null);
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, after3, null);
-    // TODO UNITTEST assert results and persistence of latestUpdate field
+    verify(esIntegrationMock, times(3)).storeLastIssueUpdatedDate(Mockito.any(BulkRequestBuilder.class),
+        Mockito.any(String.class), Mockito.any(Date.class));
+    verify(esIntegrationMock, times(1)).storeLastIssueUpdatedDate(Mockito.any(BulkRequestBuilder.class),
+        Mockito.eq("ORG"),
+        Mockito.eq(ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:02:00.000-0400").toDate()));
+    verify(esIntegrationMock, times(1)).storeLastIssueUpdatedDate(Mockito.any(BulkRequestBuilder.class),
+        Mockito.eq("ORG"),
+        Mockito.eq(ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:05:00.000-0400").toDate()));
+    verify(esIntegrationMock, times(1)).storeLastIssueUpdatedDate(Mockito.any(BulkRequestBuilder.class),
+        Mockito.eq("ORG"),
+        Mockito.eq(ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:07:00.000-0400").toDate()));
+    verify(esIntegrationMock, times(3)).executeESBulkRequestBuilder(Mockito.any(BulkRequestBuilder.class));
   }
 
   @Test
   public void processUpdate_PagedByStartAt() throws Exception {
 
-    // test case with more than one "page" of results with same updated dates so pagination in JIRA is used
+    // test case with more than one "page" of results from JIRA search method with same updated dates so pagination in
+    // JIRA is used
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, null);
+    IESIntegration esIntegrationMock = mock(IESIntegration.class);
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
     addIssueMock(issues, "ORG-45", "2012-08-14T08:00:00.000-0400");
@@ -129,17 +169,27 @@ public class JIRAProjectIndexerTest {
     List<Map<String, Object>> issues3 = new ArrayList<Map<String, Object>>();
     addIssueMock(issues3, "ORG-4", "2012-08-14T08:00:00.000-0400");
     addIssueMock(issues3, "ORG-91", "2012-08-14T08:00:00.000-0400");
+    when(esIntegrationMock.getLastIssueUpdatedDate("ORG")).thenReturn(null);
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
         new ChangedIssuesResults(issues, 0, 3, 8));
     when(jiraClientMock.getJIRAChangedIssues("ORG", 3, null, null)).thenReturn(
         new ChangedIssuesResults(issues2, 3, 3, 8));
     when(jiraClientMock.getJIRAChangedIssues("ORG", 6, null, null)).thenReturn(
         new ChangedIssuesResults(issues3, 6, 3, 8));
+    when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+
     Assert.assertEquals(8, tested.processUpdate());
+    verify(esIntegrationMock, times(1)).getLastIssueUpdatedDate(Mockito.any(String.class));
+    verify(esIntegrationMock, times(3)).getESBulkRequestBuilder();
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 3, null, null);
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 6, null, null);
-    // TODO UNITTEST assert results and persistence of latestUpdate field
+    verify(esIntegrationMock, times(3)).storeLastIssueUpdatedDate(Mockito.any(BulkRequestBuilder.class),
+        Mockito.any(String.class), Mockito.any(Date.class));
+    verify(esIntegrationMock, times(3)).storeLastIssueUpdatedDate(Mockito.any(BulkRequestBuilder.class),
+        Mockito.eq("ORG"),
+        Mockito.eq(ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:00:00.000-0400").toDate()));
+    verify(esIntegrationMock, times(3)).executeESBulkRequestBuilder(Mockito.any(BulkRequestBuilder.class));
 
   }
 

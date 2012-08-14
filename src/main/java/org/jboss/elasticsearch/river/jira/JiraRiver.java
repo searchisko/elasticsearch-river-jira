@@ -1,12 +1,21 @@
 package org.jboss.elasticsearch.river.jira;
 
+import static org.elasticsearch.client.Requests.indexRequest;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+
 import java.net.MalformedURLException;
+import java.util.Date;
 import java.util.Map;
 
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.ExceptionsHelper;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.block.ClusterBlockException;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
@@ -21,7 +30,7 @@ import org.elasticsearch.river.RiverSettings;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JiraRiver extends AbstractRiverComponent implements River {
+public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration {
 
   private static final int coordinatorThreadWaits = 1000;
 
@@ -105,6 +114,7 @@ public class JiraRiver extends AbstractRiverComponent implements River {
     // TODO close other threads processing JIRA projects if any
   }
 
+  @Override
   public boolean isClosed() {
     return closed;
   }
@@ -134,6 +144,74 @@ public class JiraRiver extends AbstractRiverComponent implements River {
         } catch (InterruptedException e1) {
         }
       }
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public Date getLastIssueUpdatedDate(String jiraProjectKey) {
+    Date lastDate = null;
+    String lastupdateField = getLastIssueUpdatedDateFieldName(jiraProjectKey);
+    try {
+      client.admin().indices().prepareRefresh("_river").execute().actionGet();
+      GetResponse lastSeqGetResponse = client.prepareGet("_river", riverName().name(), lastupdateField).execute()
+          .actionGet();
+      if (lastSeqGetResponse.exists()) {
+        Map<String, Object> jiraProjectLastUpdateState = (Map<String, Object>) lastSeqGetResponse.sourceAsMap().get(
+            "lastupdatedissuedate");
+
+        if (jiraProjectLastUpdateState != null) {
+          Object lastupdate = jiraProjectLastUpdateState.get(lastupdateField);
+          if (lastupdate != null) {
+            String strLastDate = lastupdate.toString();
+            lastDate = ISODateTimeFormat.dateOptionalTimeParser().parseDateTime(strLastDate).toDate();
+          }
+        }
+      } else {
+        if (logger.isDebugEnabled())
+          logger.debug("{} doesn't exist in JIRA river persistent store", lastupdateField);
+      }
+    } catch (Exception e) {
+      throw new ElasticSearchException("Failed to get " + lastupdateField, e);
+    }
+    return lastDate;
+  }
+
+  /**
+   * Get field name used to store "last issue updated" value in ES river index
+   * 
+   * @param jiraProjectKey key of JIRA project to store value for
+   * @return name of field used to store value in ES river index
+   * 
+   * @see #getLastIssueUpdatedDate(String)
+   * @see #storeLastIssueUpdatedDate(BulkRequestBuilder, String, Date)
+   */
+  protected String getLastIssueUpdatedDateFieldName(String jiraProjectKey) {
+    return "_lastupdatedissue_" + jiraProjectKey;
+  }
+
+  @Override
+  public void storeLastIssueUpdatedDate(BulkRequestBuilder esBulk, String jiraProjectKey, Date lastIssueUpdatedDate)
+      throws Exception {
+    String lastupdateField = getLastIssueUpdatedDateFieldName(jiraProjectKey);
+    esBulk.add(indexRequest("_river")
+        .type(riverName.name())
+        .id(lastupdateField)
+        .source(
+            jsonBuilder().startObject().startObject("lastupdatedissuedate")
+                .field(lastupdateField, lastIssueUpdatedDate).endObject().endObject()));
+  }
+
+  @Override
+  public BulkRequestBuilder getESBulkRequestBuilder() {
+    return client.prepareBulk();
+  }
+
+  @Override
+  public void executeESBulkRequestBuilder(BulkRequestBuilder esBulk) throws Exception {
+    BulkResponse response = esBulk.execute().actionGet();
+    if (response.hasFailures()) {
+      throw new ElasticSearchException("Failed to execute ES index bulk update: " + response.buildFailureMessage());
     }
   }
 }

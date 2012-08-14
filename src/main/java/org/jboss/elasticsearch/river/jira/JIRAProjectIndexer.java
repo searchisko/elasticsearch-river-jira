@@ -8,6 +8,7 @@ package org.jboss.elasticsearch.river.jira;
 import java.util.Date;
 import java.util.Map;
 
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
@@ -23,14 +24,14 @@ public class JIRAProjectIndexer implements Runnable {
 
   protected final IJIRAClient jiraClient;
 
-  protected final JiraRiver jiraRiver;
+  protected final IESIntegration esIntegrationComponent;
 
   protected final String projectKey;
 
-  public JIRAProjectIndexer(String projectKey, IJIRAClient jiraClient, JiraRiver jiraRiver) {
+  public JIRAProjectIndexer(String projectKey, IJIRAClient jiraClient, IESIntegration esIntegrationComponent) {
     this.jiraClient = jiraClient;
     this.projectKey = projectKey;
-    this.jiraRiver = jiraRiver;
+    this.esIntegrationComponent = esIntegrationComponent;
   }
 
   @Override
@@ -40,10 +41,10 @@ public class JIRAProjectIndexer implements Runnable {
     try {
       updatedCount = processUpdate();
     } catch (Exception e) {
-      logger.error("Failed to process JIRA updates for project " + projectKey, e);
+      logger.error("Failed to process JIRA updates for project {} due: {}", e, projectKey, e.getMessage());
     } finally {
-      logger.info("Finished processing of JIRA updates for project " + projectKey + ". Updated " + updatedCount
-          + " issues. Time elapsed " + ((System.currentTimeMillis() - startTime) / 1000) + "s.");
+      logger.info("Finished processing of JIRA updates for project {}. Updated {} issues. Time elapsed {}s.",
+          projectKey, updatedCount, ((System.currentTimeMillis() - startTime) / 1000));
     }
   }
 
@@ -56,10 +57,9 @@ public class JIRAProjectIndexer implements Runnable {
   @SuppressWarnings("unchecked")
   protected int processUpdate() throws Exception {
     int updatedCount = 0;
-    // TODO load updatedAfter from persistent store to continue last indexing
-    Date updatedAfter = null;
-    logger.info("Go to process JIRA updates for project " + projectKey + " for issues updated "
-        + (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
+    Date updatedAfter = esIntegrationComponent.getLastIssueUpdatedDate(projectKey);
+    logger.info("Go to process JIRA updates for project {} for issues updated {}", projectKey,
+        (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
 
     int startAt = 0;
 
@@ -74,18 +74,22 @@ public class JIRAProjectIndexer implements Runnable {
       } else {
         String firstIssueUpdated = null;
         String lastIssueUpdated = null;
+        BulkRequestBuilder esBulk = esIntegrationComponent.getESBulkRequestBuilder();
         for (Map<String, Object> issue : res.getIssues()) {
           lastIssueUpdated = (String) ((Map<String, Object>) issue.get("fields")).get("updated");
           if (firstIssueUpdated == null) {
             firstIssueUpdated = lastIssueUpdated;
           }
-          updatedCount++;
           logger.debug("Go to update index for issue {}", issue.get("key"));
+          // TODO write JIRA issue to the index esBulk update
+          updatedCount++;
           if (isClosed())
             break;
         }
 
-        // TODO persist lastIssueUpdated if not null so we can continue next time to update starting this datetime
+        esIntegrationComponent.storeLastIssueUpdatedDate(esBulk, projectKey, ISODateTimeFormat.dateTimeParser()
+            .parseDateTime(lastIssueUpdated).toDate());
+        esIntegrationComponent.executeESBulkRequestBuilder(esBulk);
 
         // next logic depends on issues sorted by update time ascending when returned from
         // jiraClient.getJIRAChangedIssues()!!!!
@@ -107,12 +111,12 @@ public class JIRAProjectIndexer implements Runnable {
   }
 
   /**
-   * Check if we must interrupt update process because JIRA River is closed/stopped.
+   * Check if we must interrupt update process because ElasticSearch runtime needs it.
    * 
    * @return true if we must interrupt update process
    */
   protected boolean isClosed() {
-    return jiraRiver != null && jiraRiver.isClosed();
+    return esIntegrationComponent != null && esIntegrationComponent.isClosed();
   }
 
 }

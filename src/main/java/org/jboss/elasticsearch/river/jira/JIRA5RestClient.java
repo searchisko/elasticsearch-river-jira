@@ -187,7 +187,8 @@ public class JIRA5RestClient implements IJIRAClient {
     params.add(new NameValuePair("startAt", startAt + ""));
 
     // TODO add additional indexed issue fields from River configuration (include unit test)
-    params.add(new NameValuePair("fields", "key,created,updated,reporter,assignee,summary,description"));
+    params
+        .add(new NameValuePair("fields", "key,status,issuetype,created,updated,reporter,assignee,summary,description"));
 
     return performJIRAGetRESTCall("search", params);
   }
