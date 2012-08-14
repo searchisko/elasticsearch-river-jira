@@ -27,7 +27,7 @@ public class JiraRiver extends AbstractRiverComponent implements River {
 
   private final Client client;
 
-  private final JIRA5RestClient jiraClient;
+  private final IJIRAClient jiraClient;
 
   private final String indexName;
 
@@ -46,8 +46,16 @@ public class JiraRiver extends AbstractRiverComponent implements River {
     if (settings.settings().containsKey("jira")) {
       Map<String, Object> jiraSettings = (Map<String, Object>) settings.settings().get("jira");
       url = XContentMapValues.nodeStringValue(jiraSettings.get("urlBase"), null);
+      Integer timeout = null;
+      try {
+        timeout = new Integer(XContentMapValues.nodeIntegerValue(jiraSettings.get("timeout")));
+      } catch (NumberFormatException e) {
+        logger.warn("timeout parameter is not valid number");
+      }
       jiraClient = new JIRA5RestClient(url, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
-          XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null));
+          XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
+      // TODO read this from River Configuration
+      jiraClient.setListJIRAIssuesMax(XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIssuesPerRequest"), 50));
     } else {
       throw new SettingsException("jira configuration structure not found");
     }
@@ -94,6 +102,7 @@ public class JiraRiver extends AbstractRiverComponent implements River {
     if (thread != null) {
       thread.interrupt();
     }
+    // TODO close other threads processing JIRA projects if any
   }
 
   public boolean isClosed() {

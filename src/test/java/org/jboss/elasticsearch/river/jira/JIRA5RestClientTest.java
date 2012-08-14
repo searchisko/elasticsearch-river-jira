@@ -40,7 +40,7 @@ public class JIRA5RestClientTest {
    */
   public static void main(String[] args) throws Exception {
 
-    JIRA5RestClient tested = new JIRA5RestClient("https://issues.jboss.org", null, null);
+    IJIRAClient tested = new JIRA5RestClient("https://issues.jboss.org", null, null, 5000);
 
     // List<String> projects = tested.getAllJIRAProjects();
     // System.out.println(projects);
@@ -52,41 +52,41 @@ public class JIRA5RestClientTest {
   @Test
   public void constructor() {
     try {
-      new JIRA5RestClient(null, null, null);
+      new JIRA5RestClient(null, null, null, 5000);
       Assert.fail("SettingsException not thrown");
     } catch (SettingsException e) {
       // OK
     }
     try {
-      new JIRA5RestClient("  ", null, null);
+      new JIRA5RestClient("  ", null, null, 5000);
       Assert.fail("SettingsException not thrown");
     } catch (SettingsException e) {
       // OK
     }
     try {
-      new JIRA5RestClient("nonsenseUrl", null, null);
+      new JIRA5RestClient("nonsenseUrl", null, null, 5000);
       Assert.fail("SettingsException not thrown");
     } catch (SettingsException e) {
       // OK
     }
 
-    JIRA5RestClient tested = new JIRA5RestClient("http://issues.jboss.org", null, null);
+    JIRA5RestClient tested = new JIRA5RestClient("http://issues.jboss.org", null, null, 5000);
     Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL("http://issues.jboss.org"), tested.jiraRestAPIUrlBase);
-    tested = new JIRA5RestClient(TEST_JIRA_URL, null, null);
+    tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000);
     Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL(TEST_JIRA_URL), tested.jiraRestAPIUrlBase);
     Assert.assertFalse(tested.isAuthConfigured);
 
-    tested = new JIRA5RestClient(TEST_JIRA_URL, "", "pwd");
+    tested = new JIRA5RestClient(TEST_JIRA_URL, "", "pwd", 5000);
     Assert.assertFalse(tested.isAuthConfigured);
 
-    tested = new JIRA5RestClient(TEST_JIRA_URL, "uname", "pwd");
+    tested = new JIRA5RestClient(TEST_JIRA_URL, "uname", "pwd", 5000);
     Assert.assertTrue(tested.isAuthConfigured);
   }
 
   @Test
   public void getAllJIRAProjects() throws Exception {
 
-    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
+    IJIRAClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000) {
       @Override
       protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
         Assert.assertEquals("project", restOperation);
@@ -108,7 +108,7 @@ public class JIRA5RestClientTest {
     final Date ua = new Date();
     final Date ub = new Date();
 
-    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
+    IJIRAClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000) {
       @Override
       protected byte[] performJIRAChangedIssuesREST(String projectKey, int startAt, Date updatedAfter,
           Date updatedBefore) throws Exception {
@@ -134,7 +134,7 @@ public class JIRA5RestClientTest {
     final Date ua = new Date();
     final Date ub = new Date();
 
-    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null) {
+    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000) {
       @Override
       protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
         Assert.assertEquals("search", restOperation);
@@ -201,7 +201,7 @@ public class JIRA5RestClientTest {
 
   @Test
   public void formatJQLDate() throws Exception {
-    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null);
+    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000);
     Assert.assertNull(tested.formatJQLDate(null));
     Assert.assertEquals("2012-08-10 10:52", tested.formatJQLDate(JQL_DATE_FORMAT.parse("2012-08-10 10:52")));
     Assert.assertEquals("2012-08-10 22:52", tested.formatJQLDate(JQL_DATE_FORMAT.parse("2012-08-10 22:52")));
@@ -209,7 +209,7 @@ public class JIRA5RestClientTest {
 
   @Test
   public void prepareJIRAChangedIssuesJQL() throws Exception {
-    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null);
+    JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000);
     try {
       tested.prepareJIRAChangedIssuesJQL(null, null, null);
       Assert.fail("IllegalArgumentException not thrown if project key is missing");

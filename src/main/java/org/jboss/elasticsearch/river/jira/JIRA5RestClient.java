@@ -23,17 +23,21 @@ import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 
 /**
- * Class used to call JIRA 5 functions to obtain JIRA content over REST API. One instance of this class is used to
- * access one instance of JIRA.
+ * Class used to call JIRA 5 series functions to obtain JIRA content over REST API version 2. One instance of this class
+ * is used to access one instance of JIRA.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JIRA5RestClient {
+public class JIRA5RestClient implements IJIRAClient {
+
+  private static final ESLogger logger = Loggers.getLogger(JIRA5RestClient.class);
 
   private HttpClient httpclient;
 
@@ -41,7 +45,6 @@ public class JIRA5RestClient {
 
   protected boolean isAuthConfigured = false;
 
-  // TODO read this from River Configuration
   protected int listJIRAIssuesMax = -1;
 
   /**
@@ -50,8 +53,9 @@ public class JIRA5RestClient {
    * @param jiraRestAPIUrlBase JIRA API URL used to call JIRA (see {@link #prepareAPIURLFromBaseURL(String)})
    * @param jiraUsername optional username to authenticate into JIRA
    * @param jiraPassword optional password to authenticate into JIRA
+   * @param timeout JIRA http/s connection timeout in milliseconds
    */
-  public JIRA5RestClient(String jiraUrlBase, String jiraUsername, String jiraPassword) {
+  public JIRA5RestClient(String jiraUrlBase, String jiraUsername, String jiraPassword, Integer timeout) {
 
     jiraRestAPIUrlBase = prepareAPIURLFromBaseURL(jiraUrlBase);
     if (jiraRestAPIUrlBase == null) {
@@ -68,8 +72,10 @@ public class JIRA5RestClient {
     HttpConnectionManagerParams params = new HttpConnectionManagerParams();
     params.setDefaultMaxConnectionsPerHost(20);
     params.setMaxTotalConnections(20);
-    params.setSoTimeout(5000);
-    params.setConnectionTimeout(5000);
+    if (timeout != null) {
+      params.setSoTimeout(timeout);
+      params.setConnectionTimeout(timeout);
+    }
 
     MultiThreadedHttpConnectionManager connectionManager = new MultiThreadedHttpConnectionManager();
     connectionManager.setParams(params);
@@ -109,20 +115,26 @@ public class JIRA5RestClient {
    * @return list of project keys
    * @throws Exception
    */
+  @Override
   @SuppressWarnings("unchecked")
   public List<String> getAllJIRAProjects() throws Exception {
 
     byte[] responseData = performJIRAGetRESTCall("project", null);
+    if (logger.isDebugEnabled()) {
+      logger.debug("JIRA REST response data: " + new String(responseData));
+    }
+
     StringBuilder sb = new StringBuilder();
     sb.append("{ \"projects\" : ").append(new String(responseData, "UTF-8")).append("}");
     responseData = sb.toString().getBytes("UTF-8");
     XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
     Map<String, Object> responseParsed = parser.mapAndClose();
-    List<String> ret = new ArrayList<String>();
 
+    List<String> ret = new ArrayList<String>();
     for (Map<String, Object> mk : (List<Map<String, Object>>) responseParsed.get("projects")) {
       ret.add((String) mk.get("key"));
     }
+
     return ret;
   }
 
@@ -138,11 +150,14 @@ public class JIRA5RestClient {
    * @return List of issues informations parsed from JIRA reply into <code>Map of Maps</code> structure.
    * @throws Exception
    */
+  @Override
   @SuppressWarnings("unchecked")
   public ChangedIssuesResults getJIRAChangedIssues(String projectKey, int startAt, Date updatedAfter, Date updatedBefore)
       throws Exception {
     byte[] responseData = performJIRAChangedIssuesREST(projectKey, startAt, updatedAfter, updatedBefore);
-    // System.out.println(new String(responseData));
+    if (logger.isDebugEnabled()) {
+      logger.debug("JIRA REST response data: " + new String(responseData));
+    }
     XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
     Map<String, Object> responseParsed = parser.mapAndClose();
     Integer startAtRet = (Integer) responseParsed.get("startAt");
@@ -202,6 +217,10 @@ public class JIRA5RestClient {
       sb.append(" and updatedDate <= \"").append(formatJQLDate(updatedBefore)).append("\"");
     }
     sb.append(" ORDER BY updated ASC");
+    if (logger.isDebugEnabled()) {
+      logger.debug("JIRA JQL string: " + sb.toString());
+    }
+
     return sb.toString();
   }
 
@@ -249,6 +268,7 @@ public class JIRA5RestClient {
     }
   }
 
+  @Override
   public void setListJIRAIssuesMax(int listJIRAIssuesMax) {
     this.listJIRAIssuesMax = listJIRAIssuesMax;
   }
