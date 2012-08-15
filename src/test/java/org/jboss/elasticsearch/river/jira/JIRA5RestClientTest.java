@@ -176,14 +176,14 @@ public class JIRA5RestClientTest {
     byte[] ret = tested.performJIRAChangedIssuesREST("ORG", 10, ua, ub);
     Assert
         .assertEquals(
-            "{\"maxResults\": -1, \"startAt\": 10, \"fields\" : \"key,created,updated,reporter,assignee,summary,description\" }",
+            "{\"maxResults\": -1, \"startAt\": 10, \"fields\" : \"key,status,issuetype,created,updated,reporter,assignee,summary,description\" }",
             new String(ret, "UTF-8"));
 
     tested.listJIRAIssuesMax = 10;
     ret = tested.performJIRAChangedIssuesREST("ORG", 20, ua, ub);
     Assert
         .assertEquals(
-            "{\"maxResults\": 10, \"startAt\": 20, \"fields\" : \"key,created,updated,reporter,assignee,summary,description\" }",
+            "{\"maxResults\": 10, \"startAt\": 20, \"fields\" : \"key,status,issuetype,created,updated,reporter,assignee,summary,description\" }",
             new String(ret, "UTF-8"));
 
   }

@@ -3,13 +3,12 @@ package org.jboss.elasticsearch.river.jira;
 import static org.elasticsearch.client.Requests.indexRequest;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.ExceptionsHelper;
@@ -36,22 +35,72 @@ import org.elasticsearch.river.RiverSettings;
  */
 public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration {
 
-  protected static final int coordinatorThreadWaits = 1000;
-
   /**
    * How often is project list refreshed from JIRA instance [ms].
    */
   protected static final long JIRA_PROJECTS_REFRESH_TIME = 30 * 60 * 1000;
 
+  /**
+   * ElasticSearch client to be used for indexing
+   */
   protected Client client;
 
+  /**
+   * Configured JIRA client to access data from JIRA
+   */
   protected IJIRAClient jiraClient;
 
+  /**
+   * Config - maximal number of parallel JIRA indexing threads
+   */
+  protected int maxIndexingThreads;
+
+  /**
+   * Config - index update period [ms]
+   */
+  protected int indexUpdatePeriod;
+
+  /**
+   * Config - name of ElasticSearch index used to store issues from this river
+   */
   protected final String indexName;
 
-  protected Thread thread;
+  /**
+   * Thread running {@link JIRAProjectIndexerCoordinator} is stored here.
+   */
+  protected Thread coordinatorThread;
 
+  /**
+   * USed {@link JIRAProjectIndexerCoordinator} instance is stored here.
+   */
+  protected JIRAProjectIndexerCoordinator coordinatorInstance;
+
+  /**
+   * Flag set to true if this river is stopped from ElasticSearch server.
+   */
   protected volatile boolean closed = false;
+
+  /**
+   * List of indexing excluded JIRA project keys loaded from river configuration
+   * 
+   * @see #getAllIndexedProjectsKeys()
+   */
+  protected List<String> projectKeysExcluded = null;
+
+  /**
+   * List of all JIRA project keys to be indexed. Loaded from river configuration, or from remote JIRA (excludes
+   * removed)
+   * 
+   * @see #getAllIndexedProjectsKeys()
+   */
+  protected List<String> allIndexedProjectsKeys = null;
+
+  /**
+   * Next time when {@link #allIndexedProjectsKeys} need to be refreshed from remote JIRA instance.
+   * 
+   * @see #getAllIndexedProjectsKeys()
+   */
+  protected long allIndexedProjectsKeysNextRefresh = 0;
 
   @SuppressWarnings({ "unchecked" })
   @Inject
@@ -75,6 +124,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       jiraClient = new JIRA5RestClient(url, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
           XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
       jiraClient.setListJIRAIssuesMax(XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIssuesPerRequest"), 50));
+      maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
+      indexUpdatePeriod = XContentMapValues.nodeIntegerValue(jiraSettings.get("indexUpdatePeriod"), 5) * 60 * 1000;
       if (jiraSettings.containsKey("projectKeysIndexed")) {
         allIndexedProjectsKeys = parseCsvString(XContentMapValues.nodeStringValue(
             jiraSettings.get("projectKeysIndexed"), null));
@@ -89,7 +140,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       }
 
     } else {
-      throw new SettingsException("jira configuration structure not found");
+      throw new SettingsException("jira element of configuration structure not found");
     }
 
     logger.info("creating JIRA River for JIRA base URL  [{}]", url);
@@ -149,19 +200,21 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       }
     }
 
-    thread = EsExecutors.daemonThreadFactory(settings.globalSettings(), "jira_slurper_coordinator").newThread(
-        new JIRAProjectIndexerCoordinator());
-    thread.start();
+    coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, indexUpdatePeriod, maxIndexingThreads);
+    coordinatorThread = acquireIndexingThread("jira_river_coordinator", coordinatorInstance);
+    coordinatorThread.start();
   }
 
   @Override
   public void close() {
     logger.info("closing JIRA River");
     closed = true;
-    if (thread != null) {
-      thread.interrupt();
+    if (coordinatorThread != null) {
+      coordinatorThread.interrupt();
     }
-    // TODO close other threads processing JIRA projects if any
+    // free instances created in #start()
+    coordinatorThread = null;
+    coordinatorInstance = null;
   }
 
   @Override
@@ -169,20 +222,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     return closed;
   }
 
-  protected List<String> allIndexedProjectsKeys = null;
-  protected List<String> projectKeysExcluded = null;
-  protected long allIndexedProjectsKeysNextRefresh = 0;
-  protected Queue<String> projectKeysToIndexQueue = new LinkedBlockingQueue<String>();
-  protected volatile ArrayList<JIRAProjectIndexer> projectIndexers;
-
-  /**
-   * Get JIRA project keys for all projects which needs to be indexed. Is loaded from river configuration or from JIRA
-   * instance - depends on river configuration.
-   * 
-   * @return list of project keys.
-   * @throws Exception
-   */
-  protected List<String> getAllIndexedProjectsKeys() throws Exception {
+  @Override
+  public List<String> getAllIndexedProjectsKeys() throws Exception {
     if (allIndexedProjectsKeys == null || allIndexedProjectsKeysNextRefresh < System.currentTimeMillis()) {
       allIndexedProjectsKeys = jiraClient.getAllJIRAProjects();
       if (projectKeysExcluded != null) {
@@ -194,86 +235,42 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     return allIndexedProjectsKeys;
   }
 
-  public class JIRAProjectIndexerCoordinator implements Runnable {
+  @Override
+  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, int issuesUpdated, long timeElapsed,
+      String errorMessage) {
+    if (coordinatorInstance != null) {
+      coordinatorInstance.reportIndexingFinished(jiraProjectKey, finishedOK);
+    }
+    // TODO log JIRA project indexing result for statistics and info reasons
+  }
 
-    @Override
-    public void run() {
-      logger.info("JIRA river projects indexing coordinator task started");
-      while (true) {
-        if (closed) {
-          logger.info("JIRA river projects indexing coordinator task stopped");
-          return;
-        }
-        try {
-          // TODO check which JIRA projects need index updates and coordinate parallel threads to do this.
-        } catch (Exception e) {
-          if (closed)
-            return;
-          logger.error("Failed to process JIRA update coordination task " + e.getMessage(), e);
-        }
-        try {
-          if (logger.isDebugEnabled())
-            logger.debug("JIRA river coordinator task is going to sleep for {} ms", coordinatorThreadWaits);
-          Thread.sleep(coordinatorThreadWaits);
-        } catch (InterruptedException e1) {
-        }
-      }
+  @Override
+  public void storeDatetimeValue(String documentName, Date datetime, BulkRequestBuilder esBulk) throws IOException {
+    if (esBulk != null) {
+      esBulk.add(indexRequest("_river").type(riverName.name()).id(documentName)
+          .source(jsonBuilder().startObject().field("timestamp", datetime).endObject()));
+    } else {
+      client.prepareIndex("_river", riverName.name(), documentName)
+          .setSource(jsonBuilder().startObject().field("timestamp", datetime).endObject()).execute().actionGet();
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Override
-  public Date getLastIssueUpdatedDate(String jiraProjectKey) {
+  public Date readDatetimeValue(String documentName) throws IOException {
     Date lastDate = null;
-    String lastupdateField = getLastIssueUpdatedDateFieldName(jiraProjectKey);
-    try {
-      client.admin().indices().prepareRefresh("_river").execute().actionGet();
-      GetResponse lastSeqGetResponse = client.prepareGet("_river", riverName().name(), lastupdateField).execute()
-          .actionGet();
-      if (lastSeqGetResponse.exists()) {
-        Map<String, Object> jiraProjectLastUpdateState = (Map<String, Object>) lastSeqGetResponse.sourceAsMap().get(
-            "lastupdatedissuedate");
-
-        if (jiraProjectLastUpdateState != null) {
-          Object lastupdate = jiraProjectLastUpdateState.get(lastupdateField);
-          if (lastupdate != null) {
-            String strLastDate = lastupdate.toString();
-            lastDate = ISODateTimeFormat.dateOptionalTimeParser().parseDateTime(strLastDate).toDate();
-          }
-        }
-      } else {
-        if (logger.isDebugEnabled())
-          logger.debug("{} doesn't exist in JIRA river persistent store", lastupdateField);
+    client.admin().indices().prepareRefresh("_river").execute().actionGet();
+    GetResponse lastSeqGetResponse = client.prepareGet("_river", riverName().name(), documentName).execute()
+        .actionGet();
+    if (lastSeqGetResponse.exists()) {
+      Object timestamp = lastSeqGetResponse.sourceAsMap().get("timestamp");
+      if (timestamp != null) {
+        lastDate = ISODateTimeFormat.dateOptionalTimeParser().parseDateTime(timestamp.toString()).toDate();
       }
-    } catch (Exception e) {
-      throw new ElasticSearchException("Failed to get " + lastupdateField, e);
+    } else {
+      if (logger.isDebugEnabled())
+        logger.debug("{} document doesn't exist in JIRA river persistent store", documentName);
     }
     return lastDate;
-  }
-
-  /**
-   * Get field name used to store "last issue updated" value in ES river index
-   * 
-   * @param jiraProjectKey key of JIRA project to store value for
-   * @return name of field used to store value in ES river index
-   * 
-   * @see #getLastIssueUpdatedDate(String)
-   * @see #storeLastIssueUpdatedDate(BulkRequestBuilder, String, Date)
-   */
-  protected String getLastIssueUpdatedDateFieldName(String jiraProjectKey) {
-    return "_lastupdatedissue_" + jiraProjectKey;
-  }
-
-  @Override
-  public void storeLastIssueUpdatedDate(BulkRequestBuilder esBulk, String jiraProjectKey, Date lastIssueUpdatedDate)
-      throws Exception {
-    String lastupdateField = getLastIssueUpdatedDateFieldName(jiraProjectKey);
-    esBulk.add(indexRequest("_river")
-        .type(riverName.name())
-        .id(lastupdateField)
-        .source(
-            jsonBuilder().startObject().startObject("lastupdatedissuedate")
-                .field(lastupdateField, lastIssueUpdatedDate).endObject().endObject()));
   }
 
   @Override
@@ -288,4 +285,10 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       throw new ElasticSearchException("Failed to execute ES index bulk update: " + response.buildFailureMessage());
     }
   }
+
+  @Override
+  public Thread acquireIndexingThread(String threadName, Runnable runnable) {
+    return EsExecutors.daemonThreadFactory(settings.globalSettings(), threadName).newThread(runnable);
+  }
+
 }

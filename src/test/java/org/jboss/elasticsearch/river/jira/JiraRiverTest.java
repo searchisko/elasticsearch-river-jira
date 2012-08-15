@@ -16,6 +16,8 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
@@ -28,33 +30,15 @@ import org.junit.Test;
  */
 public class JiraRiverTest {
 
-  @Test
-  public void parseCsvString() {
-    Assert.assertNull(JiraRiver.parseCsvString(null));
-    Assert.assertNull(JiraRiver.parseCsvString(""));
-    Assert.assertNull(JiraRiver.parseCsvString("    "));
-    Assert.assertNull(JiraRiver.parseCsvString("  ,, ,   ,   "));
-    List<String> r = JiraRiver.parseCsvString(" ORG ,UUUU, , PEM  , ,SU07  ");
-    Assert.assertEquals(4, r.size());
-    Assert.assertEquals("ORG", r.get(0));
-    Assert.assertEquals("UUUU", r.get(1));
-    Assert.assertEquals("PEM", r.get(2));
-    Assert.assertEquals("SU07", r.get(3));
-  }
+  // TODO UNITTEST add other configuration reading in constructor tests
 
   @Test
   public void getAllIndexedProjectsKeys_FromStaticConfig() throws Exception {
-    Map<String, Object> settings = new HashMap<String, Object>();
     Map<String, Object> jiraSettings = new HashMap<String, Object>();
-    settings.put("jira", jiraSettings);
-    jiraSettings.put("urlBase", "https://issues.jboss.org");
     jiraSettings.put("projectKeysIndexed", "ORG, UUUU, PEM, SU07");
 
-    Settings gs = mock(Settings.class);
-    RiverSettings rs = new RiverSettings(gs, settings);
-    JiraRiver tested = new JiraRiver(new RiverName("jira", "my_jira_river"), rs, null);
-    IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-    tested.jiraClient = jiraClientMock;
+    JiraRiver tested = prepareJiraRiverInstanceForTest(jiraSettings);
+    IJIRAClient jiraClientMock = tested.jiraClient;
 
     List<String> r = tested.getAllIndexedProjectsKeys();
     Assert.assertEquals(4, r.size());
@@ -68,17 +52,12 @@ public class JiraRiverTest {
 
   @Test
   public void getAllIndexedProjectsKeys_FromJIRANoExcludes() throws Exception {
-    Map<String, Object> settings = new HashMap<String, Object>();
     Map<String, Object> jiraSettings = new HashMap<String, Object>();
-    settings.put("jira", jiraSettings);
-    jiraSettings.put("urlBase", "https://issues.jboss.org");
     jiraSettings.put("projectKeysExcluded", "");
 
-    Settings gs = mock(Settings.class);
-    RiverSettings rs = new RiverSettings(gs, settings);
-    JiraRiver tested = new JiraRiver(new RiverName("jira", "my_jira_river"), rs, null);
-    IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-    tested.jiraClient = jiraClientMock;
+    JiraRiver tested = prepareJiraRiverInstanceForTest(jiraSettings);
+    IJIRAClient jiraClientMock = tested.jiraClient;
+
     List<String> pl = JiraRiver.parseCsvString("ORG,UUUU,PEM,SU07");
     when(jiraClientMock.getAllJIRAProjects()).thenReturn(pl);
 
@@ -91,22 +70,16 @@ public class JiraRiverTest {
     Assert.assertEquals("SU07", r.get(3));
     Assert
         .assertTrue(tested.allIndexedProjectsKeysNextRefresh <= (System.currentTimeMillis() + JiraRiver.JIRA_PROJECTS_REFRESH_TIME));
-
   }
 
   @Test
   public void getAllIndexedProjectsKeys_FromJIRAWithExcludes() throws Exception {
-    Map<String, Object> settings = new HashMap<String, Object>();
     Map<String, Object> jiraSettings = new HashMap<String, Object>();
-    settings.put("jira", jiraSettings);
-    jiraSettings.put("urlBase", "https://issues.jboss.org");
     jiraSettings.put("projectKeysExcluded", "PEM,UUUU");
 
-    Settings gs = mock(Settings.class);
-    RiverSettings rs = new RiverSettings(gs, settings);
-    JiraRiver tested = new JiraRiver(new RiverName("jira", "my_jira_river"), rs, null);
-    IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-    tested.jiraClient = jiraClientMock;
+    JiraRiver tested = prepareJiraRiverInstanceForTest(jiraSettings);
+    IJIRAClient jiraClientMock = tested.jiraClient;
+
     List<String> pl = JiraRiver.parseCsvString("ORG,UUUU,PEM,SU07");
     when(jiraClientMock.getAllJIRAProjects()).thenReturn(pl);
 
@@ -117,7 +90,89 @@ public class JiraRiverTest {
     Assert.assertEquals("SU07", r.get(1));
     Assert
         .assertTrue(tested.allIndexedProjectsKeysNextRefresh <= (System.currentTimeMillis() + JiraRiver.JIRA_PROJECTS_REFRESH_TIME));
+  }
 
+  @Test
+  public void readDatetimeValue() {
+    // TODO UNITTEST
+  }
+
+  @Test
+  public void storeDatetimeValue() {
+    // TODO UNITTEST
+  }
+
+  @Test
+  public void getESBulkRequestBuilder() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    Client clientMock = tested.client;
+    when(clientMock.prepareBulk()).thenReturn(new BulkRequestBuilder(null));
+    Assert.assertNotNull(tested.getESBulkRequestBuilder());
+    verify(clientMock, times(1)).prepareBulk();
+  }
+
+  @Test
+  public void reportIndexingFinished() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    tested.reportIndexingFinished("ORG", true, 0, 10, null);
+    // TODO UNITTEST define some asserts
+  }
+
+  @Test
+  public void close() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    Thread mock = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        while (true) {
+
+        }
+      }
+    });
+    tested.coordinatorThread = mock;
+    Assert.assertFalse(tested.isClosed());
+
+    tested.close();
+    Assert.assertTrue(tested.isClosed());
+    // how to test mock.interrupt was called? Next doesn't work Assert.assertTrue(mock.interrupted());
+  }
+
+  /**
+   * Prepare {@link JiraRiver} instance for unit test, with Mockito moceked jiraClient and elasticSearchClient.
+   * 
+   * @param jiraSettingsAdd additional/optional config properties to be added into <code>jira</code> configuration node
+   * @return instance for tests
+   * @throws Exception from constructor
+   */
+  protected JiraRiver prepareJiraRiverInstanceForTest(Map<String, Object> jiraSettingsAdd) throws Exception {
+    Map<String, Object> settings = new HashMap<String, Object>();
+    Map<String, Object> jiraSettings = new HashMap<String, Object>();
+    settings.put("jira", jiraSettings);
+    jiraSettings.put("urlBase", "https://issues.jboss.org");
+    if (jiraSettingsAdd != null)
+      jiraSettings.putAll(jiraSettingsAdd);
+
+    Settings gs = mock(Settings.class);
+    RiverSettings rs = new RiverSettings(gs, settings);
+    Client clientMock = mock(Client.class);
+    JiraRiver tested = new JiraRiver(new RiverName("jira", "my_jira_river"), rs, clientMock);
+    IJIRAClient jiraClientMock = mock(IJIRAClient.class);
+    tested.jiraClient = jiraClientMock;
+    return tested;
+  }
+
+  @Test
+  public void parseCsvString() {
+    Assert.assertNull(JiraRiver.parseCsvString(null));
+    Assert.assertNull(JiraRiver.parseCsvString(""));
+    Assert.assertNull(JiraRiver.parseCsvString("    "));
+    Assert.assertNull(JiraRiver.parseCsvString("  ,, ,   ,   "));
+    List<String> r = JiraRiver.parseCsvString(" ORG ,UUUU, , PEM  , ,SU07  ");
+    Assert.assertEquals(4, r.size());
+    Assert.assertEquals("ORG", r.get(0));
+    Assert.assertEquals("UUUU", r.get(1));
+    Assert.assertEquals("PEM", r.get(2));
+    Assert.assertEquals("SU07", r.get(3));
   }
 
 }

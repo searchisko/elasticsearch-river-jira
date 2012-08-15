@@ -5,6 +5,7 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
 
@@ -28,7 +29,16 @@ public class JIRAProjectIndexer implements Runnable {
 
   protected final String projectKey;
 
+  protected int updatedCount = 0;
+
+  /**
+   * @param projectKey JIRA project key for project to be indexed by this indexer.
+   * @param jiraClient configured JIRA client to be used to obtain informations from JIRA.
+   * @param esIntegrationComponent to be used to call River component and ElasticSearch functions
+   */
   public JIRAProjectIndexer(String projectKey, IJIRAClient jiraClient, IESIntegration esIntegrationComponent) {
+    if (projectKey == null || projectKey.trim().length() == 0)
+      throw new IllegalArgumentException("projectKey must be defined");
     this.jiraClient = jiraClient;
     this.projectKey = projectKey;
     this.esIntegrationComponent = esIntegrationComponent;
@@ -36,28 +46,32 @@ public class JIRAProjectIndexer implements Runnable {
 
   @Override
   public void run() {
-    int updatedCount = 0;
     long startTime = System.currentTimeMillis();
     try {
-      updatedCount = processUpdate();
-    } catch (Exception e) {
-      logger.error("Failed to process JIRA updates for project {} due: {}", e, projectKey, e.getMessage());
-    } finally {
+      processUpdate();
+      long timeElapsed = (System.currentTimeMillis() - startTime);
+      esIntegrationComponent.reportIndexingFinished(projectKey, true, updatedCount, timeElapsed, null);
       logger.info("Finished processing of JIRA updates for project {}. Updated {} issues. Time elapsed {}s.",
-          projectKey, updatedCount, ((System.currentTimeMillis() - startTime) / 1000));
+          projectKey, updatedCount, (timeElapsed / 1000));
+    } catch (Throwable e) {
+      long timeElapsed = (System.currentTimeMillis() - startTime);
+      esIntegrationComponent.reportIndexingFinished(projectKey, false, updatedCount, timeElapsed, e.getMessage());
+      logger.error("Failed to process JIRA updates for project {} due: {}", e, projectKey, e.getMessage());
     }
   }
 
   /**
+   * Process update of search index for configured JIRA project. A {@link #updatedCount} field is updated inside of this
+   * method.
    * 
-   * @return number of issues updated in index
+   * @return number of issues updated in index - same as {@link #updatedCount}
    * @throws Exception
    * 
    */
   @SuppressWarnings("unchecked")
   protected int processUpdate() throws Exception {
-    int updatedCount = 0;
-    Date updatedAfter = esIntegrationComponent.getLastIssueUpdatedDate(projectKey);
+    updatedCount = 0;
+    Date updatedAfter = readLastIssueUpdatedDate(projectKey);
     logger.info("Go to process JIRA updates for project {} for issues updated {}", projectKey,
         (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
 
@@ -87,7 +101,7 @@ public class JIRAProjectIndexer implements Runnable {
             break;
         }
 
-        esIntegrationComponent.storeLastIssueUpdatedDate(esBulk, projectKey, ISODateTimeFormat.dateTimeParser()
+        storeLastIssueUpdatedDate(esBulk, projectKey, ISODateTimeFormat.dateTimeParser()
             .parseDateTime(lastIssueUpdated).toDate());
         esIntegrationComponent.executeESBulkRequestBuilder(esBulk);
 
@@ -117,6 +131,49 @@ public class JIRAProjectIndexer implements Runnable {
    */
   protected boolean isClosed() {
     return esIntegrationComponent != null && esIntegrationComponent.isClosed();
+  }
+
+  /**
+   * Get date of last issue updated for given JIRA project from persistent store inside ES cluster, so we can continue
+   * in update process from this point.
+   * 
+   * @param jiraProjectKey JIRA project key to get date for.
+   * @return date of last issue updated or null if not available (in this case indexing starts from the beginning of
+   *         project history)
+   * @throws IOException
+   * @see #storeLastIssueUpdatedDate(BulkRequestBuilder, String, Date)
+   */
+  protected Date readLastIssueUpdatedDate(String jiraProjectKey) throws Exception {
+    return esIntegrationComponent.readDatetimeValue(getLastIssueUpdatedDateStoreDocumentName(jiraProjectKey));
+  }
+
+  /**
+   * Store date of last issue updated for given JIRA project into persistent store inside ES cluster, so we can continue
+   * in update process from this point next time.
+   * 
+   * @param esBulk ElasticSearch bulk request to be used for update
+   * @param jiraProjectKey JIRA project key to store date for.
+   * @param lastIssueUpdatedDate date to store
+   * @throws Exception
+   * @see #readLastIssueUpdatedDate(String)
+   */
+  protected void storeLastIssueUpdatedDate(BulkRequestBuilder esBulk, String jiraProjectKey, Date lastIssueUpdatedDate)
+      throws Exception {
+    esIntegrationComponent.storeDatetimeValue(getLastIssueUpdatedDateStoreDocumentName(jiraProjectKey),
+        lastIssueUpdatedDate, esBulk);
+  }
+
+  /**
+   * Get name of document used to store "last issue updated" Date value in ES river configuration
+   * 
+   * @param jiraProjectKey key of JIRA project to store value for
+   * @return name of field used to store value in ES river index
+   * 
+   * @see #readLastIssueUpdatedDate(String)
+   * @see #storeLastIssueUpdatedDate(BulkRequestBuilder, String, Date)
+   */
+  protected static String getLastIssueUpdatedDateStoreDocumentName(String jiraProjectKey) {
+    return "_lastupdatedissue_" + jiraProjectKey;
   }
 
 }

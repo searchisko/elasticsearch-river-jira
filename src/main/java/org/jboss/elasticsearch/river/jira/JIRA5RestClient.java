@@ -120,9 +120,7 @@ public class JIRA5RestClient implements IJIRAClient {
   public List<String> getAllJIRAProjects() throws Exception {
 
     byte[] responseData = performJIRAGetRESTCall("project", null);
-    if (logger.isDebugEnabled()) {
-      logger.debug("JIRA REST response data: " + new String(responseData));
-    }
+    logger.debug("JIRA REST response data: {}", new String(responseData));
 
     StringBuilder sb = new StringBuilder();
     sb.append("{ \"projects\" : ").append(new String(responseData, "UTF-8")).append("}");
@@ -155,9 +153,8 @@ public class JIRA5RestClient implements IJIRAClient {
   public ChangedIssuesResults getJIRAChangedIssues(String projectKey, int startAt, Date updatedAfter, Date updatedBefore)
       throws Exception {
     byte[] responseData = performJIRAChangedIssuesREST(projectKey, startAt, updatedAfter, updatedBefore);
-    if (logger.isDebugEnabled()) {
-      logger.debug("JIRA REST response data: " + new String(responseData));
-    }
+    logger.debug("JIRA REST response data: {}", new String(responseData));
+
     XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
     Map<String, Object> responseParsed = parser.mapAndClose();
     Integer startAtRet = (Integer) responseParsed.get("startAt");
@@ -218,10 +215,7 @@ public class JIRA5RestClient implements IJIRAClient {
       sb.append(" and updatedDate <= \"").append(formatJQLDate(updatedBefore)).append("\"");
     }
     sb.append(" ORDER BY updated ASC");
-    if (logger.isDebugEnabled()) {
-      logger.debug("JIRA JQL string: " + sb.toString());
-    }
-
+    logger.debug("JIRA JQL string: {}", sb.toString());
     return sb.toString();
   }
 

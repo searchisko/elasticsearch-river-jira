@@ -5,32 +5,69 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
+import java.io.IOException;
 import java.util.Date;
+import java.util.List;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 
 /**
- * Interface for component which allows integration of indexer into ElasticSearch instance.
+ * Interface for component which allows integration of indexer components into ElasticSearch River instance.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public interface IESIntegration {
 
   /**
+   * Get JIRA project keys for all projects which needs to be indexed. Is loaded from river configuration or from JIRA
+   * instance (in this case excludes are removed from it) - depends on river configuration.
+   * 
+   * @return list of project keys.
+   * @throws Exception
+   */
+  public List<String> getAllIndexedProjectsKeys() throws Exception;
+
+  /**
+   * Callback method - report that indexing of some JIRA project was finished. Used to coordinate parallel indexing of
+   * all projects and gather indexing statistics/audit data.
+   * 
+   * @param jiraProjectKey JIRA project key for finished indexing
+   * @param finishedOK set to <code>true</code> if indexing finished OK, <code>false</code> if finished due error
+   * @param issuesUpdated number of issues updated during this indexing
+   * @param timeElapsed time of this indexing run [ms]
+   * @param errorMessage error message if indexing finished with error
+   */
+  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, int issuesUpdated, long timeElapsed,
+      String errorMessage);
+
+  /**
+   * Check if EclipseSearch instance is closed, so we must interrupt long running indexing processes.
+   * 
    * @return true if ES instance is closed, so we must interrupt long running indexing processes
    */
   public boolean isClosed();
 
   /**
-   * Get date of last issue updated for given JIRA project from persistent store inside ES cluster, so we can continue
-   * in update process from this point.
+   * Persistently store datetime value as document into ElasticSearch river configuration area.
    * 
-   * @param jiraProjectKey JIRA project key to get date for.
-   * @return date of last issue updated or null if not available (in this case indexing starts from the beginning of
-   *         project history)
-   * @see #storeLastIssueUpdatedDate(BulkRequestBuilder, String, Date)
+   * @param documentName name of document where timestamp is stored
+   * @param datetime to be stored
+   * @param esBulk to be used for value store, if <code>null</code> then value is stored immediately
+   * @throws IOException
+   * 
+   * @see {@link #readDatetimeValue(String)}
    */
-  public Date getLastIssueUpdatedDate(String jiraProjectKey);
+  public void storeDatetimeValue(String documentName, Date datetime, BulkRequestBuilder esBulk) throws Exception;
+
+  /**
+   * Read datetime value from document in ElasticSearch river configuration persistent area.
+   * 
+   * @param documentName name of document where timestamp is stored
+   * @return datetime or null if do not exists
+   * @throws IOException
+   * @see {@link #storeDatetimeValue(BulkRequestBuilder, String, Date)}
+   */
+  public Date readDatetimeValue(String documentName) throws Exception;
 
   /**
    * Get ElasticSearch bulk request to be used for index update by more issues.
@@ -41,19 +78,6 @@ public interface IESIntegration {
   public BulkRequestBuilder getESBulkRequestBuilder();
 
   /**
-   * Store date of last issue updated for given JIRA project into persistent store inside ES cluster, so we can continue
-   * in update process from this point next time.
-   * 
-   * @param esBulk ElasticSearch bulk request to be used for update
-   * @param jiraProjectKey JIRA project key to store date for.
-   * @param lastIssueUpdatedDate date to store
-   * @throws Exception
-   * @see #getLastIssueUpdatedDate(String)
-   */
-  public void storeLastIssueUpdatedDate(BulkRequestBuilder esBulk, String jiraProjectKey, Date lastIssueUpdatedDate)
-      throws Exception;
-
-  /**
    * Perform ElasticSearch bulk request against ElasticSearch cluster.
    * 
    * @param esBulk to perform
@@ -61,5 +85,14 @@ public interface IESIntegration {
    * @see #getESBulkRequestBuilder()
    */
   public void executeESBulkRequestBuilder(BulkRequestBuilder esBulk) throws Exception;
+
+  /**
+   * Acquire thread from ElasticSearch infrastructure to run indexing.
+   * 
+   * @param threadName name of thread
+   * @param runnable to run in this thread
+   * @return {@link Thread} instance - not started yet!
+   */
+  public Thread acquireIndexingThread(String threadName, Runnable runnable);
 
 }
