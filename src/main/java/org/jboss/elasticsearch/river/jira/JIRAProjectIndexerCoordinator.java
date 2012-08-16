@@ -46,6 +46,8 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    */
   protected IJIRAClient jiraClient;
 
+  protected IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder;
+
   protected int maxIndexingThreads;
 
   protected int indexUpdatePeriod;
@@ -73,12 +75,13 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    * @param maxIndexingThreads maximal number of parallel JIRA indexing threads started by this coordinator
    */
   public JIRAProjectIndexerCoordinator(IJIRAClient jiraClient, IESIntegration esIntegrationComponent,
-      int indexUpdatePeriod, int maxIndexingThreads) {
+      IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder, int indexUpdatePeriod, int maxIndexingThreads) {
     super();
     this.jiraClient = jiraClient;
     this.esIntegrationComponent = esIntegrationComponent;
     this.indexUpdatePeriod = indexUpdatePeriod;
     this.maxIndexingThreads = maxIndexingThreads;
+    this.jiraIssueIndexStructureBuilder = jiraIssueIndexStructureBuilder;
   }
 
   @Override
@@ -169,7 +172,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
         throw new InterruptedException();
       String projectKey = projectKeysToIndexQueue.poll();
       Thread it = esIntegrationComponent.acquireIndexingThread("jira_river_indexer_" + projectKey,
-          new JIRAProjectIndexer(projectKey, jiraClient, esIntegrationComponent));
+          new JIRAProjectIndexer(projectKey, jiraClient, esIntegrationComponent, jiraIssueIndexStructureBuilder));
       esIntegrationComponent.storeDatetimeValue(projectKey, STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE,
           new Date(), null);
       synchronized (projectIndexers) {

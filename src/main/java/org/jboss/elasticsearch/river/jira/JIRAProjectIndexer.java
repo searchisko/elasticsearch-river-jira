@@ -35,6 +35,11 @@ public class JIRAProjectIndexer implements Runnable {
 
   protected final IESIntegration esIntegrationComponent;
 
+  /**
+   * Configured JIRA issue index structure builder to be used.
+   */
+  protected final IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder;
+
   protected final String projectKey;
 
   protected int updatedCount = 0;
@@ -44,12 +49,14 @@ public class JIRAProjectIndexer implements Runnable {
    * @param jiraClient configured JIRA client to be used to obtain informations from JIRA.
    * @param esIntegrationComponent to be used to call River component and ElasticSearch functions
    */
-  public JIRAProjectIndexer(String projectKey, IJIRAClient jiraClient, IESIntegration esIntegrationComponent) {
+  public JIRAProjectIndexer(String projectKey, IJIRAClient jiraClient, IESIntegration esIntegrationComponent,
+      IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder) {
     if (projectKey == null || projectKey.trim().length() == 0)
       throw new IllegalArgumentException("projectKey must be defined");
     this.jiraClient = jiraClient;
     this.projectKey = projectKey;
     this.esIntegrationComponent = esIntegrationComponent;
+    this.jiraIssueIndexStructureBuilder = jiraIssueIndexStructureBuilder;
   }
 
   @Override
@@ -98,12 +105,13 @@ public class JIRAProjectIndexer implements Runnable {
         String lastIssueUpdated = null;
         BulkRequestBuilder esBulk = esIntegrationComponent.getESBulkRequestBuilder();
         for (Map<String, Object> issue : res.getIssues()) {
-          lastIssueUpdated = (String) ((Map<String, Object>) issue.get("fields")).get("updated");
+          lastIssueUpdated = (String) ((Map<String, Object>) issue.get(JIRA5RestIssueIndexStructureBuilder.JF_FIELDS))
+              .get(JIRA5RestIssueIndexStructureBuilder.JF_UPDATED);
           if (firstIssueUpdated == null) {
             firstIssueUpdated = lastIssueUpdated;
           }
-          logger.debug("Go to update index for issue {}", issue.get("key"));
-          // TODO write JIRA issue to the index esBulk update
+          logger.debug("Go to update index for issue {}", issue.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY));
+          jiraIssueIndexStructureBuilder.indexIssue(esBulk, projectKey, issue);
           updatedCount++;
           if (isClosed())
             break;

@@ -31,7 +31,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     int indexUpdatePeriod = 60 * 1000;
 
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
-    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock,
+    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null,
         indexUpdatePeriod, 2);
 
     // case - update necessary- no date of last update stored
@@ -61,7 +61,7 @@ public class JIRAProjectIndexerCoordinatorTest {
   public void fillProjectKeysToIndexQueue() throws Exception {
     int indexUpdatePeriod = 60 * 1000;
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
-    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock,
+    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null,
         indexUpdatePeriod, 2);
     Assert.assertTrue(tested.projectKeysToIndexQueue.isEmpty());
 
@@ -124,7 +124,7 @@ public class JIRAProjectIndexerCoordinatorTest {
   public void startIndexers() throws Exception {
 
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
-    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, 100000, 2);
+    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 100000, 2);
     Assert.assertTrue(tested.projectKeysToIndexQueue.isEmpty());
 
     // case - nothing to start
@@ -229,7 +229,7 @@ public class JIRAProjectIndexerCoordinatorTest {
   @Test
   public void run() throws Exception {
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
-    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, 100000, 2);
+    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 100000, 2);
     when(esIntegrationMock.acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class))).thenReturn(
         new MockThread());
 
@@ -275,7 +275,7 @@ public class JIRAProjectIndexerCoordinatorTest {
   @Test
   public void processLoopTask() throws Exception {
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
-    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, 100000, 2);
+    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 100000, 2);
     when(esIntegrationMock.acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class))).thenReturn(
         new MockThread());
 
@@ -331,7 +331,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 
   @Test
   public void reportIndexingFinished() throws Exception {
-    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, null, 10, 2);
+    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, null, null, 10, 2);
     tested.projectIndexers.put("ORG", new Thread());
     tested.projectIndexers.put("AAA", new Thread());
     tested.reportIndexingFinished("ORG", true);

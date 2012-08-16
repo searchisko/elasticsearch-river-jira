@@ -32,7 +32,8 @@ Creating the JIRA river can be done using:
 	        "indexUpdatePeriod"   : 5
 	    },
 	    "index" : {
-	        "index" : "my_jira_index"
+	        "index" : "my_jira_index",
+	        "type"  : "jira_issue"
 	    }
 	}
 	'
@@ -47,6 +48,7 @@ The above lists all the options controlling the creation of a JIRA river.
 * `jira/projectKeysExcluded` comma separated list of JIRA project keys to be excluded from indexing if list is obtained from JIRA instance (so used only if no `jira/projectKeysIndexed` is defined). Optional.
 * `jira/indexUpdatePeriod` period in minutes how ofter is search index updated from JIRA instance. Optional, default 5 minutes.
 * `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited.
+* `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited.
 
 TODO List
 ---------

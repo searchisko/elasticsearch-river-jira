@@ -5,6 +5,10 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -156,8 +160,10 @@ public class JIRA5RestClientTest {
 
         if ("-1".equals(mr)) {
           Assert.assertEquals(3, params.size());
-        } else {
+        } else if ("10".equals(mr)) {
           Assert.assertEquals(4, params.size());
+        } else if ("20".equals(mr)) {
+          Assert.assertEquals(3, params.size());
         }
 
         return ("{\"maxResults\": " + mr + ", \"startAt\": " + startAt + ", \"fields\" : \"" + fields + "\" }")
@@ -172,19 +178,31 @@ public class JIRA5RestClientTest {
         return "JQL string";
       }
     };
+    IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
+    tested.setIndexStructureBuilder(jiraIssueIndexStructureBuilderMock);
+    when(jiraIssueIndexStructureBuilderMock.getRequiredJIRAIssueFields()).thenReturn(
+        "key,status,issuetype,created,updated,reporter,assignee,summary,description");
 
+    // case - no maxResults parameter defined
     byte[] ret = tested.performJIRAChangedIssuesREST("ORG", 10, ua, ub);
     Assert
         .assertEquals(
             "{\"maxResults\": -1, \"startAt\": 10, \"fields\" : \"key,status,issuetype,created,updated,reporter,assignee,summary,description\" }",
             new String(ret, "UTF-8"));
 
+    // case - maxResults parameter defined
     tested.listJIRAIssuesMax = 10;
     ret = tested.performJIRAChangedIssuesREST("ORG", 20, ua, ub);
     Assert
         .assertEquals(
             "{\"maxResults\": 10, \"startAt\": 20, \"fields\" : \"key,status,issuetype,created,updated,reporter,assignee,summary,description\" }",
             new String(ret, "UTF-8"));
+
+    // case - no fields defined
+    reset(jiraIssueIndexStructureBuilderMock);
+    tested.listJIRAIssuesMax = 20;
+    ret = tested.performJIRAChangedIssuesREST("ORG", 30, ua, ub);
+    Assert.assertEquals("{\"maxResults\": 20, \"startAt\": 30, \"fields\" : \"\" }", new String(ret, "UTF-8"));
 
   }
 

@@ -40,6 +40,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    */
   protected static final long JIRA_PROJECTS_REFRESH_TIME = 30 * 60 * 1000;
 
+  protected static final String INDEX_TYPE_NAME_DEFAULT = "jira_issue";
+
   /**
    * ElasticSearch client to be used for indexing
    */
@@ -49,6 +51,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * Configured JIRA client to access data from JIRA
    */
   protected IJIRAClient jiraClient;
+
+  /**
+   * Configured JIRA issue index structure builder to be used.
+   */
+  protected IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder;
 
   /**
    * Config - maximal number of parallel JIRA indexing threads
@@ -64,6 +71,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * Config - name of ElasticSearch index used to store issues from this river
    */
   protected final String indexName;
+
+  /**
+   * Config - name of ElasticSearch type used to store issues from this river in index
+   */
+  protected final String typeName;
 
   /**
    * Thread running {@link JIRAProjectIndexerCoordinator} is stored here.
@@ -146,9 +158,14 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     if (settings.settings().containsKey("index")) {
       Map<String, Object> indexSettings = (Map<String, Object>) settings.settings().get("index");
       indexName = XContentMapValues.nodeStringValue(indexSettings.get("index"), riverName.name());
+      typeName = XContentMapValues.nodeStringValue(indexSettings.get("type"), INDEX_TYPE_NAME_DEFAULT);
     } else {
       indexName = riverName.name();
+      typeName = INDEX_TYPE_NAME_DEFAULT;
     }
+
+    jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(indexName, typeName);
+    jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
   }
 
   @Override
@@ -167,7 +184,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       }
     }
 
-    coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, indexUpdatePeriod, maxIndexingThreads);
+    coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, jiraIssueIndexStructureBuilder,
+        indexUpdatePeriod, maxIndexingThreads);
     coordinatorThread = acquireIndexingThread("jira_river_coordinator", coordinatorInstance);
     coordinatorThread.start();
   }

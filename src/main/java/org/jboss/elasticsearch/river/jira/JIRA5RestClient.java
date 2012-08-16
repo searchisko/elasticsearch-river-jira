@@ -47,6 +47,8 @@ public class JIRA5RestClient implements IJIRAClient {
 
   protected int listJIRAIssuesMax = -1;
 
+  protected IJIRAIssueIndexStructureBuilder indexStructureBuilder;
+
   /**
    * Constructor to create and configure remote JIRA REST API client.
    * 
@@ -183,9 +185,12 @@ public class JIRA5RestClient implements IJIRAClient {
       params.add(new NameValuePair("maxResults", "" + listJIRAIssuesMax));
     params.add(new NameValuePair("startAt", startAt + ""));
 
-    // TODO add additional indexed issue fields from River configuration (include unit test)
-    params
-        .add(new NameValuePair("fields", "key,status,issuetype,created,updated,reporter,assignee,summary,description"));
+    if (indexStructureBuilder != null) {
+      String fields = indexStructureBuilder.getRequiredJIRAIssueFields();
+      if (fields != null) {
+        params.add(new NameValuePair("fields", indexStructureBuilder.getRequiredJIRAIssueFields()));
+      }
+    }
 
     return performJIRAGetRESTCall("search", params);
   }
@@ -243,7 +248,11 @@ public class JIRA5RestClient implements IJIRAClient {
    * @throws Exception in case of unsuccessful call
    */
   protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
-    HttpMethod method = new GetMethod(jiraRestAPIUrlBase + restOperation);
+
+    String url = jiraRestAPIUrlBase + restOperation;
+    logger.debug("Go to perform JIRA REST API call to the {} with parameters {}", url, params);
+
+    HttpMethod method = new GetMethod(url);
     method.setDoAuthentication(isAuthConfigured);
     method.setFollowRedirects(true);
     method.addRequestHeader("Accept", "application/json");
@@ -261,6 +270,11 @@ public class JIRA5RestClient implements IJIRAClient {
     } finally {
       method.releaseConnection();
     }
+  }
+
+  @Override
+  public void setIndexStructureBuilder(IJIRAIssueIndexStructureBuilder indexStructureBuilder) {
+    this.indexStructureBuilder = indexStructureBuilder;
   }
 
   @Override

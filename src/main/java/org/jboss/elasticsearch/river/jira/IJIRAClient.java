@@ -49,4 +49,12 @@ public interface IJIRAClient {
    */
   public abstract int getListJIRAIssuesMax();
 
+  /**
+   * Add index structure builder so JIRA client can obtain only fields necessary for indexing
+   * 
+   * @param indexStructureBuilder
+   * @see IJIRAIssueIndexStructureBuilder#getRequiredJIRAIssueFields()
+   */
+  public void setIndexStructureBuilder(IJIRAIssueIndexStructureBuilder indexStructureBuilder);
+
 }

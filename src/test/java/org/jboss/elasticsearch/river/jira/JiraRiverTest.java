@@ -58,21 +58,28 @@ public class JiraRiverTest {
     Assert.assertEquals(1, tested.maxIndexingThreads);
     Assert.assertEquals(5 * 60 * 1000, tested.indexUpdatePeriod);
     Assert.assertEquals("my_jira_river", tested.indexName);
+    Assert.assertEquals(JiraRiver.INDEX_TYPE_NAME_DEFAULT, tested.typeName);
     Assert.assertEquals(50, tested.jiraClient.getListJIRAIssuesMax());
+
+    Map<String, Object> indexSettings = new HashMap<String, Object>();
+    toplevelSettingsAdd.put("index", indexSettings);
+    tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", jiraSettings, toplevelSettingsAdd, false);
+    Assert.assertEquals("my_jira_river", tested.indexName);
+    Assert.assertEquals(JiraRiver.INDEX_TYPE_NAME_DEFAULT, tested.typeName);
 
     // case - test river configuration reading
     jiraSettings.put("maxIndexingThreads", "5");
     jiraSettings.put("indexUpdatePeriod", "20");
     jiraSettings.put("maxIssuesPerRequest", 20);
     jiraSettings.put("timeout", 5000);
-    Map<String, Object> indexSettings = new HashMap<String, Object>();
-    toplevelSettingsAdd.put("index", indexSettings);
     indexSettings.put("index", "my_index_name");
+    indexSettings.put("type", "type_test");
     tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", jiraSettings, toplevelSettingsAdd, false);
 
     Assert.assertEquals(5, tested.maxIndexingThreads);
     Assert.assertEquals(20 * 60 * 1000, tested.indexUpdatePeriod);
     Assert.assertEquals("my_index_name", tested.indexName);
+    Assert.assertEquals("type_test", tested.typeName);
     Assert.assertEquals(20, tested.jiraClient.getListJIRAIssuesMax());
 
   }
