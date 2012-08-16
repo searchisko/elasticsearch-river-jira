@@ -268,4 +268,9 @@ public class JIRA5RestClient implements IJIRAClient {
     this.listJIRAIssuesMax = listJIRAIssuesMax;
   }
 
+  @Override
+  public int getListJIRAIssuesMax() {
+    return listJIRAIssuesMax;
+  }
+
 }

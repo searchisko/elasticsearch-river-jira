@@ -73,7 +73,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   /**
    * USed {@link JIRAProjectIndexerCoordinator} instance is stored here.
    */
-  protected JIRAProjectIndexerCoordinator coordinatorInstance;
+  protected IJIRAProjectIndexerCoordinator coordinatorInstance;
 
   /**
    * Flag set to true if this river is stopped from ElasticSearch server.
@@ -113,13 +113,12 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     if (settings.settings().containsKey("jira")) {
       Map<String, Object> jiraSettings = (Map<String, Object>) settings.settings().get("jira");
       url = XContentMapValues.nodeStringValue(jiraSettings.get("urlBase"), null);
+      if (url == null || url.trim().length() == 0) {
+        throw new SettingsException("jira/urlBase element of configuration structure not found or empty");
+      }
       Integer timeout = null;
       if (jiraSettings.get("timeout") != null) {
-        try {
-          timeout = new Integer(XContentMapValues.nodeIntegerValue(jiraSettings.get("timeout")));
-        } catch (NumberFormatException e) {
-          logger.warn("timeout parameter is not valid number");
-        }
+        timeout = XContentMapValues.nodeIntegerValue(jiraSettings.get("timeout"));
       }
       jiraClient = new JIRA5RestClient(url, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
           XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
@@ -138,7 +137,6 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         projectKeysExcluded = parseCsvString(XContentMapValues.nodeStringValue(jiraSettings.get("projectKeysExcluded"),
             null));
       }
-
     } else {
       throw new SettingsException("jira element of configuration structure not found");
     }
@@ -151,35 +149,6 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     } else {
       indexName = riverName.name();
     }
-  }
-
-  /**
-   * Parse comma separated string into list of tokens. Tokens are trimmed, empty tokens are not in result.
-   * 
-   * @param toParse String to parse
-   * @return List of tokens if at least one token exists, null otherwise.
-   */
-  protected static List<String> parseCsvString(String toParse) {
-    if (toParse == null || toParse.length() == 0) {
-      return null;
-    }
-    String[] t = toParse.split(",");
-    if (t.length == 0) {
-      return null;
-    }
-    List<String> ret = new ArrayList<String>();
-    for (String s : t) {
-      if (s != null) {
-        s = s.trim();
-        if (s.length() > 0) {
-          ret.add(s);
-        }
-      }
-    }
-    if (ret.isEmpty())
-      return null;
-    else
-      return ret;
   }
 
   @Override
@@ -310,4 +279,32 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     return EsExecutors.daemonThreadFactory(settings.globalSettings(), threadName).newThread(runnable);
   }
 
+  /**
+   * Parse comma separated string into list of tokens. Tokens are trimmed, empty tokens are not in result.
+   * 
+   * @param toParse String to parse
+   * @return List of tokens if at least one token exists, null otherwise.
+   */
+  public static List<String> parseCsvString(String toParse) {
+    if (toParse == null || toParse.length() == 0) {
+      return null;
+    }
+    String[] t = toParse.split(",");
+    if (t.length == 0) {
+      return null;
+    }
+    List<String> ret = new ArrayList<String>();
+    for (String s : t) {
+      if (s != null) {
+        s = s.trim();
+        if (s.length() > 0) {
+          ret.add(s);
+        }
+      }
+    }
+    if (ret.isEmpty())
+      return null;
+    else
+      return ret;
+  }
 }

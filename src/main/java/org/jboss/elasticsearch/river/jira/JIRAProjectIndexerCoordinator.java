@@ -23,7 +23,7 @@ import org.elasticsearch.common.logging.Loggers;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JIRAProjectIndexerCoordinator implements Runnable {
+public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordinator {
 
   private static final ESLogger logger = Loggers.getLogger(JIRAProjectIndexerCoordinator.class);
 
@@ -198,6 +198,7 @@ public class JIRAProjectIndexerCoordinator implements Runnable {
    * @param jiraProjectKey JIRA project key for finished indexing
    * @param finishedOK set to <code>true</code> if indexing finished OK, <code>false</code> if finished due error
    */
+  @Override
   public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK) {
     synchronized (projectIndexers) {
       projectIndexers.remove(jiraProjectKey);

@@ -329,24 +329,6 @@ public class JIRAProjectIndexerCoordinatorTest {
     Assert.assertEquals(JIRAProjectIndexerCoordinator.COORDINATOR_THREAD_WAITS_SLOW, tested.coordinatorThreadWaits);
   }
 
-  protected class MockThread extends Thread {
-
-    protected boolean wasStarted = false;
-
-    protected boolean interruptWasCalled = false;
-
-    @Override
-    public synchronized void start() {
-      wasStarted = true;
-    }
-
-    @Override
-    public void interrupt() {
-      interruptWasCalled = true;
-    }
-
-  }
-
   @Test
   public void reportIndexingFinished() throws Exception {
     JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, null, 10, 2);

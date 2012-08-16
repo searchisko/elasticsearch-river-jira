@@ -41,4 +41,12 @@ public interface IJIRAClient {
    */
   public abstract void setListJIRAIssuesMax(int listJIRAIssuesMax);
 
+  /**
+   * Get maximal number of issues returned from {@link #getJIRAChangedIssues(String, int, Date, Date)} configured for
+   * this instance.
+   * 
+   * @return configured value
+   */
+  public abstract int getListJIRAIssuesMax();
+
 }
