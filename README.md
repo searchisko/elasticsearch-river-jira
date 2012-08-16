@@ -15,7 +15,7 @@ In order to install the plugin into ElasticSearch, simply run: `bin/plugin -inst
 
 The JIRA river indexes JIRA issues and comments, and makes it searchable by ElasticSearch. JIRA is pooled periodically to detect changed issues (search operation with JQL query over `updatedDate` field) to update search index.
 
-Creating the twitter river can be done using:
+Creating the JIRA river can be done using:
 
 	curl -XPUT localhost:9200/_river/my_jira_river/_meta -d '
 	{
