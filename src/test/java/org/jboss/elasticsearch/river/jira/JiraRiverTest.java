@@ -66,6 +66,7 @@ public class JiraRiverTest {
     tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", jiraSettings, toplevelSettingsAdd, false);
     Assert.assertEquals("my_jira_river", tested.indexName);
     Assert.assertEquals(JiraRiver.INDEX_TYPE_NAME_DEFAULT, tested.typeName);
+    Assert.assertEquals(tested.jiraIssueIndexStructureBuilder, tested.jiraClient.getIndexStructureBuilder());
 
     // case - test river configuration reading
     jiraSettings.put("maxIndexingThreads", "5");
@@ -81,6 +82,14 @@ public class JiraRiverTest {
     Assert.assertEquals("my_index_name", tested.indexName);
     Assert.assertEquals("type_test", tested.typeName);
     Assert.assertEquals(20, tested.jiraClient.getListJIRAIssuesMax());
+    // assert index structure builder initialization
+    Assert.assertEquals(tested.jiraIssueIndexStructureBuilder, tested.jiraClient.getIndexStructureBuilder());
+    Assert.assertEquals(tested.indexName,
+        ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).indexName);
+    Assert.assertEquals(tested.typeName,
+        ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).typeName);
+    Assert.assertEquals(tested.riverName().getName(),
+        ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).riverName);
 
   }
 

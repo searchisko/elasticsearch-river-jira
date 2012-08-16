@@ -164,7 +164,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       typeName = INDEX_TYPE_NAME_DEFAULT;
     }
 
-    jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(indexName, typeName);
+    jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName);
     jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
   }
 

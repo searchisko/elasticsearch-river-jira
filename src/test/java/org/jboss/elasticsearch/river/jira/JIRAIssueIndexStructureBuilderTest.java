@@ -18,7 +18,7 @@ public class JIRAIssueIndexStructureBuilderTest {
 
   @Test
   public void getRequiredJIRAIssueFields() {
-    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null);
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null);
     Assert.assertEquals("key,status,issuetype,created,updated,reporter,assignee,summary,description",
         tested.getRequiredJIRAIssueFields());
   }

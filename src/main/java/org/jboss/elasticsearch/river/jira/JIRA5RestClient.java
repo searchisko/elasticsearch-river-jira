@@ -214,6 +214,7 @@ public class JIRA5RestClient implements IJIRAClient {
     StringBuilder sb = new StringBuilder();
     sb.append("project='").append(projectKey).append("'");
     if (updatedAfter != null) {
+      // TODO check date formatting into JQL due timezones handling!
       sb.append(" and updatedDate >= \"").append(formatJQLDate(updatedAfter)).append("\"");
     }
     if (updatedBefore != null) {
@@ -275,6 +276,11 @@ public class JIRA5RestClient implements IJIRAClient {
   @Override
   public void setIndexStructureBuilder(IJIRAIssueIndexStructureBuilder indexStructureBuilder) {
     this.indexStructureBuilder = indexStructureBuilder;
+  }
+
+  @Override
+  public IJIRAIssueIndexStructureBuilder getIndexStructureBuilder() {
+    return indexStructureBuilder;
   }
 
   @Override

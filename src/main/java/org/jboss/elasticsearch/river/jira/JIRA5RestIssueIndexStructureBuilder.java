@@ -16,6 +16,11 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 /**
  * JIRA 5 REST API implementation of component responsible to transform issue data obtained from JIRA instance call to
  * the document stored in ElasticSearch index.
+ * <p>
+ * Testing URLs:<br>
+ * <code>https://issues.jboss.org/rest/api/2/search?jql=project=ORG</code>
+ * <code>https://issues.jboss.org/rest/api/2/search?jql=project=ORG&fields=</code>
+ * <code>https://issues.jboss.org/rest/api/2/search?jql=project=ORG&fields=&expand=</code>
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -25,8 +30,14 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
    * JIRA field constants
    */
   public static final String JF_KEY = "key";
+  public static final String JF_SELF = "self";
   public static final String JF_FIELDS = "fields";
   public static final String JF_UPDATED = "updated";
+
+  /**
+   * Name of River to be stored in document to mark indexing source
+   */
+  protected final String riverName;
 
   /**
    * Name of ElasticSearch index used to store issues
@@ -39,11 +50,16 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected final String typeName;
 
   /**
-   * @param indexName Name of ElasticSearch index used to store issues
-   * @param typeName Name of ElasticSearch type used to store issues into index
+   * Constructor.
+   * 
+   * @param riverName name of ElasticSearch River instance this indexer is running inside to be stored in search index
+   *          to identify indexed documents source.
+   * @param indexName name of ElasticSearch index used to store issues
+   * @param typeName name of ElasticSearch type used to store issues into index
    */
-  public JIRA5RestIssueIndexStructureBuilder(String indexName, String typeName) {
+  public JIRA5RestIssueIndexStructureBuilder(String riverName, String indexName, String typeName) {
     super();
+    this.riverName = riverName;
     this.indexName = indexName;
     this.typeName = typeName;
   }
@@ -51,6 +67,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   @Override
   public String getRequiredJIRAIssueFields() {
     // TODO add additional indexed issue fields from River configuration (include unit test)
+    // TODO issue comments
     return "key,status,issuetype,created,updated,reporter,assignee,summary,description";
   }
 
@@ -68,10 +85,23 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
    * @return JSON builder
    * @throws Exception
    */
+  @SuppressWarnings("unchecked")
   protected XContentBuilder toJson(String jiraProjectKey, Map<String, Object> issue) throws Exception {
     XContentBuilder out = jsonBuilder().startObject();
+    // TODO IS - some normalized name for 'river' field due common search GUI?
+    out.field("river", riverName);
     out.field("project_key", jiraProjectKey);
+    // TODO IS - add normalized 'project' field due common search GUI?
     out.field("issue_key", issue.get(JF_KEY));
+    out.field("document_url", issue.get(JF_SELF));
+
+    Map<String, Object> fields = (Map<String, Object>) issue.get(JF_FIELDS);
+    if (fields != null) {
+      // TODO IS - some normalized name for 'title' field due common search GUI?
+      out.field("title", fields.get("summary"));
+
+      // TODO insert other fields into index
+    }
     // TODO insert other fields into index
     return out.endObject();
   }
