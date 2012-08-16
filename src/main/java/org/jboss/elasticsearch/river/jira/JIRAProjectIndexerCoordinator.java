@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 
@@ -25,6 +26,14 @@ import org.elasticsearch.common.logging.Loggers;
 public class JIRAProjectIndexerCoordinator implements Runnable {
 
   private static final ESLogger logger = Loggers.getLogger(JIRAProjectIndexerCoordinator.class);
+
+  /**
+   * Property value where "last index update start date" is stored for JIRA project
+   * 
+   * @see IESIntegration#storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see IESIntegration#readDatetimeValue(String, String)
+   */
+  protected static final String STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE = "lastIndexUpdateStartDate";
 
   protected static final int COORDINATOR_THREAD_WAITS_QUICK = 2 * 1000;
   protected static final int COORDINATOR_THREAD_WAITS_SLOW = 60 * 1000;
@@ -161,8 +170,8 @@ public class JIRAProjectIndexerCoordinator implements Runnable {
       String projectKey = projectKeysToIndexQueue.poll();
       Thread it = esIntegrationComponent.acquireIndexingThread("jira_river_indexer_" + projectKey,
           new JIRAProjectIndexer(projectKey, jiraClient, esIntegrationComponent));
-      esIntegrationComponent
-          .storeDatetimeValue(getLastIndexingStartDateStoreDocumentName(projectKey), new Date(), null);
+      esIntegrationComponent.storeDatetimeValue(projectKey, STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE,
+          new Date(), null);
       synchronized (projectIndexers) {
         projectIndexers.put(projectKey, it);
       }
@@ -178,7 +187,8 @@ public class JIRAProjectIndexerCoordinator implements Runnable {
    * @throws IOException
    */
   protected boolean projectIndexUpdateNecessary(String projectKey) throws Exception {
-    Date lastIndexing = esIntegrationComponent.readDatetimeValue(getLastIndexingStartDateStoreDocumentName(projectKey));
+    Date lastIndexing = esIntegrationComponent.readDatetimeValue(projectKey,
+        STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE);
     return lastIndexing == null || lastIndexing.getTime() < (System.currentTimeMillis() - indexUpdatePeriod);
   }
 
@@ -192,17 +202,6 @@ public class JIRAProjectIndexerCoordinator implements Runnable {
     synchronized (projectIndexers) {
       projectIndexers.remove(jiraProjectKey);
     }
-  }
-
-  /**
-   * Get name of document used to store "last indexing started" Date value in ES river configuration
-   * 
-   * @param jiraProjectKey key of JIRA project to store value for
-   * @return name of field used to store value in ES river index
-   * 
-   */
-  protected static String getLastIndexingStartDateStoreDocumentName(String jiraProjectKey) {
-    return "_lastindexingstart_" + jiraProjectKey;
   }
 
 }

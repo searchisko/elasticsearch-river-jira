@@ -23,6 +23,14 @@ public class JIRAProjectIndexer implements Runnable {
 
   private static final ESLogger logger = Loggers.getLogger(JIRAProjectIndexer.class);
 
+  /**
+   * Property value where "last indexed issue update date" is stored
+   * 
+   * @see IESIntegration#storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see IESIntegration#readDatetimeValue(String, String)
+   */
+  protected static final String STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE = "lastIndexedIssueUpdateDate";
+
   protected final IJIRAClient jiraClient;
 
   protected final IESIntegration esIntegrationComponent;
@@ -144,7 +152,7 @@ public class JIRAProjectIndexer implements Runnable {
    * @see #storeLastIssueUpdatedDate(BulkRequestBuilder, String, Date)
    */
   protected Date readLastIssueUpdatedDate(String jiraProjectKey) throws Exception {
-    return esIntegrationComponent.readDatetimeValue(getLastIssueUpdatedDateStoreDocumentName(jiraProjectKey));
+    return esIntegrationComponent.readDatetimeValue(jiraProjectKey, STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE);
   }
 
   /**
@@ -159,21 +167,8 @@ public class JIRAProjectIndexer implements Runnable {
    */
   protected void storeLastIssueUpdatedDate(BulkRequestBuilder esBulk, String jiraProjectKey, Date lastIssueUpdatedDate)
       throws Exception {
-    esIntegrationComponent.storeDatetimeValue(getLastIssueUpdatedDateStoreDocumentName(jiraProjectKey),
+    esIntegrationComponent.storeDatetimeValue(jiraProjectKey, STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE,
         lastIssueUpdatedDate, esBulk);
-  }
-
-  /**
-   * Get name of document used to store "last issue updated" Date value in ES river configuration
-   * 
-   * @param jiraProjectKey key of JIRA project to store value for
-   * @return name of field used to store value in ES river index
-   * 
-   * @see #readLastIssueUpdatedDate(String)
-   * @see #storeLastIssueUpdatedDate(BulkRequestBuilder, String, Date)
-   */
-  protected static String getLastIssueUpdatedDateStoreDocumentName(String jiraProjectKey) {
-    return "_lastupdatedissue_" + jiraProjectKey;
   }
 
 }

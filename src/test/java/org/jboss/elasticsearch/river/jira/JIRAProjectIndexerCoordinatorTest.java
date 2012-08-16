@@ -26,9 +26,6 @@ import org.mockito.Mockito;
  */
 public class JIRAProjectIndexerCoordinatorTest {
 
-  private static final String PROJECT_DATETIME_STORE_FIELD = JIRAProjectIndexerCoordinator
-      .getLastIndexingStartDateStoreDocumentName("ORG");
-
   @Test
   public void projectIndexUpdateNecessary() throws Exception {
     int indexUpdatePeriod = 60 * 1000;
@@ -38,18 +35,24 @@ public class JIRAProjectIndexerCoordinatorTest {
         indexUpdatePeriod, 2);
 
     // case - update necessary- no date of last update stored
-    when(esIntegrationMock.readDatetimeValue(PROJECT_DATETIME_STORE_FIELD)).thenReturn(null);
+    when(
+        esIntegrationMock.readDatetimeValue("ORG",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(null);
     Assert.assertTrue(tested.projectIndexUpdateNecessary("ORG"));
 
     // case - update necessary - date of last update stored and is older than index update period
     reset(esIntegrationMock);
-    when(esIntegrationMock.readDatetimeValue(PROJECT_DATETIME_STORE_FIELD)).thenReturn(
+    when(
+        esIntegrationMock.readDatetimeValue("ORG",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(
         new Date(System.currentTimeMillis() - indexUpdatePeriod - 100));
     Assert.assertTrue(tested.projectIndexUpdateNecessary("ORG"));
 
     // case - no update necessary - date of last update stored and is newer than index update period
     reset(esIntegrationMock);
-    when(esIntegrationMock.readDatetimeValue(PROJECT_DATETIME_STORE_FIELD)).thenReturn(
+    when(
+        esIntegrationMock.readDatetimeValue("ORG",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(
         new Date(System.currentTimeMillis() - indexUpdatePeriod + 1000));
     Assert.assertFalse(tested.projectIndexUpdateNecessary("ORG"));
   }
@@ -66,34 +69,34 @@ public class JIRAProjectIndexerCoordinatorTest {
     when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(null);
     tested.fillProjectKeysToIndexQueue();
     Assert.assertTrue(tested.projectKeysToIndexQueue.isEmpty());
-    verify(esIntegrationMock, times(0)).readDatetimeValue(Mockito.any(String.class));
+    verify(esIntegrationMock, times(0)).readDatetimeValue(Mockito.any(String.class), Mockito.anyString());
     reset(esIntegrationMock);
     when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(new ArrayList<String>());
     tested.fillProjectKeysToIndexQueue();
     Assert.assertTrue(tested.projectKeysToIndexQueue.isEmpty());
-    verify(esIntegrationMock, times(0)).readDatetimeValue(Mockito.any(String.class));
+    verify(esIntegrationMock, times(0)).readDatetimeValue(Mockito.any(String.class), Mockito.anyString());
 
     // case - some projects available
     reset(esIntegrationMock);
     when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(JiraRiver.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
     when(
-        esIntegrationMock.readDatetimeValue(JIRAProjectIndexerCoordinator
-            .getLastIndexingStartDateStoreDocumentName("ORG"))).thenReturn(null);
+        esIntegrationMock.readDatetimeValue("ORG",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(null);
     when(
-        esIntegrationMock.readDatetimeValue(JIRAProjectIndexerCoordinator
-            .getLastIndexingStartDateStoreDocumentName("AAA"))).thenReturn(
+        esIntegrationMock.readDatetimeValue("AAA",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(
         new Date(System.currentTimeMillis() - indexUpdatePeriod - 100));
     when(
-        esIntegrationMock.readDatetimeValue(JIRAProjectIndexerCoordinator
-            .getLastIndexingStartDateStoreDocumentName("BBB"))).thenReturn(
+        esIntegrationMock.readDatetimeValue("BBB",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(
         new Date(System.currentTimeMillis() - indexUpdatePeriod + 1000));
     when(
-        esIntegrationMock.readDatetimeValue(JIRAProjectIndexerCoordinator
-            .getLastIndexingStartDateStoreDocumentName("CCC"))).thenReturn(
+        esIntegrationMock.readDatetimeValue("CCC",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(
         new Date(System.currentTimeMillis() - indexUpdatePeriod - 100));
     when(
-        esIntegrationMock.readDatetimeValue(JIRAProjectIndexerCoordinator
-            .getLastIndexingStartDateStoreDocumentName("DDD"))).thenReturn(
+        esIntegrationMock.readDatetimeValue("DDD",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(
         new Date(System.currentTimeMillis() - indexUpdatePeriod - 100));
 
     tested.fillProjectKeysToIndexQueue();
@@ -156,8 +159,8 @@ public class JIRAProjectIndexerCoordinatorTest {
     verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class));
     verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"),
         Mockito.any(Runnable.class));
-    verify(esIntegrationMock, times(1)).storeDatetimeValue(
-        Mockito.eq(JIRAProjectIndexerCoordinator.getLastIndexingStartDateStoreDocumentName("ORG")),
+    verify(esIntegrationMock, times(1)).storeDatetimeValue(Mockito.eq("ORG"),
+        Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE),
         Mockito.any(Date.class), Mockito.eq((BulkRequestBuilder) null));
 
     // case - two slots empty and more project available, start two indexers
@@ -183,11 +186,11 @@ public class JIRAProjectIndexerCoordinatorTest {
         Mockito.any(Runnable.class));
     verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_AAA"),
         Mockito.any(Runnable.class));
-    verify(esIntegrationMock, times(1)).storeDatetimeValue(
-        Mockito.eq(JIRAProjectIndexerCoordinator.getLastIndexingStartDateStoreDocumentName("ORG")),
+    verify(esIntegrationMock, times(1)).storeDatetimeValue(Mockito.eq("ORG"),
+        Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE),
         Mockito.any(Date.class), Mockito.eq((BulkRequestBuilder) null));
-    verify(esIntegrationMock, times(1)).storeDatetimeValue(
-        Mockito.eq(JIRAProjectIndexerCoordinator.getLastIndexingStartDateStoreDocumentName("AAA")),
+    verify(esIntegrationMock, times(1)).storeDatetimeValue(Mockito.eq("AAA"),
+        Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE),
         Mockito.any(Date.class), Mockito.eq((BulkRequestBuilder) null));
 
     // case - two slots empty but only one project available, start it
@@ -205,8 +208,8 @@ public class JIRAProjectIndexerCoordinatorTest {
     verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class));
     verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"),
         Mockito.any(Runnable.class));
-    verify(esIntegrationMock, times(1)).storeDatetimeValue(
-        Mockito.eq(JIRAProjectIndexerCoordinator.getLastIndexingStartDateStoreDocumentName("ORG")),
+    verify(esIntegrationMock, times(1)).storeDatetimeValue(Mockito.eq("ORG"),
+        Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE),
         Mockito.any(Date.class), Mockito.eq((BulkRequestBuilder) null));
 
     // case - exception when interrupted from ES server
@@ -282,8 +285,8 @@ public class JIRAProjectIndexerCoordinatorTest {
     tested.projectKeysToIndexQueue.clear();
     when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(JiraRiver.parseCsvString("ORG"));
     when(
-        esIntegrationMock.readDatetimeValue(JIRAProjectIndexerCoordinator
-            .getLastIndexingStartDateStoreDocumentName("ORG"))).thenReturn(null);
+        esIntegrationMock.readDatetimeValue("ORG",
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(null);
     when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"), Mockito.any(Runnable.class)))
         .thenReturn(new MockThread());
 
@@ -352,12 +355,6 @@ public class JIRAProjectIndexerCoordinatorTest {
     tested.reportIndexingFinished("ORG", true);
     Assert.assertEquals(1, tested.projectIndexers.size());
     Assert.assertFalse(tested.projectIndexers.containsKey("ORG"));
-  }
-
-  @Test
-  public void getLastIndexingStartDateStoreDocumentName() {
-    Assert.assertEquals("_lastindexingstart_ORG",
-        JIRAProjectIndexerCoordinator.getLastIndexingStartDateStoreDocumentName("ORG"));
   }
 
 }

@@ -45,7 +45,7 @@ The above lists all the options controlling the creation of a JIRA river.
 * `jira/maxIssuesPerRequest` defines maximal number of updated issues requested from JIRA by one REST request. Optional, 50 used if not provided. The maximum allowable value is dictated by the JIRA configuration property `jira.search.views.default.max`. If you specify a value that is higher than this number, your request results will be truncated to this number anyway.
 * `jira/projectKeysIndexed` comma separated list of JIRA project keys to be indexed. Optional, list of projects is obtained from JIRA instance if ommited (so new projects are indexed automatically).
 * `jira/projectKeysExcluded` comma separated list of JIRA project keys to be excluded from indexing if list is obtained from JIRA instance (so used only if no `jira/projectKeysIndexed` is defined). Optional.
-* `jira/indexUpdatePeriod` period in minutes how ofter is search index updated from JIRA instance. Oprional, default 5 minutes.
+* `jira/indexUpdatePeriod` period in minutes how ofter is search index updated from JIRA instance. Optional, default 5 minutes.
 * `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited.
 
 TODO List

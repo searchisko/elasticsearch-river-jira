@@ -162,6 +162,11 @@ public class JiraRiverTest {
   }
 
   @Test
+  public void prepareValueStoreDocumentName() {
+    Assert.assertEquals("_lastupdatedissue_ORG", JiraRiver.prepareValueStoreDocumentName("ORG", "lastupdatedissue"));
+  }
+
+  @Test
   public void parseCsvString() {
     Assert.assertNull(JiraRiver.parseCsvString(null));
     Assert.assertNull(JiraRiver.parseCsvString(""));

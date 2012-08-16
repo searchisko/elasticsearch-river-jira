@@ -48,26 +48,29 @@ public interface IESIntegration {
   public boolean isClosed();
 
   /**
-   * Persistently store datetime value as document into ElasticSearch river configuration area.
+   * Persistently store datetime value for jira project as document into ElasticSearch river configuration area.
    * 
-   * @param documentName name of document where timestamp is stored
+   * @param projectKey jira project key this value is for
+   * @param propertyName name of property for this value identification
    * @param datetime to be stored
-   * @param esBulk to be used for value store, if <code>null</code> then value is stored immediately
+   * @param esBulk to be used for value store process, if <code>null</code> then value is stored immediately
    * @throws IOException
    * 
-   * @see {@link #readDatetimeValue(String)}
+   * @see {@link #readDatetimeValue(String, String)}
    */
-  public void storeDatetimeValue(String documentName, Date datetime, BulkRequestBuilder esBulk) throws Exception;
+  public void storeDatetimeValue(String projectKey, String propertyName, Date datetime, BulkRequestBuilder esBulk)
+      throws Exception;
 
   /**
-   * Read datetime value from document in ElasticSearch river configuration persistent area.
+   * Read datetime value for jira project from document in ElasticSearch river configuration persistent area.
    * 
-   * @param documentName name of document where timestamp is stored
+   * @param projectKey jira project key this value is for
+   * @param propertyName name of property for this value identification
    * @return datetime or null if do not exists
    * @throws IOException
-   * @see {@link #storeDatetimeValue(BulkRequestBuilder, String, Date)}
+   * @see {@link #storeDatetimeValue(String, String, Date, BulkRequestBuilder)}
    */
-  public Date readDatetimeValue(String documentName) throws Exception;
+  public Date readDatetimeValue(String projectKey, String propertyName) throws Exception;
 
   /**
    * Get ElasticSearch bulk request to be used for index update by more issues.

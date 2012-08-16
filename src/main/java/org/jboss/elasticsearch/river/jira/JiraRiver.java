@@ -192,8 +192,6 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         // that's fine
       } else if (ExceptionsHelper.unwrapCause(e) instanceof ClusterBlockException) {
         // ok, not recovered yet..., lets start indexing and hope we recover by the first bulk
-        // TODO: a smarter logic can be to register for cluster event listener here, and only start sampling when the
-        // block is removed...
       } else {
         logger.warn("failed to create index [{}], disabling river...", e, indexName);
         return;
@@ -245,10 +243,16 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   @Override
-  public void storeDatetimeValue(String documentName, Date datetime, BulkRequestBuilder esBulk) throws IOException {
+  public void storeDatetimeValue(String projectKey, String propertyName, Date datetime, BulkRequestBuilder esBulk)
+      throws IOException {
+    String documentName = prepareValueStoreDocumentName(projectKey, propertyName);
     if (esBulk != null) {
-      esBulk.add(indexRequest("_river").type(riverName.name()).id(documentName)
-          .source(jsonBuilder().startObject().field("timestamp", datetime).endObject()));
+      esBulk.add(indexRequest("_river")
+          .type(riverName.name())
+          .id(documentName)
+          .source(
+              jsonBuilder().startObject().field("projectKey", projectKey).field("propertyName", propertyName)
+                  .field("value", datetime).endObject()));
     } else {
       client.prepareIndex("_river", riverName.name(), documentName)
           .setSource(jsonBuilder().startObject().field("timestamp", datetime).endObject()).execute().actionGet();
@@ -256,13 +260,14 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   @Override
-  public Date readDatetimeValue(String documentName) throws IOException {
+  public Date readDatetimeValue(String projectKey, String propertyName) throws IOException {
     Date lastDate = null;
+    String documentName = prepareValueStoreDocumentName(projectKey, propertyName);
     client.admin().indices().prepareRefresh("_river").execute().actionGet();
     GetResponse lastSeqGetResponse = client.prepareGet("_river", riverName().name(), documentName).execute()
         .actionGet();
     if (lastSeqGetResponse.exists()) {
-      Object timestamp = lastSeqGetResponse.sourceAsMap().get("timestamp");
+      Object timestamp = lastSeqGetResponse.sourceAsMap().get("value");
       if (timestamp != null) {
         lastDate = ISODateTimeFormat.dateOptionalTimeParser().parseDateTime(timestamp.toString()).toDate();
       }
@@ -271,6 +276,20 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         logger.debug("{} document doesn't exist in JIRA river persistent store", documentName);
     }
     return lastDate;
+  }
+
+  /**
+   * Prepare name of document where jira project related persistent value is stored
+   * 
+   * @param projectKey key of jira project stored value is for
+   * @param propertyName name of value
+   * @return document name
+   * 
+   * @see #storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see #readDatetimeValue(String, String)
+   */
+  protected static String prepareValueStoreDocumentName(String projectKey, String propertyName) {
+    return "_" + propertyName + "_" + projectKey;
   }
 
   @Override
