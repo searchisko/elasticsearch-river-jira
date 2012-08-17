@@ -7,7 +7,10 @@ package org.jboss.elasticsearch.river.jira;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 
@@ -118,6 +121,27 @@ public class Utils {
     }
 
     return Integer.parseInt(node.toString());
+  }
+
+  /**
+   * Filter data in Map. Leave here only data with keys passed in second parameter.
+   * 
+   * @param map to filter data inside
+   * @param keysToLeave keys leaved in map. If <code>null</code> or empty then no filtering is performed!
+   */
+  public static <T> void filterDataInMap(Map<T, Object> map, Set<T> keysToLeave) {
+    if (map == null || map.isEmpty())
+      return;
+    if (keysToLeave == null || keysToLeave.isEmpty())
+      return;
+
+    Set<T> keysToRemove = new HashSet<T>(map.keySet());
+    keysToRemove.removeAll(keysToLeave);
+    if (!keysToRemove.isEmpty()) {
+      for (T rk : keysToRemove) {
+        map.remove(rk);
+      }
+    }
   }
 
 }

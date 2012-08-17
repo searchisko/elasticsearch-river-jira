@@ -6,7 +6,11 @@
 package org.jboss.elasticsearch.river.jira;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -83,4 +87,49 @@ public class UtilsTest {
     }
   }
 
+  @Test
+  public void filterDataInMap() {
+    // case - no exceptions on distinct null and empty inputs
+    Utils.filterDataInMap(null, null);
+    Set<String> keysToLeave = new HashSet<String>();
+    Utils.filterDataInMap(null, keysToLeave);
+    Map<String, Object> map = new HashMap<String, Object>();
+    Utils.filterDataInMap(map, null);
+    Utils.filterDataInMap(map, keysToLeave);
+    keysToLeave.add("key1");
+    Utils.filterDataInMap(null, keysToLeave);
+    Utils.filterDataInMap(map, keysToLeave);
+
+    // case - no filtering on null or empty keysToLeave
+    keysToLeave.clear();
+    map.clear();
+    map.put("key1", "val1");
+    map.put("key2", "val2");
+    Utils.filterDataInMap(map, null);
+    Assert.assertEquals(2, map.size());
+    Utils.filterDataInMap(map, keysToLeave);
+    Assert.assertEquals(2, map.size());
+
+    // case - filtering works
+    map.clear();
+    keysToLeave.clear();
+    map.put("key2", "val2");
+    keysToLeave.add("key2");
+    Utils.filterDataInMap(map, keysToLeave);
+    Assert.assertEquals(1, map.size());
+    Assert.assertTrue(map.containsKey("key2"));
+
+    map.clear();
+    keysToLeave.clear();
+    map.put("key1", "val1");
+    map.put("key2", "val2");
+    map.put("key3", "val3");
+    map.put("key4", "val4");
+    keysToLeave.add("key2");
+    keysToLeave.add("key3");
+    Utils.filterDataInMap(map, keysToLeave);
+    Assert.assertEquals(2, map.size());
+    Assert.assertTrue(map.containsKey("key2"));
+    Assert.assertTrue(map.containsKey("key3"));
+  }
 }
