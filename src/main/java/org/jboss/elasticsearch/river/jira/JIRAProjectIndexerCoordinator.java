@@ -102,9 +102,9 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
           logger.error("Failed to process JIRA update coordination task {}", e, e.getMessage());
         }
         try {
-          logger.debug("JIRA river coordinator task is going to sleep for {} ms", coordinatorThreadWaits);
           if (esIntegrationComponent.isClosed())
             return;
+          logger.debug("JIRA river coordinator task is going to sleep for {} ms", coordinatorThreadWaits);
           Thread.sleep(coordinatorThreadWaits);
         } catch (InterruptedException e1) {
           return;

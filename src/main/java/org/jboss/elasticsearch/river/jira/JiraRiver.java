@@ -11,18 +11,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.cluster.block.ClusterBlockException;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
-import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.river.AbstractRiverComponent;
 import org.elasticsearch.river.River;
 import org.elasticsearch.river.RiverName;
@@ -171,19 +168,6 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   @Override
   public void start() {
     logger.info("starting JIRA River");
-    try {
-      client.admin().indices().prepareCreate(indexName).execute().actionGet();
-    } catch (Exception e) {
-      if (ExceptionsHelper.unwrapCause(e) instanceof IndexAlreadyExistsException) {
-        // that's fine
-      } else if (ExceptionsHelper.unwrapCause(e) instanceof ClusterBlockException) {
-        // ok, not recovered yet..., lets start indexing and hope we recover by the first bulk
-      } else {
-        logger.warn("failed to create index [{}], disabling river...", e, indexName);
-        return;
-      }
-    }
-
     coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, jiraIssueIndexStructureBuilder,
         indexUpdatePeriod, maxIndexingThreads);
     coordinatorThread = acquireIndexingThread("jira_river_coordinator", coordinatorInstance);

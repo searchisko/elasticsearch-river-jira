@@ -47,13 +47,14 @@ The above lists all the options controlling the creation of a JIRA river.
 * `jira/projectKeysIndexed` comma separated list of JIRA project keys to be indexed. Optional, list of projects is obtained from JIRA instance if ommited (so new projects are indexed automatically).
 * `jira/projectKeysExcluded` comma separated list of JIRA project keys to be excluded from indexing if list is obtained from JIRA instance (so used only if no `jira/projectKeysIndexed` is defined). Optional.
 * `jira/indexUpdatePeriod` period in minutes how ofter is search index updated from JIRA instance. Optional, default 5 minutes.
-* `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited.
-* `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited.
+* `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited. No index is created by river code. You can rely on '[Automatic Index Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-create-index.html) before river creation.
+* `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. No type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is created by river code. You can rely on '[Automatic Mapping Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-put-mapping.html) before river creation.
 
 TODO List
 ---------
-* Store values obtained from JIRA into ElasticSearch index, document search index structure
+* Store values obtained from JIRA into ElasticSearch index with documentation for stored JSON structure
 * Configurable list of additional JIRA issue fields indexed (some basic fields as Project Key, Issue Key, Reporter, Assignee, Status, Type, Created, Updated, Summary and Description indexed by default)
+* JIRA issue comments indexing
 * JIRA issue delete indexing (incrementa over all issue keys list comparation with configurable checking period, or full reindex in configured period)
 * Implement some mechanism to allow mapping of some issue fields (Project, Reporter, Assignee, Status, Type, ...) to common set of values shared with other document types or other issue trackers to integrate them into search frontent GUI.
 * Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)
