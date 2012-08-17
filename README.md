@@ -52,7 +52,7 @@ The above lists all the options controlling the creation of a JIRA river.
 
 Indexed JIRA issue structure
 ----------------------------
-JIRA River writes next JSON document structure to the search index. Next table describes every default field:
+JIRA River writes next JSON document structure to the search index. Next table describes every default field: 
 
     -----------------------------------------------------------------------------------------------------------------------------
     | **index field**  | **JIRA JSON field**   | **indexed field value notes**                                                  |
