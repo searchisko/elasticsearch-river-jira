@@ -78,7 +78,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 
     // case - some projects available
     reset(esIntegrationMock);
-    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(JiraRiver.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
+    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
     when(
         esIntegrationMock.readDatetimeValue("ORG",
             JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(null);
@@ -109,7 +109,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 
     // case - exception when interrupted from ES server
     reset(esIntegrationMock);
-    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(JiraRiver.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
+    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
     when(esIntegrationMock.isClosed()).thenReturn(true);
     try {
       tested.fillProjectKeysToIndexQueue();
@@ -134,7 +134,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 
     // case - all indexer slots full, do not start new ones
     reset(esIntegrationMock);
-    tested.projectKeysToIndexQueue.addAll(JiraRiver.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
+    tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
     tested.projectIndexers.put("JJ", new Thread());
     tested.projectIndexers.put("II", new Thread());
     tested.startIndexers();
@@ -147,7 +147,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     tested.projectIndexers.clear();
     tested.projectIndexers.put("II", new Thread());
     tested.projectKeysToIndexQueue.clear();
-    tested.projectKeysToIndexQueue.addAll(JiraRiver.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
+    tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
     when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"), Mockito.any(Runnable.class)))
         .thenReturn(new MockThread());
     tested.startIndexers();
@@ -167,7 +167,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     reset(esIntegrationMock);
     tested.projectIndexers.clear();
     tested.projectKeysToIndexQueue.clear();
-    tested.projectKeysToIndexQueue.addAll(JiraRiver.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
+    tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
     when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"), Mockito.any(Runnable.class)))
         .thenReturn(new MockThread());
     when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_AAA"), Mockito.any(Runnable.class)))
@@ -197,7 +197,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     reset(esIntegrationMock);
     tested.projectIndexers.clear();
     tested.projectKeysToIndexQueue.clear();
-    tested.projectKeysToIndexQueue.addAll(JiraRiver.parseCsvString("ORG"));
+    tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG"));
     when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"), Mockito.any(Runnable.class)))
         .thenReturn(new MockThread());
     tested.startIndexers();
@@ -216,7 +216,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     reset(esIntegrationMock);
     tested.projectIndexers.clear();
     tested.projectKeysToIndexQueue.clear();
-    tested.projectKeysToIndexQueue.addAll(JiraRiver.parseCsvString("ORG"));
+    tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG"));
     when(esIntegrationMock.isClosed()).thenReturn(true);
     try {
       tested.startIndexers();
@@ -283,7 +283,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     reset(esIntegrationMock);
     tested.projectIndexers.clear();
     tested.projectKeysToIndexQueue.clear();
-    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(JiraRiver.parseCsvString("ORG"));
+    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG"));
     when(
         esIntegrationMock.readDatetimeValue("ORG",
             JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(null);
@@ -303,7 +303,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     tested.projectIndexers.clear();
     tested.projectKeysToIndexQueue.clear();
     tested.projectKeysToIndexQueue.add("ORG");
-    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(JiraRiver.parseCsvString("ORG"));
+    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG"));
     when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"), Mockito.any(Runnable.class)))
         .thenReturn(new MockThread());
 

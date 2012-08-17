@@ -22,7 +22,6 @@ import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
-import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.SettingsException;
@@ -103,7 +102,7 @@ public class JIRA5RestClient implements IJIRAClient {
    * @return
    */
   protected static String prepareAPIURLFromBaseURL(String baseURL) {
-    if (baseURL == null || "".equals(Strings.trimWhitespace(baseURL)))
+    if (Utils.isEmpty(baseURL))
       return null;
     if (!baseURL.endsWith("/")) {
       baseURL = baseURL + "/";
@@ -159,10 +158,14 @@ public class JIRA5RestClient implements IJIRAClient {
 
     XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
     Map<String, Object> responseParsed = parser.mapAndClose();
-    Integer startAtRet = (Integer) responseParsed.get("startAt");
-    Integer maxResults = (Integer) responseParsed.get("maxResults");
-    Integer total = (Integer) responseParsed.get("total");
+    Integer startAtRet = Utils.nodeIntegerValue(responseParsed.get("startAt"));
+    Integer maxResults = Utils.nodeIntegerValue(responseParsed.get("maxResults"));
+    Integer total = Utils.nodeIntegerValue(responseParsed.get("total"));
     List<Map<String, Object>> issues = (List<Map<String, Object>>) responseParsed.get("issues");
+    if (startAtRet == null || maxResults == null || total == null) {
+      throw new IllegalArgumentException("Bad response structure from JIRA: startAt=" + startAtRet + " maxResults="
+          + maxResults + " total=" + total);
+    }
     return new ChangedIssuesResults(issues, startAtRet, maxResults, total);
   }
 
@@ -208,7 +211,7 @@ public class JIRA5RestClient implements IJIRAClient {
    * @see #performJIRAChangedIssuesREST(String, Date)
    */
   protected String prepareJIRAChangedIssuesJQL(String projectKey, Date updatedAfter, Date updatedBefore) {
-    if (projectKey == null || "".equals(projectKey.trim())) {
+    if (Utils.isEmpty(projectKey)) {
       throw new IllegalArgumentException("projectKey must be defined");
     }
     StringBuilder sb = new StringBuilder();

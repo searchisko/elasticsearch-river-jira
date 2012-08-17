@@ -119,7 +119,7 @@ public class JiraRiverTest {
     JiraRiver tested = prepareJiraRiverInstanceForTest(jiraSettings);
     IJIRAClient jiraClientMock = tested.jiraClient;
 
-    List<String> pl = JiraRiver.parseCsvString("ORG,UUUU,PEM,SU07");
+    List<String> pl = Utils.parseCsvString("ORG,UUUU,PEM,SU07");
     when(jiraClientMock.getAllJIRAProjects()).thenReturn(pl);
 
     List<String> r = tested.getAllIndexedProjectsKeys();
@@ -141,7 +141,7 @@ public class JiraRiverTest {
     JiraRiver tested = prepareJiraRiverInstanceForTest(jiraSettings);
     IJIRAClient jiraClientMock = tested.jiraClient;
 
-    List<String> pl = JiraRiver.parseCsvString("ORG,UUUU,PEM,SU07");
+    List<String> pl = Utils.parseCsvString("ORG,UUUU,PEM,SU07");
     when(jiraClientMock.getAllJIRAProjects()).thenReturn(pl);
 
     List<String> r = tested.getAllIndexedProjectsKeys();
@@ -275,20 +275,6 @@ public class JiraRiverTest {
       tested.jiraClient = jClientMock;
     }
     return tested;
-  }
-
-  @Test
-  public void parseCsvString() {
-    Assert.assertNull(JiraRiver.parseCsvString(null));
-    Assert.assertNull(JiraRiver.parseCsvString(""));
-    Assert.assertNull(JiraRiver.parseCsvString("    "));
-    Assert.assertNull(JiraRiver.parseCsvString("  ,, ,   ,   "));
-    List<String> r = JiraRiver.parseCsvString(" ORG ,UUUU, , PEM  , ,SU07  ");
-    Assert.assertEquals(4, r.size());
-    Assert.assertEquals("ORG", r.get(0));
-    Assert.assertEquals("UUUU", r.get(1));
-    Assert.assertEquals("PEM", r.get(2));
-    Assert.assertEquals("SU07", r.get(3));
   }
 
 }

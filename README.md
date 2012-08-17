@@ -53,7 +53,7 @@ The above lists all the options controlling the creation of a JIRA river.
 TODO List
 ---------
 * Store values obtained from JIRA into ElasticSearch index with documentation for stored JSON structure
-* Configurable list of additional JIRA issue fields indexed (some basic fields as Project Key, Issue Key, Reporter, Assignee, Status, Type, Created, Updated, Summary and Description indexed by default)
+* Configurable list of additional JIRA issue fields indexed (some basic fields as Project Key, Issue Key, Reporter, Assignee, Status, Type, Created, Updated, Summary, Description, Labels indexed by default)
 * JIRA issue comments indexing
 * JIRA issue delete indexing (incrementa over all issue keys list comparation with configurable checking period, or full reindex in configured period)
 * Implement some mechanism to allow mapping of some issue fields (Project, Reporter, Assignee, Status, Type, ...) to common set of values shared with other document types or other issue trackers to integrate them into search frontent GUI.

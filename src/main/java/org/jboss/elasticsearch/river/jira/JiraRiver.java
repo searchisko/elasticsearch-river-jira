@@ -5,7 +5,6 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -122,7 +121,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     if (settings.settings().containsKey("jira")) {
       Map<String, Object> jiraSettings = (Map<String, Object>) settings.settings().get("jira");
       url = XContentMapValues.nodeStringValue(jiraSettings.get("urlBase"), null);
-      if (url == null || url.trim().length() == 0) {
+      if (Utils.isEmpty(url)) {
         throw new SettingsException("jira/urlBase element of configuration structure not found or empty");
       }
       Integer timeout = null;
@@ -135,7 +134,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
       indexUpdatePeriod = XContentMapValues.nodeIntegerValue(jiraSettings.get("indexUpdatePeriod"), 5) * 60 * 1000;
       if (jiraSettings.containsKey("projectKeysIndexed")) {
-        allIndexedProjectsKeys = parseCsvString(XContentMapValues.nodeStringValue(
+        allIndexedProjectsKeys = Utils.parseCsvString(XContentMapValues.nodeStringValue(
             jiraSettings.get("projectKeysIndexed"), null));
         if (allIndexedProjectsKeys != null) {
           // stop loading from JIRA
@@ -143,8 +142,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         }
       }
       if (jiraSettings.containsKey("projectKeysExcluded")) {
-        projectKeysExcluded = parseCsvString(XContentMapValues.nodeStringValue(jiraSettings.get("projectKeysExcluded"),
-            null));
+        projectKeysExcluded = Utils.parseCsvString(XContentMapValues.nodeStringValue(
+            jiraSettings.get("projectKeysExcluded"), null));
       }
     } else {
       throw new SettingsException("jira element of configuration structure not found");
@@ -281,32 +280,4 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     return EsExecutors.daemonThreadFactory(settings.globalSettings(), threadName).newThread(runnable);
   }
 
-  /**
-   * Parse comma separated string into list of tokens. Tokens are trimmed, empty tokens are not in result.
-   * 
-   * @param toParse String to parse
-   * @return List of tokens if at least one token exists, null otherwise.
-   */
-  public static List<String> parseCsvString(String toParse) {
-    if (toParse == null || toParse.length() == 0) {
-      return null;
-    }
-    String[] t = toParse.split(",");
-    if (t.length == 0) {
-      return null;
-    }
-    List<String> ret = new ArrayList<String>();
-    for (String s : t) {
-      if (s != null) {
-        s = s.trim();
-        if (s.length() > 0) {
-          ret.add(s);
-        }
-      }
-    }
-    if (ret.isEmpty())
-      return null;
-    else
-      return ret;
-  }
 }
