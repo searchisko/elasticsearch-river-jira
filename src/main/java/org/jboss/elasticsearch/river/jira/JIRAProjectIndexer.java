@@ -13,6 +13,7 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
+import org.elasticsearch.common.xcontent.support.XContentMapValues;
 
 /**
  * Class used to run one index update process for one JIRA project.
@@ -105,12 +106,22 @@ public class JIRAProjectIndexer implements Runnable {
         String lastIssueUpdated = null;
         BulkRequestBuilder esBulk = esIntegrationComponent.getESBulkRequestBuilder();
         for (Map<String, Object> issue : res.getIssues()) {
-          lastIssueUpdated = (String) ((Map<String, Object>) issue.get(JIRA5RestIssueIndexStructureBuilder.JF_FIELDS))
-              .get(JIRA5RestIssueIndexStructureBuilder.JF_UPDATED);
+          String issueKey = XContentMapValues.nodeStringValue(issue.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY),
+              null);
+          logger.debug("Go to update index for issue {}", issueKey);
+          if (issueKey == null) {
+            throw new IllegalArgumentException("'key' field not found in JIRA data");
+          }
+          lastIssueUpdated = XContentMapValues.nodeStringValue(((Map<String, Object>) issue
+              .get(JIRA5RestIssueIndexStructureBuilder.JF_FIELDS)).get(JIRA5RestIssueIndexStructureBuilder.JF_UPDATED),
+              null);
+          if (lastIssueUpdated == null) {
+            throw new IllegalArgumentException("'updated' field not found in JIRA data for key " + issueKey);
+          }
           if (firstIssueUpdated == null) {
             firstIssueUpdated = lastIssueUpdated;
           }
-          logger.debug("Go to update index for issue {}", issue.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY));
+
           jiraIssueIndexStructureBuilder.indexIssue(esBulk, projectKey, issue);
           updatedCount++;
           if (isClosed())
