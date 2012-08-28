@@ -206,7 +206,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     } else {
       v = values.get(valuePath);
     }
-    if (valueFieldFilter != null && !valueFieldFilter.isEmpty()) {
+    if (v != null && valueFieldFilter != null && !valueFieldFilter.isEmpty()) {
       if (v instanceof Map) {
         Utils.filterDataInMap((Map<String, Object>) v, valueFieldFilter);
       } else if (v instanceof List) {
@@ -216,7 +216,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
           }
         }
       } else {
-        logger.warn("Filter defined for field which is not filterable - jira field: {}", valuePath);
+        logger.warn("Filter defined for field which is not filterable - jira field '{}' with value: {}", valuePath, v);
       }
     }
     addValueToTheIndexField(out, indexField, v);

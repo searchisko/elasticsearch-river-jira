@@ -192,7 +192,10 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
   protected boolean projectIndexUpdateNecessary(String projectKey) throws Exception {
     Date lastIndexing = esIntegrationComponent.readDatetimeValue(projectKey,
         STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE);
-    return lastIndexing == null || lastIndexing.getTime() < (System.currentTimeMillis() - indexUpdatePeriod);
+    if (logger.isDebugEnabled())
+      logger.debug("Project {} last indexing start date is {}. We perform next indexing after {}ms.", projectKey,
+          lastIndexing, indexUpdatePeriod);
+    return lastIndexing == null || lastIndexing.getTime() < ((System.currentTimeMillis() - indexUpdatePeriod));
   }
 
   /**

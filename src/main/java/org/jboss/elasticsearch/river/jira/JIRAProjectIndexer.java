@@ -10,7 +10,6 @@ import java.util.Date;
 import java.util.Map;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
@@ -87,16 +86,21 @@ public class JIRAProjectIndexer implements Runnable {
   @SuppressWarnings("unchecked")
   protected int processUpdate() throws Exception {
     updatedCount = 0;
-    Date updatedAfter = readLastIssueUpdatedDate(projectKey);
+    Date updatedAfter = Utils.roundDateToMinutePrecise(readLastIssueUpdatedDate(projectKey));
     logger.info("Go to process JIRA updates for project {} for issues updated {}", projectKey,
         (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
-
+    Date updatedAfterStarting = updatedAfter;
     int startAt = 0;
 
     boolean cont = true;
     while (cont) {
       if (isClosed())
         return updatedCount;
+
+      if (logger.isDebugEnabled())
+        logger.debug("Go to ask JIRA issues for project {} with startAt {} updated {}", projectKey, startAt,
+            (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
+
       ChangedIssuesResults res = jiraClient.getJIRAChangedIssues(projectKey, startAt, updatedAfter, null);
 
       if (res.getIssuesCount() == 0) {
@@ -108,13 +112,13 @@ public class JIRAProjectIndexer implements Runnable {
         for (Map<String, Object> issue : res.getIssues()) {
           String issueKey = XContentMapValues.nodeStringValue(issue.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY),
               null);
-          logger.debug("Go to update index for issue {}", issueKey);
           if (issueKey == null) {
             throw new IllegalArgumentException("'key' field not found in JIRA data");
           }
           lastIssueUpdated = XContentMapValues.nodeStringValue(((Map<String, Object>) issue
               .get(JIRA5RestIssueIndexStructureBuilder.JF_FIELDS)).get(JIRA5RestIssueIndexStructureBuilder.JF_UPDATED),
               null);
+          logger.debug("Go to update index for issue {} with updated {}", issueKey, lastIssueUpdated);
           if (lastIssueUpdated == null) {
             throw new IllegalArgumentException("'updated' field not found in JIRA data for key " + issueKey);
           }
@@ -128,16 +132,17 @@ public class JIRAProjectIndexer implements Runnable {
             break;
         }
 
-        storeLastIssueUpdatedDate(esBulk, projectKey, ISODateTimeFormat.dateTimeParser()
-            .parseDateTime(lastIssueUpdated).toDate());
+        Date lastIssueUpdatedDate = Utils.parseISODateWithMinutePrecise(lastIssueUpdated);
+
+        storeLastIssueUpdatedDate(esBulk, projectKey, lastIssueUpdatedDate);
         esIntegrationComponent.executeESBulkRequestBuilder(esBulk);
 
         // next logic depends on issues sorted by update time ascending when returned from
         // jiraClient.getJIRAChangedIssues()!!!!
-        if (!lastIssueUpdated.equals(firstIssueUpdated)) {
+        if (!lastIssueUpdatedDate.equals(Utils.parseISODateWithMinutePrecise(firstIssueUpdated))) {
           // processed issues updated in different times, so we can continue by issue filtering based on latest time
           // of update which is more safe for concurrent changes in JIRA
-          updatedAfter = ISODateTimeFormat.dateTimeParser().parseDateTime(lastIssueUpdated).toDate();
+          updatedAfter = lastIssueUpdatedDate;
           cont = res.getTotal() > (res.getStartAt() + res.getIssuesCount());
           startAt = 0;
         } else {
@@ -148,6 +153,15 @@ public class JIRAProjectIndexer implements Runnable {
         }
       }
     }
+
+    if (updatedCount > 0 && updatedAfterStarting != null && updatedAfter != null
+        && updatedAfterStarting.equals(updatedAfter)) {
+      // no any new issue during this update cycle, go to increment lastIssueUpdatedDate in store by one minute not to
+      // index last issue again and again in next cycle - this is here due JQL minute precise on timestamp search
+      storeLastIssueUpdatedDate(null, projectKey,
+          Utils.roundDateToMinutePrecise(new Date(updatedAfter.getTime() + 64 * 1000)));
+    }
+
     return updatedCount;
   }
 

@@ -78,16 +78,20 @@ public class JIRAProjectIndexerTest {
         esIntegrationMock
             .readDatetimeValue("ORG", JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE))
         .thenReturn(mockDateAfter);
-    when(jiraClientMock.getJIRAChangedIssues("ORG", 0, mockDateAfter, null)).thenReturn(
-        new ChangedIssuesResults(issues, 0, 50, 0));
+    when(jiraClientMock.getJIRAChangedIssues("ORG", 0, Utils.roundDateToMinutePrecise(mockDateAfter), null))
+        .thenReturn(new ChangedIssuesResults(issues, 0, 50, 0));
 
     Assert.assertEquals(0, tested.processUpdate());
-    verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, mockDateAfter, null);
+    verify(jiraClientMock, times(1))
+        .getJIRAChangedIssues("ORG", 0, Utils.roundDateToMinutePrecise(mockDateAfter), null);
     verify(esIntegrationMock, times(1)).readDatetimeValue(Mockito.any(String.class), Mockito.any(String.class));
     verify(esIntegrationMock, times(0)).getESBulkRequestBuilder();
     verify(esIntegrationMock, times(0)).storeDatetimeValue(Mockito.any(String.class), Mockito.any(String.class),
         Mockito.any(Date.class), Mockito.any(BulkRequestBuilder.class));
     verify(esIntegrationMock, times(0)).executeESBulkRequestBuilder(Mockito.any(BulkRequestBuilder.class));
+    verify(esIntegrationMock, Mockito.atLeastOnce()).isClosed();
+    Mockito.verifyNoMoreInteractions(jiraClientMock);
+    Mockito.verifyNoMoreInteractions(esIntegrationMock);
 
     // test case with one "page" of results from JIRA search method
     // test case with 'last update date' storing
@@ -100,7 +104,7 @@ public class JIRAProjectIndexerTest {
         .thenReturn(null);
     addIssueMock(issues, "ORG-45", "2012-08-14T08:00:00.000-0400");
     addIssueMock(issues, "ORG-46", "2012-08-14T08:01:00.000-0400");
-    addIssueMock(issues, "ORG-47", "2012-08-14T08:02:00.000-0400");
+    addIssueMock(issues, "ORG-47", "2012-08-14T08:02:10.000-0400");
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
         new ChangedIssuesResults(issues, 0, 50, 3));
     BulkRequestBuilder brb = new BulkRequestBuilder(null);
@@ -114,7 +118,7 @@ public class JIRAProjectIndexerTest {
         Mockito.any(Map.class));
     verify(esIntegrationMock, times(1)).storeDatetimeValue(Mockito.eq("ORG"),
         Mockito.eq(JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE),
-        Mockito.eq(ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:02:00.000-0400").toDate()), eq(brb));
+        Mockito.eq(Utils.parseISODateTime("2012-08-14T08:02:00.000-0400")), eq(brb));
     verify(esIntegrationMock, times(1)).executeESBulkRequestBuilder(eq(brb));
 
   }
@@ -131,18 +135,18 @@ public class JIRAProjectIndexerTest {
         jiraIssueIndexStructureBuilderMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
-    addIssueMock(issues, "ORG-45", "2012-08-14T08:00:00.000-0400");
-    addIssueMock(issues, "ORG-46", "2012-08-14T08:01:00.000-0400");
-    addIssueMock(issues, "ORG-47", "2012-08-14T08:02:00.000-0400");
-    Date after2 = ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:02:00.000-0400").toDate();
+    addIssueMock(issues, "ORG-45", "2012-08-14T08:00:10.000-0400");
+    addIssueMock(issues, "ORG-46", "2012-08-14T08:01:10.000-0400");
+    addIssueMock(issues, "ORG-47", "2012-08-14T08:02:20.000-0400");
+    Date after2 = Utils.parseISODateTime("2012-08-14T08:02:00.000-0400");
     List<Map<String, Object>> issues2 = new ArrayList<Map<String, Object>>();
-    addIssueMock(issues2, "ORG-481", "2012-08-14T08:03:00.000-0400");
-    addIssueMock(issues2, "ORG-49", "2012-08-14T08:04:00.000-0400");
-    addIssueMock(issues2, "ORG-154", "2012-08-14T08:05:00.000-0400");
+    addIssueMock(issues2, "ORG-481", "2012-08-14T08:03:10.000-0400");
+    addIssueMock(issues2, "ORG-49", "2012-08-14T08:04:10.000-0400");
+    addIssueMock(issues2, "ORG-154", "2012-08-14T08:05:20.000-0400");
     Date after3 = ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:05:00.000-0400").toDate();
     List<Map<String, Object>> issues3 = new ArrayList<Map<String, Object>>();
-    addIssueMock(issues3, "ORG-4", "2012-08-14T08:06:00.000-0400");
-    addIssueMock(issues3, "ORG-91", "2012-08-14T08:07:00.000-0400");
+    addIssueMock(issues3, "ORG-4", "2012-08-14T08:06:10.000-0400");
+    addIssueMock(issues3, "ORG-91", "2012-08-14T08:07:20.000-0400");
     when(
         esIntegrationMock
             .readDatetimeValue("ORG", JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE))
@@ -185,7 +189,7 @@ public class JIRAProjectIndexerTest {
   public void processUpdate_PagedByStartAt() throws Exception {
 
     // test case with more than one "page" of results from JIRA search method with same updated dates so pagination in
-    // JIRA is used
+    // JIRA is used. "same updated dates" means on minute precise basis due JQL limitations!!!
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
@@ -198,11 +202,11 @@ public class JIRAProjectIndexerTest {
     addIssueMock(issues, "ORG-47", "2012-08-14T08:00:00.000-0400");
     List<Map<String, Object>> issues2 = new ArrayList<Map<String, Object>>();
     addIssueMock(issues2, "ORG-481", "2012-08-14T08:00:00.000-0400");
-    addIssueMock(issues2, "ORG-49", "2012-08-14T08:00:00.000-0400");
-    addIssueMock(issues2, "ORG-154", "2012-08-14T08:00:00.000-0400");
+    addIssueMock(issues2, "ORG-49", "2012-08-14T08:00:10.000-0400");
+    addIssueMock(issues2, "ORG-154", "2012-08-14T08:00:10.000-0400");
     List<Map<String, Object>> issues3 = new ArrayList<Map<String, Object>>();
-    addIssueMock(issues3, "ORG-4", "2012-08-14T08:00:00.000-0400");
-    addIssueMock(issues3, "ORG-91", "2012-08-14T08:00:00.000-0400");
+    addIssueMock(issues3, "ORG-4", "2012-08-14T08:00:10.000-0400");
+    addIssueMock(issues3, "ORG-91", "2012-08-14T08:00:20.000-0400");
     when(
         esIntegrationMock
             .readDatetimeValue("ORG", JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE))
@@ -227,8 +231,7 @@ public class JIRAProjectIndexerTest {
         Mockito.any(Date.class), Mockito.any(BulkRequestBuilder.class));
     verify(esIntegrationMock, times(3)).storeDatetimeValue(Mockito.eq("ORG"),
         Mockito.eq(JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE),
-        Mockito.eq(ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:00:00.000-0400").toDate()),
-        Mockito.any(BulkRequestBuilder.class));
+        Mockito.eq(Utils.parseISODateTime("2012-08-14T08:00:00.000-0400")), Mockito.any(BulkRequestBuilder.class));
     verify(esIntegrationMock, times(3)).executeESBulkRequestBuilder(Mockito.any(BulkRequestBuilder.class));
 
   }
@@ -247,8 +250,8 @@ public class JIRAProjectIndexerTest {
             .readDatetimeValue("ORG", JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE))
         .thenReturn(null);
     addIssueMock(issues, "ORG-45", "2012-08-14T08:00:00.000-0400");
-    addIssueMock(issues, "ORG-46", "2012-08-14T08:00:00.000-0400");
-    addIssueMock(issues, "ORG-47", "2012-08-14T08:00:00.000-0400");
+    addIssueMock(issues, "ORG-46", "2012-08-14T08:00:10.000-0400");
+    addIssueMock(issues, "ORG-47", "2012-08-14T08:00:20.000-0400");
 
     // test case with indexing finished OK
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(

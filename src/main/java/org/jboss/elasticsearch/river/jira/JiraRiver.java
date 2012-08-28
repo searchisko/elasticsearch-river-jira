@@ -15,9 +15,9 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.river.AbstractRiverComponent;
 import org.elasticsearch.river.River;
@@ -216,30 +216,51 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   public void storeDatetimeValue(String projectKey, String propertyName, Date datetime, BulkRequestBuilder esBulk)
       throws IOException {
     String documentName = prepareValueStoreDocumentName(projectKey, propertyName);
+    if (logger.isDebugEnabled())
+      logger.debug(
+          "Going to write {} property with datetime value {} for project {} using {} update. Document name is {}.",
+          propertyName, datetime, projectKey, (esBulk != null ? "bulk" : "direct"), documentName);
     if (esBulk != null) {
-      esBulk.add(indexRequest("_river")
-          .type(riverName.name())
-          .id(documentName)
-          .source(
-              jsonBuilder().startObject().field("projectKey", projectKey).field("propertyName", propertyName)
-                  .field("value", datetime).endObject()));
+      esBulk.add(indexRequest("_river").type(riverName.name()).id(documentName)
+          .source(storeDatetimeValueJson(projectKey, propertyName, datetime)));
     } else {
       client.prepareIndex("_river", riverName.name(), documentName)
-          .setSource(jsonBuilder().startObject().field("timestamp", datetime).endObject()).execute().actionGet();
+          .setSource(storeDatetimeValueJson(projectKey, propertyName, datetime)).execute().actionGet();
     }
+  }
+
+  protected static final String STORE_FIELD_VALUE = "value";
+
+  /**
+   * Prepare JSON document to be stored inside {@link #storeDatetimeValue(String, String, Date, BulkRequestBuilder)}.
+   * 
+   * @param projectKey key of project value is for
+   * @param propertyName name of property
+   * @param datetime value to store
+   * @return JSON document
+   * @throws IOException
+   */
+  protected XContentBuilder storeDatetimeValueJson(String projectKey, String propertyName, Date datetime)
+      throws IOException {
+    return jsonBuilder().startObject().field("projectKey", projectKey).field("propertyName", propertyName)
+        .field(STORE_FIELD_VALUE, datetime).endObject();
   }
 
   @Override
   public Date readDatetimeValue(String projectKey, String propertyName) throws IOException {
     Date lastDate = null;
     String documentName = prepareValueStoreDocumentName(projectKey, propertyName);
+
+    if (logger.isDebugEnabled())
+      logger.debug("Going to read datetime value from {} property for project {}. Document name is {}.", propertyName,
+          projectKey, documentName);
+
     client.admin().indices().prepareRefresh("_river").execute().actionGet();
-    GetResponse lastSeqGetResponse = client.prepareGet("_river", riverName().name(), documentName).execute()
-        .actionGet();
+    GetResponse lastSeqGetResponse = client.prepareGet("_river", riverName.name(), documentName).execute().actionGet();
     if (lastSeqGetResponse.exists()) {
-      Object timestamp = lastSeqGetResponse.sourceAsMap().get("value");
+      Object timestamp = lastSeqGetResponse.sourceAsMap().get(STORE_FIELD_VALUE);
       if (timestamp != null) {
-        lastDate = ISODateTimeFormat.dateOptionalTimeParser().parseDateTime(timestamp.toString()).toDate();
+        lastDate = Utils.parseISODateTime(timestamp.toString());
       }
     } else {
       if (logger.isDebugEnabled())
