@@ -24,6 +24,7 @@ Creating the JIRA river can be done using:
 	        "urlBase"             : "https://issues.jboss.org",
 	        "username"            : "jira_username",
 	        "pwd"                 : "jira_user_password",
+	        "jqlTimeZone"         : "GMT+1:00",
 	        "timeout"             : 5000,
 	        "maxIndexingThreads"  : 1,
 	        "maxIssuesPerRequest" : 50,
@@ -40,7 +41,8 @@ Creating the JIRA river can be done using:
 
 The above lists all the options controlling the creation of a JIRA river. 
 * `jira/urlBase` is required in order to connect to the JIRA REST API. It's only base URL, path to REST API is added automatically.
-* `jira/username` and `jira/pwd` are optional JIRA login credentials. Anonymous JIRA access is used if not provided.
+* `jira/username` and `jira/pwd` are optional JIRA login credentials to access jira issues. Anonymous JIRA access is used if not provided.
+* `jira/jqlTimeZone` is optional [identifier of timezone](http://docs.oracle.com/javase/6/docs/api/java/util/TimeZone.html#getTimeZone%28java.lang.String%29) used to format time values into JQL when requesting updated issues. Timezone of ElasticSearch JVM is used if not provided. JQL uses timezone of jira user who perform JQL query (so this setting must reflex [jira timezone of user](https://confluence.atlassian.com/display/JIRA/Choosing+a+Time+Zone) provided by `jira/username` parameter), default timezone of JIRA in case of Anonymous access. Incorrect setting of this value may lead to some issue updates not reflected in search index!!
 * `jira/timeout` defines timeout for http/s REST request to the JIRA [ms]. Optional parameter.
 * `jira/maxIndexingThreads` defines maximal number of parallel indexing threads running for this river. Optional, default 1. This setting influences load on both JIRA and ElasticSearch servers during indexing.
 * `jira/maxIssuesPerRequest` defines maximal number of updated issues requested from JIRA by one REST request. Optional, 50 used if not provided. The maximum allowable value is dictated by the JIRA configuration property `jira.search.views.default.max`. If you specify a value that is higher than this number, your request results will be truncated to this number anyway.

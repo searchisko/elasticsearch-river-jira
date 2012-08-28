@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 import junit.framework.Assert;
 
@@ -34,7 +35,11 @@ public class JIRA5RestClientTest {
   /**
    * Date formatter used to prepare {@link Date} instances for tests
    */
-  protected SimpleDateFormat JQL_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+  protected SimpleDateFormat JQL_TEST_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+  protected TimeZone JQL_TEST_TIMEZONE = TimeZone.getTimeZone("GMT");
+  {
+    JQL_TEST_DATE_FORMAT.setTimeZone(JQL_TEST_TIMEZONE);
+  }
 
   /**
    * Main method used to run integration tests with real JIRA call.
@@ -221,13 +226,23 @@ public class JIRA5RestClientTest {
   public void formatJQLDate() throws Exception {
     JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000);
     Assert.assertNull(tested.formatJQLDate(null));
-    Assert.assertEquals("2012-08-10 10:52", tested.formatJQLDate(JQL_DATE_FORMAT.parse("2012-08-10 10:52")));
-    Assert.assertEquals("2012-08-10 22:52", tested.formatJQLDate(JQL_DATE_FORMAT.parse("2012-08-10 22:52")));
+
+    Date date1 = JQL_TEST_DATE_FORMAT.parse("2012-08-10 10:52");
+    Date date2 = JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52");
+
+    tested.setJQLDateFormatTimezone(TimeZone.getTimeZone("GMT"));
+    Assert.assertEquals("2012-08-10 10:52", tested.formatJQLDate(date1));
+    Assert.assertEquals("2012-08-10 22:52", tested.formatJQLDate(date2));
+    tested.setJQLDateFormatTimezone(TimeZone.getTimeZone("GMT+1:00"));
+    Assert.assertEquals("2012-08-10 11:52", tested.formatJQLDate(date1));
+    Assert.assertEquals("2012-08-10 23:52", tested.formatJQLDate(date2));
+
   }
 
   @Test
   public void prepareJIRAChangedIssuesJQL() throws Exception {
     JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000);
+    tested.setJQLDateFormatTimezone(JQL_TEST_TIMEZONE);
     try {
       tested.prepareJIRAChangedIssuesJQL(null, null, null);
       Assert.fail("IllegalArgumentException not thrown if project key is missing");
@@ -242,15 +257,14 @@ public class JIRA5RestClientTest {
     }
     Assert.assertEquals("project='ORG' ORDER BY updated ASC", tested.prepareJIRAChangedIssuesJQL("ORG", null, null));
     Assert.assertEquals("project='ORG' and updatedDate >= \"2012-08-10 22:52\" ORDER BY updated ASC",
-        tested.prepareJIRAChangedIssuesJQL("ORG", JQL_DATE_FORMAT.parse("2012-08-10 22:52"), null));
+        tested.prepareJIRAChangedIssuesJQL("ORG", JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52"), null));
     Assert.assertEquals("project='ORG' and updatedDate <= \"2012-08-10 22:55\" ORDER BY updated ASC",
-        tested.prepareJIRAChangedIssuesJQL("ORG", null, JQL_DATE_FORMAT.parse("2012-08-10 22:55")));
+        tested.prepareJIRAChangedIssuesJQL("ORG", null, JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:55")));
     Assert
         .assertEquals(
             "project='ORG' and updatedDate >= \"2012-08-10 22:52\" and updatedDate <= \"2012-08-10 22:55\" ORDER BY updated ASC",
-            tested.prepareJIRAChangedIssuesJQL("ORG", JQL_DATE_FORMAT.parse("2012-08-10 22:52"),
-                JQL_DATE_FORMAT.parse("2012-08-10 22:55")));
+            tested.prepareJIRAChangedIssuesJQL("ORG", JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52"),
+                JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:55")));
 
   }
-
 }

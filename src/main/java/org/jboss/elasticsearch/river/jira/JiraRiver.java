@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -117,6 +118,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     this.client = client;
 
     String url = null;
+    String jiraUser = null;
+    String jiraJqlTimezone = TimeZone.getDefault().getDisplayName();
 
     if (settings.settings().containsKey("jira")) {
       Map<String, Object> jiraSettings = (Map<String, Object>) settings.settings().get("jira");
@@ -128,9 +131,15 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       if (jiraSettings.get("timeout") != null) {
         timeout = XContentMapValues.nodeIntegerValue(jiraSettings.get("timeout"));
       }
+      jiraUser = XContentMapValues.nodeStringValue(jiraSettings.get("username"), "Anonymous access");
       jiraClient = new JIRA5RestClient(url, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
           XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
       jiraClient.setListJIRAIssuesMax(XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIssuesPerRequest"), 50));
+      if (jiraSettings.get("jqlTimeZone") != null) {
+        TimeZone tz = TimeZone.getTimeZone(XContentMapValues.nodeStringValue(jiraSettings.get("jqlTimeZone"), null));
+        jiraJqlTimezone = tz.getDisplayName();
+        jiraClient.setJQLDateFormatTimezone(tz);
+      }
       maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
       indexUpdatePeriod = XContentMapValues.nodeIntegerValue(jiraSettings.get("indexUpdatePeriod"), 5) * 60 * 1000;
       if (jiraSettings.containsKey("projectKeysIndexed")) {
@@ -149,8 +158,6 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       throw new SettingsException("jira element of configuration structure not found");
     }
 
-    logger.info("creating JIRA River for JIRA base URL  [{}]", url);
-
     if (settings.settings().containsKey("index")) {
       Map<String, Object> indexSettings = (Map<String, Object>) settings.settings().get("index");
       indexName = XContentMapValues.nodeStringValue(indexSettings.get("index"), riverName.name());
@@ -159,6 +166,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       indexName = riverName.name();
       typeName = INDEX_TYPE_NAME_DEFAULT;
     }
+
+    logger
+        .info(
+            "Creating JIRA River for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type '{}'.",
+            url, jiraUser, jiraJqlTimezone, indexName, typeName);
 
     jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName);
     jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);

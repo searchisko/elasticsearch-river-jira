@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
@@ -217,7 +218,6 @@ public class JIRA5RestClient implements IJIRAClient {
     StringBuilder sb = new StringBuilder();
     sb.append("project='").append(projectKey).append("'");
     if (updatedAfter != null) {
-      // TODO check date formatting into JQL due timezones handling!
       sb.append(" and updatedDate >= \"").append(formatJQLDate(updatedAfter)).append("\"");
     }
     if (updatedBefore != null) {
@@ -228,7 +228,14 @@ public class JIRA5RestClient implements IJIRAClient {
     return sb.toString();
   }
 
-  private SimpleDateFormat JQL_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+  private static final String JQL_DATE_FORMAT_PATTERN = "yyyy-MM-dd HH:mm";
+
+  private SimpleDateFormat JQL_DATE_FORMAT = new SimpleDateFormat(JQL_DATE_FORMAT_PATTERN);
+
+  @Override
+  public void setJQLDateFormatTimezone(TimeZone zone) {
+    JQL_DATE_FORMAT.setTimeZone(zone);
+  }
 
   /**
    * Format {@link Date} to {@link String} to be used in JQL (JIRA Query Language).

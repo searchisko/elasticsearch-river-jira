@@ -2,6 +2,7 @@ package org.jboss.elasticsearch.river.jira;
 
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * Interface for JIRA Client implementation.
@@ -34,8 +35,15 @@ public interface IJIRAClient {
       Date updatedBefore) throws Exception;
 
   /**
-   * Set maximal number of issues returned from {@link #getJIRAChangedIssues(String, int, Date, Date)}. Called in time
-   * of configuration.
+   * Configuration - Set Timezone used to format date into JQL.
+   * 
+   * @param zone to set
+   */
+  public void setJQLDateFormatTimezone(TimeZone zone);
+
+  /**
+   * Configuration - Set maximal number of issues returned from {@link #getJIRAChangedIssues(String, int, Date, Date)}.
+   * Called in time of configuration.
    * 
    * @param listJIRAIssuesMax to set
    */
