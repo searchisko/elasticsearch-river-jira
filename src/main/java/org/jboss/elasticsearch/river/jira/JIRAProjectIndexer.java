@@ -90,6 +90,7 @@ public class JIRAProjectIndexer implements Runnable {
     logger.info("Go to process JIRA updates for project {} for issues updated {}", projectKey,
         (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
     Date updatedAfterStarting = updatedAfter;
+    Date lastIssueUpdatedDate = null;
     int startAt = 0;
 
     boolean cont = true;
@@ -132,7 +133,7 @@ public class JIRAProjectIndexer implements Runnable {
             break;
         }
 
-        Date lastIssueUpdatedDate = Utils.parseISODateWithMinutePrecise(lastIssueUpdated);
+        lastIssueUpdatedDate = Utils.parseISODateWithMinutePrecise(lastIssueUpdated);
 
         storeLastIssueUpdatedDate(esBulk, projectKey, lastIssueUpdatedDate);
         esIntegrationComponent.executeESBulkRequestBuilder(esBulk);
@@ -154,12 +155,12 @@ public class JIRAProjectIndexer implements Runnable {
       }
     }
 
-    if (updatedCount > 0 && updatedAfterStarting != null && updatedAfter != null
-        && updatedAfterStarting.equals(updatedAfter)) {
+    if (updatedCount > 0 && lastIssueUpdatedDate != null && updatedAfterStarting != null
+        && updatedAfterStarting.equals(lastIssueUpdatedDate)) {
       // no any new issue during this update cycle, go to increment lastIssueUpdatedDate in store by one minute not to
       // index last issue again and again in next cycle - this is here due JQL minute precise on timestamp search
       storeLastIssueUpdatedDate(null, projectKey,
-          Utils.roundDateToMinutePrecise(new Date(updatedAfter.getTime() + 64 * 1000)));
+          Utils.roundDateToMinutePrecise(new Date(lastIssueUpdatedDate.getTime() + 64 * 1000)));
     }
 
     return updatedCount;

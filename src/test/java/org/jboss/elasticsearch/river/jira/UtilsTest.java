@@ -135,6 +135,13 @@ public class UtilsTest {
   }
 
   @Test
+  public void formatISODateTime() {
+    Assert.assertNull(Utils.formatISODateTime(null));
+    // Assert.assertEquals("2012-08-14T08:00:00.000-0400",
+    // Utils.formatISODateTime(Utils.parseISODateTime("2012-08-14T08:00:00.000-0400")));
+  }
+
+  @Test
   public void parseDateWithMinutePrecise() {
     Assert.assertNull(Utils.parseISODateWithMinutePrecise(null));
     Assert.assertNull(Utils.parseISODateWithMinutePrecise(""));

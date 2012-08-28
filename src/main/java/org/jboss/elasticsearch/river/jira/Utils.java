@@ -5,6 +5,7 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -161,6 +162,20 @@ public class Utils {
     return ISODateTimeFormat.dateTimeParser().parseDateTime(dateString).toDate();
   }
 
+  private static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SZ");
+
+  /**
+   * Format Date into ISO 8601 full datetime string.
+   * 
+   * @param date to format
+   * @return formatted string
+   */
+  public static synchronized final String formatISODateTime(Date date) {
+    if (date == null)
+      return null;
+    return ISO_DATE_FORMAT.format(date);
+  }
+
   /**
    * Parse date string with minute precise - so seconds and milliseconds are set to 0. Used because JQL allows only
    * minute precise queries.
@@ -172,10 +187,7 @@ public class Utils {
   public static Date parseISODateWithMinutePrecise(String dateString) {
     if (Utils.isEmpty(dateString))
       return null;
-    Calendar cal = ISODateTimeFormat.dateTimeParser().parseDateTime(dateString).toGregorianCalendar();
-    cal.set(Calendar.SECOND, 0);
-    cal.set(Calendar.MILLISECOND, 0);
-    return cal.getTime();
+    return roundDateToMinutePrecise(ISODateTimeFormat.dateTimeParser().parseDateTime(dateString).toDate());
   }
 
   /**

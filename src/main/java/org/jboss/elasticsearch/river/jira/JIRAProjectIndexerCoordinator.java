@@ -36,7 +36,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
   protected static final String STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE = "lastIndexUpdateStartDate";
 
   protected static final int COORDINATOR_THREAD_WAITS_QUICK = 2 * 1000;
-  protected static final int COORDINATOR_THREAD_WAITS_SLOW = 60 * 1000;
+  protected static final int COORDINATOR_THREAD_WAITS_SLOW = 30 * 1000;
   protected int coordinatorThreadWaits = COORDINATOR_THREAD_WAITS_QUICK;
 
   protected IESIntegration esIntegrationComponent;

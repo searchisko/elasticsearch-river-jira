@@ -222,13 +222,21 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
           propertyName, datetime, projectKey, (esBulk != null ? "bulk" : "direct"), documentName);
     if (esBulk != null) {
       esBulk.add(indexRequest("_river").type(riverName.name()).id(documentName)
-          .source(storeDatetimeValueJson(projectKey, propertyName, datetime)));
+          .source(storeDatetimeValueBuildDocument(projectKey, propertyName, datetime)));
     } else {
       client.prepareIndex("_river", riverName.name(), documentName)
-          .setSource(storeDatetimeValueJson(projectKey, propertyName, datetime)).execute().actionGet();
+          .setSource(storeDatetimeValueBuildDocument(projectKey, propertyName, datetime)).execute().actionGet();
     }
   }
 
+  /**
+   * Constant for field in JSON document used to store values.
+   * 
+   * @see #storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see #readDatetimeValue(String, String)
+   * @see #storeDatetimeValueBuildDocument(String, String, Date)
+   * 
+   */
   protected static final String STORE_FIELD_VALUE = "value";
 
   /**
@@ -239,11 +247,13 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * @param datetime value to store
    * @return JSON document
    * @throws IOException
+   * @see #storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see #readDatetimeValue(String, String)
    */
-  protected XContentBuilder storeDatetimeValueJson(String projectKey, String propertyName, Date datetime)
+  protected XContentBuilder storeDatetimeValueBuildDocument(String projectKey, String propertyName, Date datetime)
       throws IOException {
     return jsonBuilder().startObject().field("projectKey", projectKey).field("propertyName", propertyName)
-        .field(STORE_FIELD_VALUE, datetime).endObject();
+        .field(STORE_FIELD_VALUE, Utils.formatISODateTime(datetime)).endObject();
   }
 
   @Override
