@@ -120,6 +120,54 @@ public class JIRAProjectIndexerTest {
         Mockito.eq(JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE),
         Mockito.eq(Utils.parseISODateTime("2012-08-14T08:02:00.000-0400")), eq(brb));
     verify(esIntegrationMock, times(1)).executeESBulkRequestBuilder(eq(brb));
+    verify(esIntegrationMock, Mockito.atLeastOnce()).isClosed();
+    Mockito.verifyNoMoreInteractions(jiraClientMock);
+    Mockito.verifyNoMoreInteractions(esIntegrationMock);
+
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void processUpdate_NoLastIsuueIndexedAgain() throws Exception {
+
+    IJIRAClient jiraClientMock = mock(IJIRAClient.class);
+    IESIntegration esIntegrationMock = mock(IESIntegration.class);
+    IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock,
+        jiraIssueIndexStructureBuilderMock);
+
+    List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
+
+    // test case with list from JIRA search method containing only one issue with same update time as 'last update date'
+    Date mockDateAfter = Utils.parseISODateTime("2012-08-14T08:00:10.000-0400");
+    when(
+        esIntegrationMock
+            .readDatetimeValue("ORG", JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE))
+        .thenReturn(mockDateAfter);
+    addIssueMock(issues, "ORG-45", "2012-08-14T08:00:20.000-0400");
+    when(jiraClientMock.getJIRAChangedIssues("ORG", 0, Utils.roundDateToMinutePrecise(mockDateAfter), null))
+        .thenReturn(new ChangedIssuesResults(issues, 0, 50, 1));
+    BulkRequestBuilder brb = new BulkRequestBuilder(null);
+    when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(brb);
+
+    Assert.assertEquals(1, tested.processUpdate());
+    verify(jiraClientMock, times(1))
+        .getJIRAChangedIssues("ORG", 0, Utils.roundDateToMinutePrecise(mockDateAfter), null);
+    verify(esIntegrationMock, times(1)).readDatetimeValue(Mockito.any(String.class), Mockito.any(String.class));
+    verify(esIntegrationMock, times(1)).getESBulkRequestBuilder();
+    verify(jiraIssueIndexStructureBuilderMock, times(1)).indexIssue(Mockito.eq(brb), Mockito.eq("ORG"),
+        Mockito.any(Map.class));
+    verify(esIntegrationMock, times(1)).storeDatetimeValue(Mockito.eq("ORG"),
+        Mockito.eq(JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE),
+        Mockito.eq(Utils.parseISODateTime("2012-08-14T08:00:00.000-0400")), eq(brb));
+    verify(esIntegrationMock, times(1)).executeESBulkRequestBuilder(eq(brb));
+    // one more timestamp store with time incremented by one minute not to index last updated issue next time again!
+    verify(esIntegrationMock, times(1)).storeDatetimeValue(Mockito.eq("ORG"),
+        Mockito.eq(JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE),
+        Mockito.eq(Utils.parseISODateTime("2012-08-14T08:01:00.000-0400")), ((BulkRequestBuilder) Mockito.isNull()));
+    verify(esIntegrationMock, Mockito.atLeastOnce()).isClosed();
+    Mockito.verifyNoMoreInteractions(jiraClientMock);
+    Mockito.verifyNoMoreInteractions(esIntegrationMock);
 
   }
 
@@ -182,6 +230,10 @@ public class JIRAProjectIndexerTest {
         Mockito.eq(ISODateTimeFormat.dateTimeParser().parseDateTime("2012-08-14T08:07:00.000-0400").toDate()),
         Mockito.any(BulkRequestBuilder.class));
     verify(esIntegrationMock, times(3)).executeESBulkRequestBuilder(Mockito.any(BulkRequestBuilder.class));
+    verify(esIntegrationMock, Mockito.atLeastOnce()).isClosed();
+    Mockito.verifyNoMoreInteractions(jiraClientMock);
+    Mockito.verifyNoMoreInteractions(esIntegrationMock);
+
   }
 
   @SuppressWarnings("unchecked")
@@ -233,6 +285,9 @@ public class JIRAProjectIndexerTest {
         Mockito.eq(JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE),
         Mockito.eq(Utils.parseISODateTime("2012-08-14T08:00:00.000-0400")), Mockito.any(BulkRequestBuilder.class));
     verify(esIntegrationMock, times(3)).executeESBulkRequestBuilder(Mockito.any(BulkRequestBuilder.class));
+    verify(esIntegrationMock, Mockito.atLeastOnce()).isClosed();
+    Mockito.verifyNoMoreInteractions(jiraClientMock);
+    Mockito.verifyNoMoreInteractions(esIntegrationMock);
 
   }
 
