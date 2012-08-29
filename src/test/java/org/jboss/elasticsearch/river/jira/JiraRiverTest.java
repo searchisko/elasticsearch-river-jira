@@ -185,16 +185,16 @@ public class JiraRiverTest {
     JiraRiver tested = prepareJiraRiverInstanceForTest(null);
     tested.coordinatorInstance = coordMock;
 
-    tested.reportIndexingFinished("ORG", true, 0, null, 10, null);
-    verify(coordMock, times(1)).reportIndexingFinished("ORG", true);
+    tested.reportIndexingFinished("ORG", true, false, 10, 0, null, 10, null);
+    verify(coordMock, times(1)).reportIndexingFinished("ORG", true, false);
 
     reset(coordMock);
-    tested.reportIndexingFinished("AAA", false, 0, null, 10, null);
-    verify(coordMock, times(1)).reportIndexingFinished("AAA", false);
+    tested.reportIndexingFinished("AAA", false, true, 0, 0, null, 10, null);
+    verify(coordMock, times(1)).reportIndexingFinished("AAA", false, true);
 
     // case - no exception if coordinatorInstance is null
     tested = prepareJiraRiverInstanceForTest(null);
-    tested.reportIndexingFinished("ORG", true, 0, null, 10, null);
+    tested.reportIndexingFinished("ORG", true, false, 0, 0, null, 10, null);
 
   }
 

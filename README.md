@@ -49,11 +49,21 @@ The above lists all the options controlling the creation of a JIRA river.
 * `jira/projectKeysIndexed` comma separated list of JIRA project keys to be indexed. Optional, list of projects is obtained from JIRA instance if ommited (so new projects are indexed automatically).
 * `jira/projectKeysExcluded` comma separated list of JIRA project keys to be excluded from indexing if list is obtained from JIRA instance (so used only if no `jira/projectKeysIndexed` is defined). Optional.
 * `jira/indexUpdatePeriod` period in minutes how ofter is search index updated from JIRA instance. Optional, default 5 minutes.
-* `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited. No index is created by river code. You can rely on '[Automatic Index Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-create-index.html) before river creation.
-* `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. No type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is created by river code. You can rely on '[Automatic Mapping Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-put-mapping.html) before river creation. See later for description of issue document structure written to the search index.
+* `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited. See related notes later.
+* `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. See related notes later.
 
+ 
 To get rid of some unwanted WARN log messages add next line to the [logging configuration file](http://www.elasticsearch.org/guide/reference/setup/configuration.html) of your ElasticSearch instance which is `config/logging.yml`:
 	org.apache.commons.httpclient: ERROR
+
+Notes for Index and Document type mapping
+-----------------------------------------
+Configured Search index is NOT explicitly created by river code. You can rely on '[Automatic Index Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-create-index.html) before river creation.
+
+No type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is explicitly created by river code for configured document type. You can rely on '[Automatic Mapping Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-put-mapping.html) before river creation. To create mapping manually see later for description of issue document structure written to the search index. 
+
+JIRA river REQUIRES [`Automatic Timestamp Field`](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) enabled in mapping for this document type to be able to remove issues deleted in JIRA from index! This field is disabled by default in ElasticSearch! If you rely on Automatic Mapping Creation then you can [change this default](http://www.elasticsearch.org/guide/reference/mapping/dynamic-mapping.html).
+
 
 Indexed JIRA issue structure
 ----------------------------

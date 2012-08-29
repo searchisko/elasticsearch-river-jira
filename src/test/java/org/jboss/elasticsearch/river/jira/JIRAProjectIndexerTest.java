@@ -44,7 +44,7 @@ public class JIRAProjectIndexerTest {
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClient, esIntegrationMock,
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClient, esIntegrationMock,
         jiraIssueIndexStructureBuilderMock);
     tested.run();
   }
@@ -53,8 +53,10 @@ public class JIRAProjectIndexerTest {
   public void constructor() {
     IJIRAClient jiraClient = new JIRA5RestClient("https://issues.jboss.org", null, null, 7000);
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClient, null, jiraIssueIndexStructureBuilderMock);
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", true, jiraClient, null,
+        jiraIssueIndexStructureBuilderMock);
     Assert.assertEquals("ORG", tested.projectKey);
+    Assert.assertTrue(tested.fullUpdate);
     Assert.assertEquals(jiraClient, tested.jiraClient);
     Assert.assertEquals(jiraIssueIndexStructureBuilderMock, tested.jiraIssueIndexStructureBuilder);
   }
@@ -66,7 +68,7 @@ public class JIRAProjectIndexerTest {
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock,
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
         jiraIssueIndexStructureBuilderMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
@@ -81,7 +83,9 @@ public class JIRAProjectIndexerTest {
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, Utils.roundDateToMinutePrecise(mockDateAfter), null))
         .thenReturn(new ChangedIssuesResults(issues, 0, 50, 0));
 
-    Assert.assertEquals(0, tested.processUpdate());
+    tested.processUpdate();
+    Assert.assertEquals(0, tested.updatedCount);
+    Assert.assertFalse(tested.fullUpdate);
     verify(jiraClientMock, times(1))
         .getJIRAChangedIssues("ORG", 0, Utils.roundDateToMinutePrecise(mockDateAfter), null);
     verify(esIntegrationMock, times(1)).readDatetimeValue(Mockito.any(String.class), Mockito.any(String.class));
@@ -110,7 +114,9 @@ public class JIRAProjectIndexerTest {
     BulkRequestBuilder brb = new BulkRequestBuilder(null);
     when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(brb);
 
-    Assert.assertEquals(3, tested.processUpdate());
+    tested.processUpdate();
+    Assert.assertEquals(3, tested.updatedCount);
+    Assert.assertTrue(tested.fullUpdate);
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
     verify(esIntegrationMock, times(1)).readDatetimeValue(Mockito.any(String.class), Mockito.any(String.class));
     verify(esIntegrationMock, times(1)).getESBulkRequestBuilder();
@@ -133,7 +139,7 @@ public class JIRAProjectIndexerTest {
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock,
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
         jiraIssueIndexStructureBuilderMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
@@ -150,7 +156,9 @@ public class JIRAProjectIndexerTest {
     BulkRequestBuilder brb = new BulkRequestBuilder(null);
     when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(brb);
 
-    Assert.assertEquals(1, tested.processUpdate());
+    tested.processUpdate();
+    Assert.assertEquals(1, tested.updatedCount);
+    Assert.assertFalse(tested.fullUpdate);
     verify(jiraClientMock, times(1))
         .getJIRAChangedIssues("ORG", 0, Utils.roundDateToMinutePrecise(mockDateAfter), null);
     verify(esIntegrationMock, times(1)).readDatetimeValue(Mockito.any(String.class), Mockito.any(String.class));
@@ -179,7 +187,7 @@ public class JIRAProjectIndexerTest {
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock,
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
         jiraIssueIndexStructureBuilderMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
@@ -207,7 +215,9 @@ public class JIRAProjectIndexerTest {
         new ChangedIssuesResults(issues3, 0, 3, 2));
     when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
 
-    Assert.assertEquals(8, tested.processUpdate());
+    tested.processUpdate();
+    Assert.assertEquals(8, tested.updatedCount);
+    Assert.assertTrue(tested.fullUpdate);
     verify(esIntegrationMock, times(1)).readDatetimeValue(Mockito.any(String.class), Mockito.any(String.class));
     verify(esIntegrationMock, times(3)).getESBulkRequestBuilder();
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
@@ -245,7 +255,7 @@ public class JIRAProjectIndexerTest {
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock,
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
         jiraIssueIndexStructureBuilderMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
@@ -271,7 +281,8 @@ public class JIRAProjectIndexerTest {
         new ChangedIssuesResults(issues3, 6, 3, 8));
     when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
 
-    Assert.assertEquals(8, tested.processUpdate());
+    tested.processUpdate();
+    Assert.assertEquals(8, tested.updatedCount);
     verify(esIntegrationMock, times(1)).readDatetimeValue(Mockito.any(String.class), Mockito.any(String.class));
     verify(esIntegrationMock, times(3)).getESBulkRequestBuilder();
     verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
@@ -296,7 +307,7 @@ public class JIRAProjectIndexerTest {
     IJIRAClient jiraClientMock = mock(IJIRAClient.class);
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
-    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", jiraClientMock, esIntegrationMock,
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
         jiraIssueIndexStructureBuilderMock);
 
     List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
@@ -314,8 +325,8 @@ public class JIRAProjectIndexerTest {
     when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
 
     tested.run();
-    verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(true), eq(3), (Date) Mockito.isNotNull(),
-        Mockito.anyLong(), eq((String) null));
+    verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(true), eq(true), eq(3), eq(0),
+        (Date) Mockito.isNotNull(), Mockito.anyLong(), eq((String) null));
 
     // test case with indexing finished with error, but some issues was indexed from first page
     reset(esIntegrationMock);
@@ -330,8 +341,8 @@ public class JIRAProjectIndexerTest {
     when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
 
     tested.run();
-    verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(false), eq(3), (Date) Mockito.isNotNull(),
-        Mockito.anyLong(), eq("JIRA call error"));
+    verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(false), eq(true), eq(3), eq(0),
+        (Date) Mockito.isNotNull(), Mockito.anyLong(), eq("JIRA call error"));
 
   }
 

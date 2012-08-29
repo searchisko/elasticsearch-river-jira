@@ -5,9 +5,11 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
+import static org.elasticsearch.client.Requests.deleteRequest;
 import static org.elasticsearch.client.Requests.indexRequest;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -15,10 +17,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
+import org.elasticsearch.index.query.FilterBuilder;
+import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilders;
 
 /**
  * JIRA 5 REST API implementation of component responsible to transform issue data obtained from JIRA instance call to
@@ -36,7 +42,9 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   private static final ESLogger logger = Loggers.getLogger(JIRA5RestIssueIndexStructureBuilder.class);
 
   /**
-   * Value filter for User JIRA JSON Object to leave only some fields for index.
+   * Value filter for User JIRA JSON Object to leave only some fields for index.<br>
+   * TODO allow to remove name and/or emailAddress from this filter by configuration
+   * 
    */
   protected static final Set<String> VALUE_FIELD_FILTER_USER = new HashSet<String>();
   static {
@@ -60,6 +68,11 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   public static final String JF_SELF = "self";
   public static final String JF_FIELDS = "fields";
   public static final String JF_UPDATED = "updated";
+
+  /**
+   * Search index field constants
+   */
+  public static final String IDX_PROJECT_KEY = "project_key";
 
   /**
    * Name of River to be stored in document to mark indexing source
@@ -100,8 +113,8 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     // TODO index issue comments - River configuration
 
     // fields always necessary to get from jira
-    jiraCallFieldSet.add("key");
-    jiraCallFieldSet.add("updated");
+    jiraCallFieldSet.add(JF_KEY);
+    jiraCallFieldSet.add(JF_UPDATED);
     // and others optional fields
     jiraCallFieldSet.addAll(DEFAULT_JIRA_FIELD_SET);
 
@@ -126,6 +139,11 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   }
 
   @Override
+  public String getIssuesSearchIndexName(String jiraProjectKey) {
+    return indexName;
+  }
+
+  @Override
   public String getRequiredJIRAIssueFields() {
     return Utils.createCsvString(jiraCallFieldSet);
   }
@@ -134,6 +152,19 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   public void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception {
     esBulk.add(indexRequest(indexName).type(typeName).id(XContentMapValues.nodeStringValue(issue.get(JF_KEY), null))
         .source(toJson(jiraProjectKey, issue)));
+  }
+
+  @Override
+  public void deleteIssue(BulkRequestBuilder esBulk, String jiraIssueKey) throws Exception {
+    esBulk.add(deleteRequest(indexName).type(typeName).id(jiraIssueKey));
+  }
+
+  @Override
+  public void searchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date) {
+    FilterBuilder rangeqb = FilterBuilders.rangeFilter("_timestamp").lt(date);
+    FilterBuilder projectqb = FilterBuilders.termFilter(IDX_PROJECT_KEY, jiraProjectKey);
+    FilterBuilder filter = FilterBuilders.boolFilter().must(rangeqb).must(projectqb);
+    srb.setTypes(typeName).setQuery(QueryBuilders.matchAllQuery()).addField("_id").setFilter(filter);
   }
 
   /**
@@ -148,7 +179,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected XContentBuilder toJson(String jiraProjectKey, Map<String, Object> issue) throws Exception {
     XContentBuilder out = jsonBuilder().startObject();
     addValueToTheIndexField(out, "river", riverName);
-    addValueToTheIndexField(out, "project_key", jiraProjectKey);
+    addValueToTheIndexField(out, IDX_PROJECT_KEY, jiraProjectKey);
     addValueToTheIndex(out, "issue_key", JF_KEY, issue);
     addValueToTheIndex(out, "document_url", JF_SELF, issue);
 

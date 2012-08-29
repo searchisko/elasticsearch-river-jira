@@ -12,7 +12,9 @@ public interface IJIRAProjectIndexerCoordinator extends Runnable {
    * 
    * @param jiraProjectKey JIRA project key for finished indexing
    * @param finishedOK set to <code>true</code> if indexing finished OK, <code>false</code> if finished due error
+   * @param fullUpdate set to <code>true</code> if reported indexing was full update, <code>false</code> on incremental
+   *          update
    */
-  public abstract void reportIndexingFinished(String jiraProjectKey, boolean finishedOK);
+  public abstract void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate);
 
 }

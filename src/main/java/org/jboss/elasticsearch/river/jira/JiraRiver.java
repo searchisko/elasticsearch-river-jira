@@ -14,9 +14,13 @@ import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.SettingsException;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
@@ -216,10 +220,10 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   @Override
-  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, int issuesUpdated, Date startDate,
-      long timeElapsed, String errorMessage) {
+  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate, int issuesUpdated,
+      int issuesDeleted, Date startDate, long timeElapsed, String errorMessage) {
     if (coordinatorInstance != null) {
-      coordinatorInstance.reportIndexingFinished(jiraProjectKey, finishedOK);
+      coordinatorInstance.reportIndexingFinished(jiraProjectKey, finishedOK, fullUpdate);
     }
     // TODO log JIRA project indexing result for statistics and info reasons
   }
@@ -277,7 +281,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       logger.debug("Going to read datetime value from {} property for project {}. Document name is {}.", propertyName,
           projectKey, documentName);
 
-    client.admin().indices().prepareRefresh("_river").execute().actionGet();
+    refreshSearchIndex("_river");
     GetResponse lastSeqGetResponse = client.prepareGet("_river", riverName.name(), documentName).execute().actionGet();
     if (lastSeqGetResponse.exists()) {
       Object timestamp = lastSeqGetResponse.sourceAsMap().get(STORE_FIELD_VALUE);
@@ -321,6 +325,25 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   @Override
   public Thread acquireIndexingThread(String threadName, Runnable runnable) {
     return EsExecutors.daemonThreadFactory(settings.globalSettings(), threadName).newThread(runnable);
+  }
+
+  @Override
+  public void refreshSearchIndex(String indexName) {
+    client.admin().indices().prepareRefresh(indexName).execute().actionGet();
+  }
+
+  private static final long ES_SCROLL_KEEPALIVE = 60000;
+
+  @Override
+  public SearchRequestBuilder prepareESScrollSearchRequestBuilder(String indexName) {
+    return client.prepareSearch(indexName).setScroll(new TimeValue(ES_SCROLL_KEEPALIVE)).setSearchType(SearchType.SCAN)
+        .setSize(100);
+  }
+
+  @Override
+  public SearchResponse performESScrollSearchNextRequest(SearchResponse scrollResp) {
+    return client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(ES_SCROLL_KEEPALIVE)).execute()
+        .actionGet();
   }
 
 }

@@ -32,16 +32,18 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    * 
    * @see IESIntegration#storeDatetimeValue(String, String, Date, BulkRequestBuilder)
    * @see IESIntegration#readDatetimeValue(String, String)
+   * @see #projectIndexUpdateNecessary(String)
    */
   protected static final String STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE = "lastIndexUpdateStartDate";
 
   /**
-   * Property value where "last index full update start date" is stored for JIRA project
+   * Property value where "last index full update date" is stored for JIRA project
    * 
    * @see IESIntegration#storeDatetimeValue(String, String, Date, BulkRequestBuilder)
    * @see IESIntegration#readDatetimeValue(String, String)
+   * @see #projectIndexFullUpdateNecessary(String)
    */
-  protected static final String STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_START_DATE = "lastIndexFullUpdateStartDate";
+  protected static final String STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE = "lastIndexFullUpdateStartDate";
 
   protected static final int COORDINATOR_THREAD_WAITS_QUICK = 2 * 1000;
   protected static final int COORDINATOR_THREAD_WAITS_SLOW = 30 * 1000;
@@ -58,7 +60,15 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 
   protected int maxIndexingThreads;
 
+  /**
+   * Period of index update from jira [ms].
+   */
   protected int indexUpdatePeriod;
+
+  /**
+   * Period of index automatic full update from jira [ms]. value <= 0 means never.
+   */
+  protected int indexFullUpdatePeriod = -1;
 
   /**
    * Queue of project keys which needs to be reindexed in near future.
@@ -66,6 +76,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    * @see JIRAProjectIndexerCoordinator
    */
   protected Queue<String> projectKeysToIndexQueue = new LinkedBlockingQueue<String>();
+
   /**
    * Map where currently running JIRA project indexer threads are stored.
    * 
@@ -185,16 +196,17 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
       if (esIntegrationComponent.isClosed())
         throw new InterruptedException();
       String projectKey = projectKeysToIndexQueue.poll();
-      boolean isIndexFullUpdateNecessary = false;
+
+      boolean fullUpdateNecessary = projectIndexFullUpdateNecessary(projectKey);
 
       Thread it = esIntegrationComponent.acquireIndexingThread("jira_river_indexer_" + projectKey,
-          new JIRAProjectIndexer(projectKey, jiraClient, esIntegrationComponent, jiraIssueIndexStructureBuilder));
+          new JIRAProjectIndexer(projectKey, fullUpdateNecessary, jiraClient, esIntegrationComponent,
+              jiraIssueIndexStructureBuilder));
       esIntegrationComponent.storeDatetimeValue(projectKey, STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE,
           new Date(), null);
-      if (isIndexFullUpdateNecessary)
-        synchronized (projectIndexers) {
-          projectIndexers.put(projectKey, it);
-        }
+      synchronized (projectIndexers) {
+        projectIndexers.put(projectKey, it);
+      }
       it.start();
     }
   }
@@ -216,16 +228,46 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
   }
 
   /**
-   * Report that indexing of JIRA project was finished. Used to coordinate parallel indexing of all projects.
+   * Check if search index full update for given JIRA project have to be performed now.
    * 
-   * @param jiraProjectKey JIRA project key for finished indexing
-   * @param finishedOK set to <code>true</code> if indexing finished OK, <code>false</code> if finished due error
+   * @param projectKey JIRA project key
+   * @return true to perform index full update now
+   * @throws IOException
    */
+  protected boolean projectIndexFullUpdateNecessary(String projectKey) throws Exception {
+    if (indexFullUpdatePeriod < 1) {
+      return false;
+    }
+    Date lastIndexing = esIntegrationComponent.readDatetimeValue(projectKey,
+        STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE);
+    if (logger.isDebugEnabled())
+      logger.debug("Project {} last full update date is {}. We perform next full indexing after {}ms.", projectKey,
+          lastIndexing, indexFullUpdatePeriod);
+    return lastIndexing == null || lastIndexing.getTime() < ((System.currentTimeMillis() - indexFullUpdatePeriod));
+  }
+
   @Override
-  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK) {
+  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate) {
     synchronized (projectIndexers) {
       projectIndexers.remove(jiraProjectKey);
     }
+    if (finishedOK && fullUpdate) {
+      try {
+        esIntegrationComponent.storeDatetimeValue(jiraProjectKey, STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE,
+            new Date(), null);
+      } catch (Exception e) {
+        logger.error("Can't store {} value due: {}", STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE, e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Configuration - Set period of index automatic full update from jira [ms]. value <= 0 means never.
+   * 
+   * @param indexFullUpdatePeriod to set
+   */
+  public void setIndexFullUpdatePeriod(int indexFullUpdatePeriod) {
+    this.indexFullUpdatePeriod = indexFullUpdatePeriod;
   }
 
 }

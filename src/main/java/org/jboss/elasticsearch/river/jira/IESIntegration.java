@@ -10,6 +10,9 @@ import java.util.Date;
 import java.util.List;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.IndicesAdminClient;
 
 /**
  * Interface for component which allows integration of indexer components into ElasticSearch River instance.
@@ -25,7 +28,7 @@ public interface IESIntegration {
    * @return list of project keys.
    * @throws Exception
    */
-  public List<String> getAllIndexedProjectsKeys() throws Exception;
+  List<String> getAllIndexedProjectsKeys() throws Exception;
 
   /**
    * Callback method - report that indexing of some JIRA project was finished. Used to coordinate parallel indexing of
@@ -33,20 +36,23 @@ public interface IESIntegration {
    * 
    * @param jiraProjectKey JIRA project key for finished indexing
    * @param finishedOK set to <code>true</code> if indexing finished OK, <code>false</code> if finished due error
-   * @param issuesUpdated number of issues updated during this indexing
+   * @param fullUpdate set to <code>true</code> if reported indexing was full update, <code>false</code> on incremental
+   *          update
+   * @param issuesUpdated number of issues updated during this indexing run
+   * @param issuesDeleted number of issues deleted during this indexing run
    * @param startDate date of indexing start
    * @param timeElapsed time of this indexing run [ms]
    * @param errorMessage error message if indexing finished with error
    */
-  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, int issuesUpdated, Date startDate,
-      long timeElapsed, String errorMessage);
+  void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate, int issuesUpdated,
+      int issuesDeleted, Date startDate, long timeElapsed, String errorMessage);
 
   /**
    * Check if EclipseSearch instance is closed, so we must interrupt long running indexing processes.
    * 
    * @return true if ES instance is closed, so we must interrupt long running indexing processes
    */
-  public boolean isClosed();
+  boolean isClosed();
 
   /**
    * Persistently store datetime value for jira project as document into ElasticSearch river configuration area.
@@ -59,7 +65,7 @@ public interface IESIntegration {
    * 
    * @see {@link #readDatetimeValue(String, String)}
    */
-  public void storeDatetimeValue(String projectKey, String propertyName, Date datetime, BulkRequestBuilder esBulk)
+  void storeDatetimeValue(String projectKey, String propertyName, Date datetime, BulkRequestBuilder esBulk)
       throws Exception;
 
   /**
@@ -71,7 +77,7 @@ public interface IESIntegration {
    * @throws IOException
    * @see {@link #storeDatetimeValue(String, String, Date, BulkRequestBuilder)}
    */
-  public Date readDatetimeValue(String projectKey, String propertyName) throws Exception;
+  Date readDatetimeValue(String projectKey, String propertyName) throws Exception;
 
   /**
    * Get ElasticSearch bulk request to be used for index update by more issues.
@@ -79,7 +85,7 @@ public interface IESIntegration {
    * @return bulk request instance
    * @see #executeESBulkRequestBuilder(BulkRequestBuilder)
    */
-  public BulkRequestBuilder getESBulkRequestBuilder();
+  BulkRequestBuilder getESBulkRequestBuilder();
 
   /**
    * Perform ElasticSearch bulk request against ElasticSearch cluster.
@@ -88,7 +94,7 @@ public interface IESIntegration {
    * @throws Exception in case of update failure
    * @see #getESBulkRequestBuilder()
    */
-  public void executeESBulkRequestBuilder(BulkRequestBuilder esBulk) throws Exception;
+  void executeESBulkRequestBuilder(BulkRequestBuilder esBulk) throws Exception;
 
   /**
    * Acquire thread from ElasticSearch infrastructure to run indexing.
@@ -97,6 +103,31 @@ public interface IESIntegration {
    * @param runnable to run in this thread
    * @return {@link Thread} instance - not started yet!
    */
-  public Thread acquireIndexingThread(String threadName, Runnable runnable);
+  Thread acquireIndexingThread(String threadName, Runnable runnable);
+
+  /**
+   * Refresh search index to be up to date for search operations. See
+   * {@link IndicesAdminClient#refresh(org.elasticsearch.action.admin.indices.refresh.RefreshRequest)}.
+   * 
+   * @param indexName to be refreshed
+   */
+  void refreshSearchIndex(String indexName);
+
+  /**
+   * Prepare builder for scroll search request. See http://www.elasticsearch.org/guide/reference/java-api/search.html.
+   * 
+   * @param indexName name of index to prepare scroll for.
+   * @return scroll search builder to be used.
+   * 
+   */
+  SearchRequestBuilder prepareESScrollSearchRequestBuilder(String indexName);
+
+  /**
+   * Perform subsequent scroll search request. See http://www.elasticsearch.org/guide/reference/java-api/search.html.
+   * 
+   * @param scrollResp response from previous scroll search request
+   * @return actual response
+   */
+  SearchResponse performESScrollSearchNextRequest(SearchResponse scrollResp);
 
 }

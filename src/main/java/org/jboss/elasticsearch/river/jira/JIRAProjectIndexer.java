@@ -10,12 +10,16 @@ import java.util.Date;
 import java.util.Map;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
+import org.elasticsearch.search.SearchHit;
 
 /**
- * Class used to run one index update process for one JIRA project.
+ * Class used to run one index update process for one JIRA project. Can be used only for one run, then must be discarded
+ * and new instance created!
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -40,65 +44,90 @@ public class JIRAProjectIndexer implements Runnable {
    */
   protected final IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder;
 
+  /**
+   * Key of JIRA project updated.
+   */
   protected final String projectKey;
 
+  /**
+   * <code>true</code> if full update indexing is necessary, <code>false</code> on incremental update.
+   */
+  protected boolean fullUpdate = false;
+
+  /**
+   * Time when indexing started.
+   */
+  protected long startTime = 0;
+
+  /**
+   * Number of issues updated during this indexing.
+   */
   protected int updatedCount = 0;
+
+  /**
+   * Number of issues deleted during this indexing.
+   */
+  protected int deleteCount = 0;
 
   /**
    * @param projectKey JIRA project key for project to be indexed by this indexer.
    * @param jiraClient configured JIRA client to be used to obtain informations from JIRA.
    * @param esIntegrationComponent to be used to call River component and ElasticSearch functions
    */
-  public JIRAProjectIndexer(String projectKey, IJIRAClient jiraClient, IESIntegration esIntegrationComponent,
-      IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder) {
+  public JIRAProjectIndexer(String projectKey, boolean fullUpdate, IJIRAClient jiraClient,
+      IESIntegration esIntegrationComponent, IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder) {
     if (projectKey == null || projectKey.trim().length() == 0)
       throw new IllegalArgumentException("projectKey must be defined");
     this.jiraClient = jiraClient;
     this.projectKey = projectKey;
+    this.fullUpdate = fullUpdate;
     this.esIntegrationComponent = esIntegrationComponent;
     this.jiraIssueIndexStructureBuilder = jiraIssueIndexStructureBuilder;
   }
 
   @Override
   public void run() {
-    long startTime = System.currentTimeMillis();
+    startTime = System.currentTimeMillis();
     try {
       processUpdate();
+      processDelete(new Date(startTime));
       long timeElapsed = (System.currentTimeMillis() - startTime);
-      esIntegrationComponent.reportIndexingFinished(projectKey, true, updatedCount, new Date(startTime), timeElapsed,
-          null);
-      logger.info("Finished processing of JIRA updates for project {}. Updated {} issues. Time elapsed {}s.",
-          projectKey, updatedCount, (timeElapsed / 1000));
+      esIntegrationComponent.reportIndexingFinished(projectKey, true, fullUpdate, updatedCount, deleteCount, new Date(
+          startTime), timeElapsed, null);
+      logger.info("Finished {} update for JIRA project {}. {} updated and {} deleted issues. Time elapsed {}s.",
+          fullUpdate ? "full" : "incremental", projectKey, updatedCount, deleteCount, (timeElapsed / 1000));
     } catch (Throwable e) {
       long timeElapsed = (System.currentTimeMillis() - startTime);
-      esIntegrationComponent.reportIndexingFinished(projectKey, false, updatedCount, new Date(startTime), timeElapsed,
+      esIntegrationComponent.reportIndexingFinished(projectKey, false, fullUpdate, updatedCount, deleteCount, new Date(
+          startTime), timeElapsed, e.getMessage());
+      logger.error("Failed {} update for JIRA project {} due: {}", e, fullUpdate ? "full" : "incremental", projectKey,
           e.getMessage());
-      logger.error("Failed to process JIRA updates for project {} due: {}", e, projectKey, e.getMessage());
     }
   }
 
   /**
    * Process update of search index for configured JIRA project. A {@link #updatedCount} field is updated inside of this
-   * method.
+   * method. A {@link #fullUpdate} field can be updated inside of this method.
    * 
-   * @return number of issues updated in index - same as {@link #updatedCount}
    * @throws Exception
    * 
    */
   @SuppressWarnings("unchecked")
-  protected int processUpdate() throws Exception {
+  protected void processUpdate() throws Exception {
     updatedCount = 0;
     Date updatedAfter = Utils.roundDateToMinutePrecise(readLastIssueUpdatedDate(projectKey));
     logger.info("Go to process JIRA updates for project {} for issues updated {}", projectKey,
         (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
     Date updatedAfterStarting = updatedAfter;
+    if (updatedAfter == null)
+      fullUpdate = true;
     Date lastIssueUpdatedDate = null;
     int startAt = 0;
 
     boolean cont = true;
     while (cont) {
       if (isClosed())
-        return updatedCount;
+        return;
 
       if (logger.isDebugEnabled())
         logger.debug("Go to ask JIRA issues for project {} with startAt {} updated {}", projectKey, startAt,
@@ -164,8 +193,41 @@ public class JIRAProjectIndexer implements Runnable {
       storeLastIssueUpdatedDate(null, projectKey,
           Utils.roundDateToMinutePrecise(new Date(lastIssueUpdatedDate.getTime() + 64 * 1000)));
     }
+  }
 
-    return updatedCount;
+  /**
+   * Process delete of issues from search index for configured JIRA project. A {@link #deleteCount} field is updated
+   * inside of this method.
+   * 
+   * @param boundDate date when full update was started. We delete all search index documents not updated after this
+   *          date (which means these issues are not in jira anymore).
+   */
+  private void processDelete(Date boundDate) throws Exception {
+    deleteCount = 0;
+    if (!fullUpdate)
+      return;
+
+    String indexName = jiraIssueIndexStructureBuilder.getIssuesSearchIndexName(projectKey);
+    esIntegrationComponent.refreshSearchIndex(indexName);
+
+    logger.debug("go to delete indexed issues for project {} not updated after {}", projectKey, boundDate);
+    SearchRequestBuilder srb = esIntegrationComponent.prepareESScrollSearchRequestBuilder(indexName);
+    jiraIssueIndexStructureBuilder.searchForIndexedIssuesNotUpdatedAfter(srb, projectKey, boundDate);
+
+    SearchResponse scrollResp = srb.execute().actionGet();
+
+    BulkRequestBuilder esBulk = esIntegrationComponent.getESBulkRequestBuilder();
+    while (scrollResp.hits().hits().length > 0) {
+      for (SearchHit hit : scrollResp.getHits()) {
+        deleteCount++;
+        logger.debug("go to delete indexed issue {}", hit.getId());
+        jiraIssueIndexStructureBuilder.deleteIssue(esBulk, hit.getId());
+      }
+      scrollResp = esIntegrationComponent.performESScrollSearchNextRequest(scrollResp);
+    }
+    if (deleteCount > 0)
+      esIntegrationComponent.executeESBulkRequestBuilder(esBulk);
+
   }
 
   /**
