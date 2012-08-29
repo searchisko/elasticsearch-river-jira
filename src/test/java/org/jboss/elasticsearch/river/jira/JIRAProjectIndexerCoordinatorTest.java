@@ -107,6 +107,24 @@ public class JIRAProjectIndexerCoordinatorTest {
     Assert.assertTrue(tested.projectKeysToIndexQueue.contains("CCC"));
     Assert.assertTrue(tested.projectKeysToIndexQueue.contains("DDD"));
 
+    // case - some project available for index update, but in processing already, so do not schedule it for processing
+    // now
+    reset(esIntegrationMock);
+    tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, indexUpdatePeriod, 2);
+    tested.projectIndexers.put("ORG", new Thread());
+    when(
+        esIntegrationMock.readDatetimeValue(Mockito.eq(Mockito.anyString()),
+            JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(null);
+
+    when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
+    tested.fillProjectKeysToIndexQueue();
+    Assert.assertFalse(tested.projectKeysToIndexQueue.isEmpty());
+    Assert.assertEquals(4, tested.projectKeysToIndexQueue.size());
+    Assert.assertFalse(tested.projectKeysToIndexQueue.contains("ORG"));
+    Assert.assertTrue(tested.projectKeysToIndexQueue.contains("AAA"));
+    Assert.assertTrue(tested.projectKeysToIndexQueue.contains("CCC"));
+    Assert.assertTrue(tested.projectKeysToIndexQueue.contains("DDD"));
+
     // case - exception when interrupted from ES server
     reset(esIntegrationMock);
     when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));

@@ -24,7 +24,7 @@ Creating the JIRA river can be done using:
 	        "urlBase"             : "https://issues.jboss.org",
 	        "username"            : "jira_username",
 	        "pwd"                 : "jira_user_password",
-	        "jqlTimeZone"         : "GMT+1:00",
+	        "jqlTimeZone"         : "Europe/Prague",
 	        "timeout"             : 5000,
 	        "maxIndexingThreads"  : 1,
 	        "maxIssuesPerRequest" : 50,
@@ -51,6 +51,9 @@ The above lists all the options controlling the creation of a JIRA river.
 * `jira/indexUpdatePeriod` period in minutes how ofter is search index updated from JIRA instance. Optional, default 5 minutes.
 * `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited. No index is created by river code. You can rely on '[Automatic Index Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-create-index.html) before river creation.
 * `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. No type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is created by river code. You can rely on '[Automatic Mapping Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-put-mapping.html) before river creation. See later for description of issue document structure written to the search index.
+
+To get rid of some unwanted WARN log messages add next line to the [logging configuration file](http://www.elasticsearch.org/guide/reference/setup/configuration.html) of your ElasticSearch instance which is `config/logging.yml`:
+	org.apache.commons.httpclient: ERROR
 
 Indexed JIRA issue structure
 ----------------------------
@@ -96,11 +99,13 @@ Code creating indexed document structure is inside `org.jboss.elasticsearch.rive
 
 TODO List
 ---------
+* JIRA issue delete indexing (incremental over all issue keys list comparation with configurable checking period, or full reindex in configured period)
+* Configuration of informations about JIRA users stored in index (username, email, full name)
 * Configurable list of JIRA issue fields ommited from the indexing (if you do not want to index fields indexed by default due index size and performance reasons)
 * Configurable list of additional JIRA issue fields to be indexed (to be able to index JIRA custom fields)
+* Possibility to change name of fields in search index
 * JIRA issue comments indexing
-* JIRA issue delete indexing (incremental over all issue keys list comparation with configurable checking period, or full reindex in configured period)
-* Implement some mechanism to allow mapping of some issue fields (Project, Reporter, Assignee, Status, Type, ...) to common set of fields (title, link, project, authors, dates af some activity) and values (normalized set of Issue types, Statuses, authors and projects mapping) shared with other document types and/or other issue trackers to integrate them into search frontent GUI.
+* Implement some mechanism to allow mapping of some issue fields (Project Key, Reporter, Assignee, Status, Type, ...) to common set of fields (title, link, project, authors, dates of activity) and values (normalized set of Issue types, Statuses, authors and projects mapping) shared with other document types and/or other issue trackers to integrate them into search frontent GUI.
 * Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)
 * Implement some mechanism which allows to initiate full reindex of all issues for defined JIRA project (calleable over REST)
 * Implement REST endpoint where you can monitor status of JIRA river (which projects are indexed by river, which projects are indexed just now, last time of indexing run for projects etc.)

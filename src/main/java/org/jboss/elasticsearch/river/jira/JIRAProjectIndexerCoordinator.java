@@ -35,6 +35,14 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    */
   protected static final String STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE = "lastIndexUpdateStartDate";
 
+  /**
+   * Property value where "last index full update start date" is stored for JIRA project
+   * 
+   * @see IESIntegration#storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see IESIntegration#readDatetimeValue(String, String)
+   */
+  protected static final String STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_START_DATE = "lastIndexFullUpdateStartDate";
+
   protected static final int COORDINATOR_THREAD_WAITS_QUICK = 2 * 1000;
   protected static final int COORDINATOR_THREAD_WAITS_SLOW = 30 * 1000;
   protected int coordinatorThreadWaits = COORDINATOR_THREAD_WAITS_QUICK;
@@ -153,6 +161,12 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
       for (String projectKey : ap) {
         if (esIntegrationComponent.isClosed())
           throw new InterruptedException();
+        // do not schedule project for indexing if indexing runs already for it
+        synchronized (projectIndexers) {
+          if (projectIndexers.containsKey(projectKey)) {
+            continue;
+          }
+        }
         if (projectIndexUpdateNecessary(projectKey)) {
           projectKeysToIndexQueue.add(projectKey);
         }
@@ -171,13 +185,16 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
       if (esIntegrationComponent.isClosed())
         throw new InterruptedException();
       String projectKey = projectKeysToIndexQueue.poll();
+      boolean isIndexFullUpdateNecessary = false;
+
       Thread it = esIntegrationComponent.acquireIndexingThread("jira_river_indexer_" + projectKey,
           new JIRAProjectIndexer(projectKey, jiraClient, esIntegrationComponent, jiraIssueIndexStructureBuilder));
       esIntegrationComponent.storeDatetimeValue(projectKey, STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE,
           new Date(), null);
-      synchronized (projectIndexers) {
-        projectIndexers.put(projectKey, it);
-      }
+      if (isIndexFullUpdateNecessary)
+        synchronized (projectIndexers) {
+          projectIndexers.put(projectKey, it);
+        }
       it.start();
     }
   }
