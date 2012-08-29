@@ -99,12 +99,12 @@ TODO List
 * Configurable list of JIRA issue fields ommited from the indexing (if you do not want to index fields indexed by default due index size and performance reasons)
 * Configurable list of additional JIRA issue fields to be indexed (to be able to index JIRA custom fields)
 * JIRA issue comments indexing
-* JIRA issue delete indexing (incrementa over all issue keys list comparation with configurable checking period, or full reindex in configured period)
+* JIRA issue delete indexing (incremental over all issue keys list comparation with configurable checking period, or full reindex in configured period)
 * Implement some mechanism to allow mapping of some issue fields (Project, Reporter, Assignee, Status, Type, ...) to common set of fields (title, link, project, authors, dates af some activity) and values (normalized set of Issue types, Statuses, authors and projects mapping) shared with other document types and/or other issue trackers to integrate them into search frontent GUI.
 * Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)
 * Implement some mechanism which allows to initiate full reindex of all issues for defined JIRA project (calleable over REST)
 * Implement REST endpoint where you can monitor status of JIRA river (which projects are indexed by river, which projects are indexed just now, last time of indexing run for projects etc.)
-* Store info about every JIRA project update run (time started, time finished, time elapsed, number of issues updated, etc.) for statistical reasons (stored into defined search index to be searchable).
+* Store info about every JIRA project update run (type of run (full/incremental), time started, time elapsed, number of issues updated/deleted, etc.) for statistical reasons (stored into configured search index to be searchable).
 * Credentials for http proxy authentication used for JIRA REST calls
 
 License

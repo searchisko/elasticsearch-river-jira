@@ -65,12 +65,14 @@ public class JIRAProjectIndexer implements Runnable {
     try {
       processUpdate();
       long timeElapsed = (System.currentTimeMillis() - startTime);
-      esIntegrationComponent.reportIndexingFinished(projectKey, true, updatedCount, timeElapsed, null);
+      esIntegrationComponent.reportIndexingFinished(projectKey, true, updatedCount, new Date(startTime), timeElapsed,
+          null);
       logger.info("Finished processing of JIRA updates for project {}. Updated {} issues. Time elapsed {}s.",
           projectKey, updatedCount, (timeElapsed / 1000));
     } catch (Throwable e) {
       long timeElapsed = (System.currentTimeMillis() - startTime);
-      esIntegrationComponent.reportIndexingFinished(projectKey, false, updatedCount, timeElapsed, e.getMessage());
+      esIntegrationComponent.reportIndexingFinished(projectKey, false, updatedCount, new Date(startTime), timeElapsed,
+          e.getMessage());
       logger.error("Failed to process JIRA updates for project {} due: {}", e, projectKey, e.getMessage());
     }
   }

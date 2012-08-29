@@ -314,8 +314,8 @@ public class JIRAProjectIndexerTest {
     when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
 
     tested.run();
-    verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(true), eq(3), Mockito.anyLong(),
-        eq((String) null));
+    verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(true), eq(3), (Date) Mockito.isNotNull(),
+        Mockito.anyLong(), eq((String) null));
 
     // test case with indexing finished with error, but some issues was indexed from first page
     reset(esIntegrationMock);
@@ -330,8 +330,8 @@ public class JIRAProjectIndexerTest {
     when(esIntegrationMock.getESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
 
     tested.run();
-    verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(false), eq(3), Mockito.anyLong(),
-        eq("JIRA call error"));
+    verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(false), eq(3), (Date) Mockito.isNotNull(),
+        Mockito.anyLong(), eq("JIRA call error"));
 
   }
 

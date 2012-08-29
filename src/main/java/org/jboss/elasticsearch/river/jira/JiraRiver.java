@@ -216,8 +216,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   @Override
-  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, int issuesUpdated, long timeElapsed,
-      String errorMessage) {
+  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, int issuesUpdated, Date startDate,
+      long timeElapsed, String errorMessage) {
     if (coordinatorInstance != null) {
       coordinatorInstance.reportIndexingFinished(jiraProjectKey, finishedOK);
     }

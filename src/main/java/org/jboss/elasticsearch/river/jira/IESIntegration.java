@@ -34,11 +34,12 @@ public interface IESIntegration {
    * @param jiraProjectKey JIRA project key for finished indexing
    * @param finishedOK set to <code>true</code> if indexing finished OK, <code>false</code> if finished due error
    * @param issuesUpdated number of issues updated during this indexing
+   * @param startDate date of indexing start
    * @param timeElapsed time of this indexing run [ms]
    * @param errorMessage error message if indexing finished with error
    */
-  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, int issuesUpdated, long timeElapsed,
-      String errorMessage);
+  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, int issuesUpdated, Date startDate,
+      long timeElapsed, String errorMessage);
 
   /**
    * Check if EclipseSearch instance is closed, so we must interrupt long running indexing processes.
