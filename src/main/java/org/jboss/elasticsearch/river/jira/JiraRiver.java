@@ -69,6 +69,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   protected int indexUpdatePeriod;
 
   /**
+   * Config - index full update period [ms]
+   */
+  protected int indexFullUpdatePeriod = -1;
+
+  /**
    * Config - name of ElasticSearch index used to store issues from this river
    */
   protected final String indexName;
@@ -146,6 +151,10 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       }
       maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
       indexUpdatePeriod = XContentMapValues.nodeIntegerValue(jiraSettings.get("indexUpdatePeriod"), 5) * 60 * 1000;
+      indexFullUpdatePeriod = XContentMapValues.nodeIntegerValue(jiraSettings.get("indexFullUpdatePeriod"), 12);
+      if (indexFullUpdatePeriod > 0) {
+        indexFullUpdatePeriod = indexFullUpdatePeriod * 60 * 60 * 1000;
+      }
       if (jiraSettings.containsKey("projectKeysIndexed")) {
         allIndexedProjectsKeys = Utils.parseCsvString(XContentMapValues.nodeStringValue(
             jiraSettings.get("projectKeysIndexed"), null));
@@ -184,7 +193,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   public void start() {
     logger.info("starting JIRA River");
     coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, jiraIssueIndexStructureBuilder,
-        indexUpdatePeriod, maxIndexingThreads);
+        indexUpdatePeriod, maxIndexingThreads, indexFullUpdatePeriod);
     coordinatorThread = acquireIndexingThread("jira_river_coordinator", coordinatorInstance);
     coordinatorThread.start();
   }
@@ -310,12 +319,12 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   @Override
-  public BulkRequestBuilder getESBulkRequestBuilder() {
+  public BulkRequestBuilder prepareESBulkRequestBuilder() {
     return client.prepareBulk();
   }
 
   @Override
-  public void executeESBulkRequestBuilder(BulkRequestBuilder esBulk) throws Exception {
+  public void executeESBulkRequest(BulkRequestBuilder esBulk) throws Exception {
     BulkResponse response = esBulk.execute().actionGet();
     if (response.hasFailures()) {
       throw new ElasticSearchException("Failed to execute ES index bulk update: " + response.buildFailureMessage());
@@ -340,8 +349,12 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         .setSize(100);
   }
 
+  public SearchResponse executeESSearchRequest(SearchRequestBuilder searchRequestBuilder) {
+    return searchRequestBuilder.execute().actionGet();
+  }
+
   @Override
-  public SearchResponse performESScrollSearchNextRequest(SearchResponse scrollResp) {
+  public SearchResponse executeESScrollSearchNextRequest(SearchResponse scrollResp) {
     return client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(ES_SCROLL_KEEPALIVE)).execute()
         .actionGet();
   }

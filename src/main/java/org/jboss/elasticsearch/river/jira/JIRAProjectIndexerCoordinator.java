@@ -90,17 +90,21 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    * @param jiraClient configured jira client to be passed into {@link JIRAProjectIndexer} instances started from
    *          coordinator
    * @param esIntegrationComponent to be used to call River component and ElasticSearch functions
+   * @param jiraIssueIndexStructureBuilder component used to build structures for search index
    * @param indexUpdatePeriod index update period [ms]
    * @param maxIndexingThreads maximal number of parallel JIRA indexing threads started by this coordinator
+   * @param indexFullUpdatePeriod period of index automatic full update from jira [ms]. value <= 0 means never.
    */
   public JIRAProjectIndexerCoordinator(IJIRAClient jiraClient, IESIntegration esIntegrationComponent,
-      IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder, int indexUpdatePeriod, int maxIndexingThreads) {
+      IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder, int indexUpdatePeriod, int maxIndexingThreads,
+      int indexFullUpdatePeriod) {
     super();
     this.jiraClient = jiraClient;
     this.esIntegrationComponent = esIntegrationComponent;
     this.indexUpdatePeriod = indexUpdatePeriod;
     this.maxIndexingThreads = maxIndexingThreads;
     this.jiraIssueIndexStructureBuilder = jiraIssueIndexStructureBuilder;
+    this.indexFullUpdatePeriod = indexFullUpdatePeriod;
   }
 
   @Override
@@ -192,12 +196,26 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    * @throws Exception
    */
   protected void startIndexers() throws InterruptedException, Exception {
+    String firstSkippedFullIndex = null;
     while (projectIndexers.size() < maxIndexingThreads && !projectKeysToIndexQueue.isEmpty()) {
       if (esIntegrationComponent.isClosed())
         throw new InterruptedException();
       String projectKey = projectKeysToIndexQueue.poll();
 
       boolean fullUpdateNecessary = projectIndexFullUpdateNecessary(projectKey);
+
+      // reserve last free thread for incremental updates!!!
+      if (fullUpdateNecessary && maxIndexingThreads > 1 && projectIndexers.size() == (maxIndexingThreads - 1)) {
+        projectKeysToIndexQueue.add(projectKey);
+        // try to find some project for incremental update, if not any found then end
+        if (firstSkippedFullIndex == null) {
+          firstSkippedFullIndex = projectKey;
+        } else {
+          if (firstSkippedFullIndex == projectKey)
+            return;
+        }
+        continue;
+      }
 
       Thread it = esIntegrationComponent.acquireIndexingThread("jira_river_indexer_" + projectKey,
           new JIRAProjectIndexer(projectKey, fullUpdateNecessary, jiraClient, esIntegrationComponent,

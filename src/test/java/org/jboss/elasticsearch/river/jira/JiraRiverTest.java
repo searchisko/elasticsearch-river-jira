@@ -57,6 +57,7 @@ public class JiraRiverTest {
         false);
     Assert.assertEquals(1, tested.maxIndexingThreads);
     Assert.assertEquals(5 * 60 * 1000, tested.indexUpdatePeriod);
+    Assert.assertEquals(12 * 60 * 60 * 1000, tested.indexFullUpdatePeriod);
     Assert.assertEquals("my_jira_river", tested.indexName);
     Assert.assertEquals(JiraRiver.INDEX_TYPE_NAME_DEFAULT, tested.typeName);
     Assert.assertEquals(50, tested.jiraClient.getListJIRAIssuesMax());
@@ -71,6 +72,7 @@ public class JiraRiverTest {
     // case - test river configuration reading
     jiraSettings.put("maxIndexingThreads", "5");
     jiraSettings.put("indexUpdatePeriod", "20");
+    jiraSettings.put("indexFullUpdatePeriod", "5");
     jiraSettings.put("maxIssuesPerRequest", 20);
     jiraSettings.put("timeout", 5000);
     indexSettings.put("index", "my_index_name");
@@ -79,6 +81,7 @@ public class JiraRiverTest {
 
     Assert.assertEquals(5, tested.maxIndexingThreads);
     Assert.assertEquals(20 * 60 * 1000, tested.indexUpdatePeriod);
+    Assert.assertEquals(5 * 60 * 60 * 1000, tested.indexFullUpdatePeriod);
     Assert.assertEquals("my_index_name", tested.indexName);
     Assert.assertEquals("type_test", tested.typeName);
     Assert.assertEquals(20, tested.jiraClient.getListJIRAIssuesMax());
@@ -173,7 +176,7 @@ public class JiraRiverTest {
     JiraRiver tested = prepareJiraRiverInstanceForTest(null);
     Client clientMock = tested.client;
     when(clientMock.prepareBulk()).thenReturn(new BulkRequestBuilder(null));
-    Assert.assertNotNull(tested.getESBulkRequestBuilder());
+    Assert.assertNotNull(tested.prepareESBulkRequestBuilder());
     verify(clientMock, times(1)).prepareBulk();
   }
 

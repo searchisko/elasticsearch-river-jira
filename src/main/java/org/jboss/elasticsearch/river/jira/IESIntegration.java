@@ -80,21 +80,21 @@ public interface IESIntegration {
   Date readDatetimeValue(String projectKey, String propertyName) throws Exception;
 
   /**
-   * Get ElasticSearch bulk request to be used for index update by more issues.
+   * Prepare ElasticSearch bulk request to be used for index update by more issues.
    * 
    * @return bulk request instance
-   * @see #executeESBulkRequestBuilder(BulkRequestBuilder)
+   * @see #executeESBulkRequest(BulkRequestBuilder)
    */
-  BulkRequestBuilder getESBulkRequestBuilder();
+  BulkRequestBuilder prepareESBulkRequestBuilder();
 
   /**
-   * Perform ElasticSearch bulk request against ElasticSearch cluster.
+   * Execute ElasticSearch bulk request against ElasticSearch cluster.
    * 
    * @param esBulk to perform
    * @throws Exception in case of update failure
-   * @see #getESBulkRequestBuilder()
+   * @see #prepareESBulkRequestBuilder()
    */
-  void executeESBulkRequestBuilder(BulkRequestBuilder esBulk) throws Exception;
+  void executeESBulkRequest(BulkRequestBuilder esBulk) throws Exception;
 
   /**
    * Acquire thread from ElasticSearch infrastructure to run indexing.
@@ -114,20 +114,32 @@ public interface IESIntegration {
   void refreshSearchIndex(String indexName);
 
   /**
-   * Prepare builder for scroll search request. See http://www.elasticsearch.org/guide/reference/java-api/search.html.
+   * Prepare builder for Scroll Search request. See http://www.elasticsearch.org/guide/reference/java-api/search.html.
    * 
-   * @param indexName name of index to prepare scroll for.
-   * @return scroll search builder to be used.
-   * 
+   * @param indexName name of index to prepare scroll for
+   * @return scroll search builder to be used
+   * @see #executeESSearchRequest(SearchRequestBuilder)
+   * @see #executeESScrollSearchNextRequest(SearchResponse)
    */
   SearchRequestBuilder prepareESScrollSearchRequestBuilder(String indexName);
 
   /**
-   * Perform subsequent scroll search request. See http://www.elasticsearch.org/guide/reference/java-api/search.html.
+   * Execute search on passed search request builder and return result. Can be used for normal search, or first search
+   * in Scroll scenario (http://www.elasticsearch.org/guide/reference/java-api/search.html).
+   * 
+   * @param searchRequestBuilder to execute
+   * @return actual response
+   */
+  SearchResponse executeESSearchRequest(SearchRequestBuilder searchRequestBuilder);
+
+  /**
+   * Execute subsequent scroll search request. See http://www.elasticsearch.org/guide/reference/java-api/search.html.
    * 
    * @param scrollResp response from previous scroll search request
    * @return actual response
+   * @see #prepareESScrollSearchRequestBuilder(String)
+   * @see #executeESSearchRequest(SearchRequestBuilder)
    */
-  SearchResponse performESScrollSearchNextRequest(SearchResponse scrollResp);
+  SearchResponse executeESScrollSearchNextRequest(SearchResponse scrollResp);
 
 }

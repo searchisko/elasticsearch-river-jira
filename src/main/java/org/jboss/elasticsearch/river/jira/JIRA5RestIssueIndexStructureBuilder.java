@@ -25,6 +25,7 @@ import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
 
 /**
  * JIRA 5 REST API implementation of component responsible to transform issue data obtained from JIRA instance call to
@@ -155,16 +156,16 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   }
 
   @Override
-  public void deleteIssue(BulkRequestBuilder esBulk, String jiraIssueKey) throws Exception {
-    esBulk.add(deleteRequest(indexName).type(typeName).id(jiraIssueKey));
+  public void buildSearchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date) {
+    FilterBuilder filterTime = FilterBuilders.rangeFilter("_timestamp").lt(date);
+    FilterBuilder filterProject = FilterBuilders.termFilter(IDX_PROJECT_KEY, jiraProjectKey);
+    FilterBuilder filter = FilterBuilders.boolFilter().must(filterTime).must(filterProject);
+    srb.setTypes(typeName).setQuery(QueryBuilders.matchAllQuery()).addField("_id").setFilter(filter);
   }
 
   @Override
-  public void searchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date) {
-    FilterBuilder rangeqb = FilterBuilders.rangeFilter("_timestamp").lt(date);
-    FilterBuilder projectqb = FilterBuilders.termFilter(IDX_PROJECT_KEY, jiraProjectKey);
-    FilterBuilder filter = FilterBuilders.boolFilter().must(rangeqb).must(projectqb);
-    srb.setTypes(typeName).setQuery(QueryBuilders.matchAllQuery()).addField("_id").setFilter(filter);
+  public void deleteIssue(BulkRequestBuilder esBulk, SearchHit issueDocumentToDelete) throws Exception {
+    esBulk.add(deleteRequest(indexName).type(typeName).id(issueDocumentToDelete.getId()));
   }
 
   /**

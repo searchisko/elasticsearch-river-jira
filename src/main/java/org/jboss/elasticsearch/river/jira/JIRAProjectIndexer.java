@@ -140,7 +140,7 @@ public class JIRAProjectIndexer implements Runnable {
       } else {
         String firstIssueUpdated = null;
         String lastIssueUpdated = null;
-        BulkRequestBuilder esBulk = esIntegrationComponent.getESBulkRequestBuilder();
+        BulkRequestBuilder esBulk = esIntegrationComponent.prepareESBulkRequestBuilder();
         for (Map<String, Object> issue : res.getIssues()) {
           String issueKey = XContentMapValues.nodeStringValue(issue.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY),
               null);
@@ -167,7 +167,7 @@ public class JIRAProjectIndexer implements Runnable {
         lastIssueUpdatedDate = Utils.parseISODateWithMinutePrecise(lastIssueUpdated);
 
         storeLastIssueUpdatedDate(esBulk, projectKey, lastIssueUpdatedDate);
-        esIntegrationComponent.executeESBulkRequestBuilder(esBulk);
+        esIntegrationComponent.executeESBulkRequest(esBulk);
 
         // next logic depends on issues sorted by update time ascending when returned from
         // jiraClient.getJIRAChangedIssues()!!!!
@@ -202,32 +202,40 @@ public class JIRAProjectIndexer implements Runnable {
    * @param boundDate date when full update was started. We delete all search index documents not updated after this
    *          date (which means these issues are not in jira anymore).
    */
-  private void processDelete(Date boundDate) throws Exception {
+  protected void processDelete(Date boundDate) throws Exception {
+
+    if (boundDate == null)
+      throw new IllegalArgumentException("boundDate must be set");
+
     deleteCount = 0;
+
     if (!fullUpdate)
       return;
+
+    logger.info("Go to process JIRA deletes for project {} for issues not updated in index after {}", projectKey,
+        boundDate);
 
     String indexName = jiraIssueIndexStructureBuilder.getIssuesSearchIndexName(projectKey);
     esIntegrationComponent.refreshSearchIndex(indexName);
 
     logger.debug("go to delete indexed issues for project {} not updated after {}", projectKey, boundDate);
     SearchRequestBuilder srb = esIntegrationComponent.prepareESScrollSearchRequestBuilder(indexName);
-    jiraIssueIndexStructureBuilder.searchForIndexedIssuesNotUpdatedAfter(srb, projectKey, boundDate);
+    jiraIssueIndexStructureBuilder.buildSearchForIndexedIssuesNotUpdatedAfter(srb, projectKey, boundDate);
 
-    SearchResponse scrollResp = srb.execute().actionGet();
+    SearchResponse scrollResp = esIntegrationComponent.executeESSearchRequest(srb);
 
-    BulkRequestBuilder esBulk = esIntegrationComponent.getESBulkRequestBuilder();
-    while (scrollResp.hits().hits().length > 0) {
-      for (SearchHit hit : scrollResp.getHits()) {
-        deleteCount++;
-        logger.debug("go to delete indexed issue {}", hit.getId());
-        jiraIssueIndexStructureBuilder.deleteIssue(esBulk, hit.getId());
+    if (scrollResp.hits().hits().length > 0) {
+      BulkRequestBuilder esBulk = esIntegrationComponent.prepareESBulkRequestBuilder();
+      while (scrollResp.hits().hits().length > 0) {
+        for (SearchHit hit : scrollResp.getHits()) {
+          logger.debug("Go to delete indexed issue for document id {}", hit.getId());
+          deleteCount++;
+          jiraIssueIndexStructureBuilder.deleteIssue(esBulk, hit);
+        }
+        scrollResp = esIntegrationComponent.executeESScrollSearchNextRequest(scrollResp);
       }
-      scrollResp = esIntegrationComponent.performESScrollSearchNextRequest(scrollResp);
+      esIntegrationComponent.executeESBulkRequest(esBulk);
     }
-    if (deleteCount > 0)
-      esIntegrationComponent.executeESBulkRequestBuilder(esBulk);
-
   }
 
   /**

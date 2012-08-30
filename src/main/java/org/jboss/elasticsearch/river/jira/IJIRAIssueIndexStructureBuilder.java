@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.search.SearchHit;
 
 /**
  * Interface for component responsible to transform issue data obtained from JIRA instance call to the document stored
@@ -27,16 +28,16 @@ public interface IJIRAIssueIndexStructureBuilder {
   String getIssuesSearchIndexName(String jiraProjectKey);
 
   /**
-   * Get issue fields required from jira to build index document.
+   * Get issue fields required from JIRA to build index document.
    * 
    * @return comma separated list of fields
    */
   String getRequiredJIRAIssueFields();
 
   /**
-   * Store issue obtained from JIRA into search index.
+   * Store/Update issue obtained from JIRA in search index.
    * 
-   * @param esBulk bulk operation builder used to index issue data
+   * @param esBulk bulk operation builder used to update issue data in search index
    * @param jiraProjectKey JIRA project key indexed issue is for
    * @param issue data obtained from JIRA to be indexed (JSON paresd into Map of Map structure)
    * @throws Exception
@@ -44,19 +45,24 @@ public interface IJIRAIssueIndexStructureBuilder {
   void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception;
 
   /**
-   * Delete issue from search index.
+   * Construct search request to find issues not updated after given date. Used during full index update to remove
+   * issues not presented in JIRA anymore. Results from this query are processed by
+   * {@link #deleteIssue(BulkRequestBuilder, SearchHit)}
    * 
-   * @param esBulk bulk operation builder used to index issue data
-   * @param jiraIssueKey to delete from index
-   * @throws Exception
+   * @param srb search request builder to add necessary conditions into
+   * @param jiraProjectKey key of jira project to search issues for
+   * @param date bound date for search. All issues updated before this date must be found by constructed query
    */
-  void deleteIssue(BulkRequestBuilder esBulk, String jiraIssueKey) throws Exception;
+  void buildSearchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date);
 
   /**
-   * @param srb search request builder to add condition into
-   * @param jiraProjectKey to search issues for
-   * @param date bound date for search. All issues not updated after this date are searched.
+   * Delete issue from search index. Query to obtain issues to be deleted is constructed using
+   * {@link #buildSearchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder, String, Date)}
+   * 
+   * @param esBulk bulk operation builder used to delete issue data from search index
+   * @param issueDocumentToDelete found issue document to delete from index
+   * @throws Exception
    */
-  void searchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date);
+  void deleteIssue(BulkRequestBuilder esBulk, SearchHit issueDocumentToDelete) throws Exception;
 
 }
