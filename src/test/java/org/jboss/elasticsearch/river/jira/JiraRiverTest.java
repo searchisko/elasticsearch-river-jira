@@ -256,7 +256,7 @@ public class JiraRiverTest {
    * @return instance for tests
    * @throws Exception from constructor
    */
-  protected JiraRiver prepareJiraRiverInstanceForTest(String urlBase, Map<String, Object> jiraSettingsAdd,
+  public static JiraRiver prepareJiraRiverInstanceForTest(String urlBase, Map<String, Object> jiraSettingsAdd,
       Map<String, Object> toplevelSettingsAdd, boolean jiraClientMock) throws Exception {
     Map<String, Object> settings = new HashMap<String, Object>();
     if (toplevelSettingsAdd != null)

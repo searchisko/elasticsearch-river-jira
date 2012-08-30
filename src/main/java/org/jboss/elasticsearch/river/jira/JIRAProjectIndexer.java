@@ -115,14 +115,18 @@ public class JIRAProjectIndexer implements Runnable {
   @SuppressWarnings("unchecked")
   protected void processUpdate() throws Exception {
     updatedCount = 0;
-    Date updatedAfter = Utils.roundDateToMinutePrecise(readLastIssueUpdatedDate(projectKey));
-    logger.info("Go to process JIRA updates for project {} for issues updated {}", projectKey,
-        (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
+    Date updatedAfter = null;
+    if (!fullUpdate) {
+      updatedAfter = Utils.roundDateToMinutePrecise(readLastIssueUpdatedDate(projectKey));
+    }
     Date updatedAfterStarting = updatedAfter;
     if (updatedAfter == null)
       fullUpdate = true;
     Date lastIssueUpdatedDate = null;
     int startAt = 0;
+
+    logger.info("Go to process JIRA updates for project {} for issues updated {}", projectKey,
+        (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
 
     boolean cont = true;
     while (cont) {
@@ -224,7 +228,8 @@ public class JIRAProjectIndexer implements Runnable {
 
     SearchResponse scrollResp = esIntegrationComponent.executeESSearchRequest(srb);
 
-    if (scrollResp.hits().hits().length > 0) {
+    if (scrollResp.hits().totalHits() > 0) {
+      scrollResp = esIntegrationComponent.executeESScrollSearchNextRequest(scrollResp);
       BulkRequestBuilder esBulk = esIntegrationComponent.prepareESBulkRequestBuilder();
       while (scrollResp.hits().hits().length > 0) {
         for (SearchHit hit : scrollResp.getHits()) {

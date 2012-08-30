@@ -363,22 +363,30 @@ public class JIRAProjectIndexerTest {
       tested = new JIRAProjectIndexer("ORG", true, jiraClientMock, esIntegrationMock,
           jiraIssueIndexStructureBuilderMock);
       // prepare update part
+
+      Date mockDate = new Date();
       when(
           esIntegrationMock.readDatetimeValue("ORG",
-              JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE)).thenReturn(lastUpdatedDate);
-      when(jiraClientMock.getJIRAChangedIssues("ORG", 0, lastUpdatedDate, null)).thenReturn(
+              JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE)).thenReturn(mockDate);
+      // updatedAfter is null here (even some is returned from previous when) because we run full update!
+      when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
           new ChangedIssuesResults(issues, 0, 50, 3));
       when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
 
       // prepare delete part
       when(esIntegrationMock.prepareESScrollSearchRequestBuilder(Mockito.anyString())).thenReturn(
           new SearchRequestBuilder(null));
-      when(esIntegrationMock.executeESSearchRequest(Mockito.any(SearchRequestBuilder.class))).thenReturn(
-          prepareSearchResponse("scrlid1", new InternalSearchHit(1, "ORG-12", "", null, null)));
-      when(esIntegrationMock.executeESScrollSearchNextRequest(Mockito.any(SearchResponse.class))).thenReturn(
-          prepareSearchResponse("scrlid3"));
+      SearchResponse sr1 = prepareSearchResponse("scrlid1", new InternalSearchHit(1, "ORG-12", "", null, null));
+      when(esIntegrationMock.executeESSearchRequest(Mockito.any(SearchRequestBuilder.class))).thenReturn(sr1);
+      SearchResponse sr2 = prepareSearchResponse("scrlid1", new InternalSearchHit(1, "ORG-12", "", null, null));
+      when(esIntegrationMock.executeESScrollSearchNextRequest(sr1)).thenReturn(sr2);
+      when(esIntegrationMock.executeESScrollSearchNextRequest(sr2)).thenReturn(prepareSearchResponse("scrlid3"));
 
       tested.run();
+      // verify updatedAfter is null in this call, not value read from store, because we run full update here!
+      verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
+      verify(jiraClientMock, times(0)).getJIRAChangedIssues("ORG", 0, mockDate, null);
+
       verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(true), eq(true), eq(3), eq(1),
           (Date) Mockito.isNotNull(), Mockito.anyLong(), eq((String) null));
 
@@ -454,13 +462,16 @@ public class JIRAProjectIndexerTest {
       SearchRequestBuilder srbmock = new SearchRequestBuilder(null);
       when(esIntegrationMock.prepareESScrollSearchRequestBuilder(jiraIndexName)).thenReturn(srbmock);
 
-      InternalSearchHit hit1_1 = new InternalSearchHit(1, "ORG-12", "", null, null);
-      InternalSearchHit hit1_2 = new InternalSearchHit(2, "ORG-124", "", null, null);
-      SearchResponse sr1 = prepareSearchResponse("scrlid1", hit1_1, hit1_2);
-      when(esIntegrationMock.executeESSearchRequest(srbmock)).thenReturn(sr1);
+      SearchResponse sr = prepareSearchResponse("scrlid0", new InternalSearchHit(1, "ORG-12", "", null, null));
+      when(esIntegrationMock.executeESSearchRequest(srbmock)).thenReturn(sr);
 
       BulkRequestBuilder brbmock = new BulkRequestBuilder(null);
       when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brbmock);
+
+      InternalSearchHit hit1_1 = new InternalSearchHit(1, "ORG-12", "", null, null);
+      InternalSearchHit hit1_2 = new InternalSearchHit(2, "ORG-124", "", null, null);
+      SearchResponse sr1 = prepareSearchResponse("scrlid1", hit1_1, hit1_2);
+      when(esIntegrationMock.executeESScrollSearchNextRequest(sr)).thenReturn(sr1);
 
       InternalSearchHit hit2_1 = new InternalSearchHit(1, "ORG-22", "", null, null);
       InternalSearchHit hit2_2 = new InternalSearchHit(2, "ORG-224", "", null, null);
@@ -479,13 +490,12 @@ public class JIRAProjectIndexerTest {
       verify(esIntegrationMock).prepareESScrollSearchRequestBuilder(jiraIndexName);
       verify(esIntegrationMock).executeESSearchRequest(srbmock);
       verify(esIntegrationMock).prepareESBulkRequestBuilder();
+      verify(esIntegrationMock, times(3)).executeESScrollSearchNextRequest(Mockito.any(SearchResponse.class));
       verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit1_1);
       verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit1_2);
-      verify(esIntegrationMock).executeESScrollSearchNextRequest(sr1);
       verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit2_1);
       verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit2_2);
       verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit2_3);
-      verify(esIntegrationMock).executeESScrollSearchNextRequest(sr2);
       verify(esIntegrationMock).executeESBulkRequest(brbmock);
 
       Mockito.verifyNoMoreInteractions(jiraClientMock);

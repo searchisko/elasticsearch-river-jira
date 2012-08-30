@@ -61,12 +61,26 @@ To get rid of some unwanted WARN log messages add next line to the [logging conf
 
 Notes for Index and Document type mapping creation
 --------------------------------------------------
-Configured Search index is NOT explicitly created by river code. You can rely on '[Automatic Index Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-create-index.html) before river creation.
+Configured Search index is NOT explicitly created by river code. You need to [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-create-index.html) BEFORE river creation.
 
-No type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is explicitly created by river code for configured document type. You can rely on '[Automatic Mapping Creation](http://www.elasticsearch.org/guide/reference/api/index_.html)' if enabled, or [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-put-mapping.html) before river creation. To create mapping manually see later for description of issue document structure written to the search index. 
+	curl -XPUT 'http://localhost:9200/my_jira_index/'
 
-JIRA river REQUIRES [Automatic Timestamp Field](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) enabled in mapping for this document type to be able to remove issues deleted in JIRA from index! This field is disabled by default in ElasticSearch! If you rely on Automatic Mapping Creation then you can [change this default](http://www.elasticsearch.org/guide/reference/mapping/dynamic-mapping.html).
+Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is not explicitly created by river code for configured document type. The river REQUIRES [Automatic Timestamp Field](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) and `keyword` analyzer for `project_key` field to be able to correctly remove issues deleted in JIRA from index during full update! So you need to create mapping manually BEFORE river creation with this content at least:
 
+	curl -XPUT localhost:9200/my_jira_index/jira_issue/_mapping -d '
+	{
+	    "jira_issue" : {
+	        "_timestamp"  : { "enabled" : true },
+	        "properties" : {
+	            "project_key" : {"type" : "string", "analyzer" : "keyword"}
+	        }
+	    }
+	}
+	'
+
+Alternativelly you can store [Mapping Configuration in node configuration](http://www.elasticsearch.org/guide/reference/mapping/conf-mappings.html).
+
+See next chapter for description of JIRA issue indexed document structure to create better mapping for it. 
 
 JIRA issue index document structure
 -----------------------------------
@@ -121,6 +135,7 @@ TODO List
 * Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)
 * Implement some mechanism which allows to initiate full reindex of all issues for defined JIRA project (calleable over REST)
 * Implement REST endpoint where you can monitor status of JIRA river (which projects are indexed by river, which projects are indexed just now, last time of indexing run for projects etc.)
+* Implement REST endpoint which can be used to delete issue from index to support incremental deletes by notifications from JIRA side
 * Store info about every JIRA project update run (type of run (full/incremental), time started, time elapsed, number of issues updated/deleted, etc.) for statistical reasons (stored into configured search index to be searchable).
 * Credentials for http proxy authentication used for JIRA REST calls
 
