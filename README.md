@@ -3,7 +3,7 @@ JIRA River Plugin for ElasticSearch
 
 The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/software/jira) issues and issue comments into [ElasticSearch](http://www.elasticsearch.org). It's implemented as ElasticSearch [river](http://www.elasticsearch.org/guide/reference/river/) [plugin](http://www.elasticsearch.org/guide/reference/modules/plugins.html) and uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) to obtain issus from JIRA instance.
 
-**This plugin is in very early alpha phase of development, not functional yet!!**
+**This plugin is in beta phase of development now. All basic functionality is here and working, new features are added now.**
 
 In order to install the plugin into ElasticSearch, simply run: `bin/plugin -install jbossorg/elasticsearch-river-jira/1.0.0`.
 
@@ -13,7 +13,8 @@ In order to install the plugin into ElasticSearch, simply run: `bin/plugin -inst
     | master         | 0.19 -> master   | 5+           | 2                     |
     ----------------------------------------------------------------------------
 
-The JIRA river indexes JIRA issues and comments, and makes it searchable by ElasticSearch. JIRA is pooled periodically to detect changed issues (search operation with JQL query over `updatedDate` field) to update search index.
+The JIRA river indexes JIRA issues and comments, and makes them searchable by ElasticSearch. JIRA is pooled periodically to detect changed issues (search operation with JQL query over `updatedDate` field) to update search index in incremental update mode. 
+Periodical full update may be configured too to completely refresh search index and remove issues deleted in JIRA from it (deletes are not catched by incremental updates).
 
 Creating the JIRA river can be done using:
 
@@ -67,7 +68,7 @@ Configured Search index is NOT explicitly created by river code. You need to [cr
 
 	curl -XPUT 'http://localhost:9200/my_jira_index/'
 
-Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is not explicitly created by river code for configured document type. The river REQUIRES [Automatic Timestamp Field](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) and `keyword` analyzer for `project_key` field to be able to correctly remove issues deleted in JIRA from index during full update! So you need to create mapping manually BEFORE river creation, with next content at least:
+Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is not explicitly created by river code for configured document type. The river REQUIRES [Automatic Timestamp Field](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) and `keyword` analyzer for `project_key` field to be able to correctly remove issues deleted in JIRA from index during full update! So you need to create type mapping manually BEFORE river creation, with next content at least:
 
 	curl -XPUT localhost:9200/my_jira_index/jira_issue/_mapping -d '
 	{
