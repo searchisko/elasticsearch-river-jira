@@ -14,9 +14,11 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
+import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
@@ -71,10 +73,10 @@ public class JiraRiverTest {
 
     // case - test river configuration reading
     jiraSettings.put("maxIndexingThreads", "5");
-    jiraSettings.put("indexUpdatePeriod", "20");
-    jiraSettings.put("indexFullUpdatePeriod", "5");
+    jiraSettings.put("indexUpdatePeriod", "20m");
+    jiraSettings.put("indexFullUpdatePeriod", "5h");
     jiraSettings.put("maxIssuesPerRequest", 20);
-    jiraSettings.put("timeout", 5000);
+    jiraSettings.put("timeout", "5s");
     indexSettings.put("index", "my_index_name");
     indexSettings.put("type", "type_test");
     tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", jiraSettings, toplevelSettingsAdd, false);
@@ -154,6 +156,54 @@ public class JiraRiverTest {
     Assert.assertEquals("SU07", r.get(1));
     Assert
         .assertTrue(tested.allIndexedProjectsKeysNextRefresh <= (System.currentTimeMillis() + JiraRiver.JIRA_PROJECTS_REFRESH_TIME));
+  }
+
+  @Test
+  public void parseTimeValue() {
+    Map<String, Object> jiraSettings = new HashMap<String, Object>();
+
+    // test defaults
+    Assert.assertEquals(0, JiraRiver.parseTimeValue(jiraSettings, "nonexist", 1250, null));
+    Assert.assertEquals(12, JiraRiver.parseTimeValue(null, "nonexist", 12, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(1250, JiraRiver.parseTimeValue(jiraSettings, "nonexist", 1250, TimeUnit.MILLISECONDS));
+
+    // test correct values parsing
+    jiraSettings.put("mstest", "250");
+    jiraSettings.put("mstest2", "255ms");
+    jiraSettings.put("secondtest", "250s");
+    jiraSettings.put("minutetest", "50m");
+    jiraSettings.put("hourtest", "2h");
+    jiraSettings.put("daytest", "2d");
+    jiraSettings.put("weektest", "2w");
+    jiraSettings.put("zerotest", "0");
+    jiraSettings.put("negativetest", "-1");
+    Assert.assertEquals(250, JiraRiver.parseTimeValue(jiraSettings, "mstest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(255, JiraRiver.parseTimeValue(jiraSettings, "mstest2", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(250 * 1000, JiraRiver.parseTimeValue(jiraSettings, "secondtest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(50 * 60 * 1000,
+        JiraRiver.parseTimeValue(jiraSettings, "minutetest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(2 * 24 * 60 * 60 * 1000,
+        JiraRiver.parseTimeValue(jiraSettings, "daytest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(2 * 7 * 24 * 60 * 60 * 1000,
+        JiraRiver.parseTimeValue(jiraSettings, "weektest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(0, JiraRiver.parseTimeValue(jiraSettings, "zerotest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(-1, JiraRiver.parseTimeValue(jiraSettings, "negativetest", 1250, TimeUnit.MILLISECONDS));
+
+    // test error handling
+    jiraSettings.put("errortest", "w");
+    jiraSettings.put("errortest2", "ahojs");
+    try {
+      JiraRiver.parseTimeValue(jiraSettings, "errortest", 1250, TimeUnit.MILLISECONDS);
+      Assert.fail("ElasticSearchParseException must be thrown");
+    } catch (ElasticSearchParseException e) {
+      // ok
+    }
+    try {
+      JiraRiver.parseTimeValue(jiraSettings, "errortest2", 1250, TimeUnit.MILLISECONDS);
+      Assert.fail("ElasticSearchParseException must be thrown");
+    } catch (ElasticSearchParseException e) {
+      // ok
+    }
   }
 
   @Test

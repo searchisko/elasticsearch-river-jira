@@ -9,8 +9,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.get.GetResponse;
@@ -66,12 +68,12 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   /**
    * Config - index update period [ms]
    */
-  protected int indexUpdatePeriod;
+  protected long indexUpdatePeriod;
 
   /**
    * Config - index full update period [ms]
    */
-  protected int indexFullUpdatePeriod = -1;
+  protected long indexFullUpdatePeriod = -1;
 
   /**
    * Config - name of ElasticSearch index used to store issues from this river
@@ -136,10 +138,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       if (Utils.isEmpty(url)) {
         throw new SettingsException("jira/urlBase element of configuration structure not found or empty");
       }
-      Integer timeout = null;
-      if (jiraSettings.get("timeout") != null) {
-        timeout = XContentMapValues.nodeIntegerValue(jiraSettings.get("timeout"));
-      }
+      Integer timeout = new Long(parseTimeValue(jiraSettings, "timeout", 5, TimeUnit.SECONDS)).intValue();
       jiraUser = XContentMapValues.nodeStringValue(jiraSettings.get("username"), "Anonymous access");
       jiraClient = new JIRA5RestClient(url, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
           XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
@@ -150,11 +149,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         jiraClient.setJQLDateFormatTimezone(tz);
       }
       maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
-      indexUpdatePeriod = XContentMapValues.nodeIntegerValue(jiraSettings.get("indexUpdatePeriod"), 5) * 60 * 1000;
-      indexFullUpdatePeriod = XContentMapValues.nodeIntegerValue(jiraSettings.get("indexFullUpdatePeriod"), 12);
-      if (indexFullUpdatePeriod > 0) {
-        indexFullUpdatePeriod = indexFullUpdatePeriod * 60 * 60 * 1000;
-      }
+      indexUpdatePeriod = parseTimeValue(jiraSettings, "indexUpdatePeriod", 5, TimeUnit.MINUTES);
+      indexFullUpdatePeriod = parseTimeValue(jiraSettings, "indexFullUpdatePeriod", 12, TimeUnit.HOURS);
       if (jiraSettings.containsKey("projectKeysIndexed")) {
         allIndexedProjectsKeys = Utils.parseCsvString(XContentMapValues.nodeStringValue(
             jiraSettings.get("projectKeysIndexed"), null));
@@ -187,6 +183,42 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 
     jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName);
     jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
+  }
+
+  /**
+   * Parse time value from river settings/config map. Value must be number, which is normaly in milliseconds, but you
+   * can postfix it by one of next letters to set units
+   * <ul>
+   * <li><code>s</code> - seconds
+   * <li><code>m</code> - minutes
+   * <li><code>h</code> - hours
+   * <li><code>d</code> - days
+   * <li><code>w</code> - weeks
+   * </ul>
+   * 
+   * @param jiraSettings map to get value from
+   * @param key of config value in map
+   * @param defaultDuration default duration used if no value in config
+   * @param defaultTimeUnit time unit for default duration - if null no default is used, so return 0 as default in this
+   *          case
+   * @return time value in millis
+   */
+  protected static long parseTimeValue(Map<String, Object> jiraSettings, String key, long defaultDuration,
+      TimeUnit defaultTimeUnit) {
+    long ret = 0;
+    if (jiraSettings == null || !jiraSettings.containsKey(key)) {
+      if (defaultTimeUnit != null) {
+        ret = new TimeValue(defaultDuration, defaultTimeUnit).millis();
+      }
+    } else {
+      try {
+        ret = TimeValue.parseTimeValue(XContentMapValues.nodeStringValue(jiraSettings.get(key), null),
+            new TimeValue(defaultDuration, defaultTimeUnit)).millis();
+      } catch (ElasticSearchParseException e) {
+        throw new ElasticSearchParseException(e.getMessage() + " for setting: " + key);
+      }
+    }
+    return ret;
   }
 
   @Override

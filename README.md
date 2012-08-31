@@ -25,12 +25,12 @@ Creating the JIRA river can be done using:
 	        "username"              : "jira_username",
 	        "pwd"                   : "jira_user_password",
 	        "jqlTimeZone"           : "Europe/Prague",
-	        "timeout"               : 5000,
+	        "timeout"               : "5s",
 	        "maxIssuesPerRequest"   : 50,
 	        "projectKeysIndexed"    : "ORG,AS7",
 	        "projectKeysExcluded"   : "ORG,IOP",
-	        "indexUpdatePeriod"     : 5,
-	        "indexFullUpdatePeriod" : 1,
+	        "indexUpdatePeriod"     : "5s",
+	        "indexFullUpdatePeriod" : "1h",
 	        "maxIndexingThreads"    : 1
 	    },
 	    "index" : {
@@ -43,16 +43,18 @@ Creating the JIRA river can be done using:
 The above lists all the options controlling the creation of a JIRA river. 
 * `jira/urlBase` is required in order to connect to the JIRA REST API. It's only base URL, path to REST API is added automatically.
 * `jira/username` and `jira/pwd` are optional JIRA login credentials to access jira issues. Anonymous JIRA access is used if not provided.
-* `jira/jqlTimeZone` is optional [identifier of timezone](http://docs.oracle.com/javase/6/docs/api/java/util/TimeZone.html#getTimeZone%28java.lang.String%29) used to format time values into JQL when requesting updated issues. Timezone of ElasticSearch JVM is used if not provided. JQL uses timezone of jira user who perform JQL query (so this setting must reflex [jira timezone of user](https://confluence.atlassian.com/display/JIRA/Choosing+a+Time+Zone) provided by `jira/username` parameter), default timezone of JIRA in case of Anonymous access. Incorrect setting of this value may lead to some issue updates not reflected in search index!!
-* `jira/timeout` defines timeout for http/s REST request to the JIRA [ms]. Optional parameter.
+* `jira/jqlTimeZone` is optional [identifier of timezone](http://docs.oracle.com/javase/6/docs/api/java/util/TimeZone.html#getTimeZone%28java.lang.String%29) used to format time values into JQL when requesting updated issues. Timezone of ElasticSearch JVM is used if not provided. JQL uses timezone of jira user who perform JQL query (so this setting must reflex [jira timezone of user](https://confluence.atlassian.com/display/JIRA/Choosing+a+Time+Zone) provided by `jira/username` parameter), default timezone of JIRA in case of Anonymous access. Incorrect setting of this value may lead to some issue updates not reflected in search index during incremental update!!
+* `jira/timeout` time value, defines timeout for http/s REST request to the JIRA. Optional, 5s is default if not provided.
 * `jira/maxIssuesPerRequest` defines maximal number of updated issues requested from JIRA by one REST request. Optional, 50 used if not provided. The maximum allowable value is dictated by the JIRA configuration property `jira.search.views.default.max`. If you specify a value that is higher than this number, your request results will be truncated to this number anyway.
 * `jira/projectKeysIndexed` comma separated list of JIRA project keys to be indexed. Optional, list of projects is obtained from JIRA instance if ommited (so new projects are indexed automatically).
 * `jira/projectKeysExcluded` comma separated list of JIRA project keys to be excluded from indexing if list is obtained from JIRA instance (so used only if no `jira/projectKeysIndexed` is defined). Optional.
-* `jira/indexUpdatePeriod` period in minutes how ofter is search index updated from JIRA instance. Optional, default 5 minutes.
-* `jira/indexFullUpdatePeriod` period in hours how ofter is search index updated from JIRA instance in full update mode. Optional, default 12 hours. You can use `0` to disable automatic full updates. Full update updates all issues and removes issues deleted in JIRA from search index also, but brings more load to both JIRA and ElasticSearch servers, and may run for long time in case of JIRA instance with many issues. Incremental updates are performed between full updates as defined by `indexUpdatePeriod` parameter.
+* `jira/indexUpdatePeriod`  time value, defines how ofter is search index updated from JIRA instance. Optional, default 5 minutes.
+* `jira/indexFullUpdatePeriod` time value, defines how ofter is search index updated from JIRA instance in full update mode. Optional, default 12 hours. You can use `0` to disable automatic full updates. Full update updates all issues in search index from JIRA, and removes issues deleted in JIRA from search index also. This brings more load to both JIRA and ElasticSearch servers, and may run for long time in case of JIRA instance with many issues. Incremental updates are performed between full updates as defined by `indexUpdatePeriod` parameter.
 * `jira/maxIndexingThreads` defines maximal number of parallel indexing threads running for this river. Optional, default 1. This setting influences load on both JIRA and ElasticSearch servers during indexing. Threads are started per JIRA project update. If there is more threads allowed, then one is always dedicated for incremental updates only (so full updates do not block incremental updates for another projects).
 * `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited. See related notes later!
 * `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. See related notes later!
+
+Time value in configuration is number representing milliseconds, but you can use next postfixes appended to the number to define units: `s` for seconds, `m` for minutes, `h` for hours, `d` for days and `w` for weeks. So for example value `5h` means five fours, `2w` means two weeks.
  
 To get rid of some unwanted WARN log messages add next line to the [logging configuration file](http://www.elasticsearch.org/guide/reference/setup/configuration.html) of your ElasticSearch instance which is `config/logging.yml`:
 
@@ -65,7 +67,7 @@ Configured Search index is NOT explicitly created by river code. You need to [cr
 
 	curl -XPUT 'http://localhost:9200/my_jira_index/'
 
-Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is not explicitly created by river code for configured document type. The river REQUIRES [Automatic Timestamp Field](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) and `keyword` analyzer for `project_key` field to be able to correctly remove issues deleted in JIRA from index during full update! So you need to create mapping manually BEFORE river creation with this content at least:
+Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is not explicitly created by river code for configured document type. The river REQUIRES [Automatic Timestamp Field](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) and `keyword` analyzer for `project_key` field to be able to correctly remove issues deleted in JIRA from index during full update! So you need to create mapping manually BEFORE river creation, with next content at least:
 
 	curl -XPUT localhost:9200/my_jira_index/jira_issue/_mapping -d '
 	{
@@ -78,7 +80,7 @@ Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is not exp
 	}
 	'
 
-Alternativelly you can store [Mapping Configuration in node configuration](http://www.elasticsearch.org/guide/reference/mapping/conf-mappings.html).
+Alternativelly you can store [mapping in ElasticSearch node configuration](http://www.elasticsearch.org/guide/reference/mapping/conf-mappings.html).
 
 See next chapter for description of JIRA issue indexed document structure to create better mapping for it. 
 
@@ -129,7 +131,7 @@ TODO List
 * Configuration of informations about JIRA users stored in index (username, email, full name)
 * Configurable list of JIRA issue fields ommited from the indexing (if you do not want to index fields indexed by default due index size and performance reasons)
 * Configurable list of additional JIRA issue fields to be indexed (to be able to index JIRA custom fields)
-* Possibility to change name of fields in search index
+* Possibility to change name of issue fields in search index document
 * JIRA issue comments indexing
 * Implement some mechanism to allow mapping of some issue fields (Project Key, Reporter, Assignee, Status, Type, ...) to common set of fields (title, link, project, authors, dates of activity) and values (normalized set of Issue types, Statuses, authors and projects mapping) shared with other document types and/or other issue trackers to integrate them into search frontent GUI.
 * Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)

@@ -21,7 +21,6 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 import org.junit.Test;
-import org.junit.Test;
 
 /**
  * Class for ElasticSearch integration tests.

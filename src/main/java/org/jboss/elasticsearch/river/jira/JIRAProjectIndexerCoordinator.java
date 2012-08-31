@@ -63,12 +63,12 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
   /**
    * Period of index update from jira [ms].
    */
-  protected int indexUpdatePeriod;
+  protected long indexUpdatePeriod;
 
   /**
    * Period of index automatic full update from jira [ms]. value <= 0 means never.
    */
-  protected int indexFullUpdatePeriod = -1;
+  protected long indexFullUpdatePeriod = -1;
 
   /**
    * Queue of project keys which needs to be reindexed in near future.
@@ -96,8 +96,8 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    * @param indexFullUpdatePeriod period of index automatic full update from jira [ms]. value <= 0 means never.
    */
   public JIRAProjectIndexerCoordinator(IJIRAClient jiraClient, IESIntegration esIntegrationComponent,
-      IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder, int indexUpdatePeriod, int maxIndexingThreads,
-      int indexFullUpdatePeriod) {
+      IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder, long indexUpdatePeriod, int maxIndexingThreads,
+      long indexFullUpdatePeriod) {
     super();
     this.jiraClient = jiraClient;
     this.esIntegrationComponent = esIntegrationComponent;
