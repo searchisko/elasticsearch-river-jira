@@ -230,11 +230,11 @@ public class JIRA5RestClient implements IJIRAClient {
 
   private static final String JQL_DATE_FORMAT_PATTERN = "yyyy-MM-dd HH:mm";
 
-  private SimpleDateFormat JQL_DATE_FORMAT = new SimpleDateFormat(JQL_DATE_FORMAT_PATTERN);
+  protected SimpleDateFormat jqlDateFormat = new SimpleDateFormat(JQL_DATE_FORMAT_PATTERN);
 
   @Override
   public void setJQLDateFormatTimezone(TimeZone zone) {
-    JQL_DATE_FORMAT.setTimeZone(zone);
+    jqlDateFormat.setTimeZone(zone);
   }
 
   /**
@@ -246,7 +246,7 @@ public class JIRA5RestClient implements IJIRAClient {
   protected synchronized String formatJQLDate(Date date) {
     String ret = null;
     if (date != null)
-      ret = JQL_DATE_FORMAT.format(date);
+      ret = jqlDateFormat.format(date);
     return ret;
   }
 

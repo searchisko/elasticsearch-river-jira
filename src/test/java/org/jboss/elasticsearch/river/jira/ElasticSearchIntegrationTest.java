@@ -23,7 +23,7 @@ import org.elasticsearch.river.RiverSettings;
 import org.junit.Test;
 
 /**
- * Class for ElasticSearch integration tests.
+ * Class for ElasticSearch integration tests against some running ES cluster. This is not Unit test!
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */

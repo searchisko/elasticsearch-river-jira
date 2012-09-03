@@ -11,28 +11,33 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
 import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 /**
  * Unit test for {@link JiraRiver}.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JiraRiverTest {
+public class JiraRiverTest extends ESRealClientTestBase {
 
   @Test
   public void constructor_config() throws Exception {
@@ -77,6 +82,7 @@ public class JiraRiverTest {
     jiraSettings.put("indexFullUpdatePeriod", "5h");
     jiraSettings.put("maxIssuesPerRequest", 20);
     jiraSettings.put("timeout", "5s");
+    jiraSettings.put("jqlTimeZone", "Europe/Prague");
     indexSettings.put("index", "my_index_name");
     indexSettings.put("type", "type_test");
     tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", jiraSettings, toplevelSettingsAdd, false);
@@ -87,6 +93,8 @@ public class JiraRiverTest {
     Assert.assertEquals("my_index_name", tested.indexName);
     Assert.assertEquals("type_test", tested.typeName);
     Assert.assertEquals(20, tested.jiraClient.getListJIRAIssuesMax());
+    Assert.assertEquals(TimeZone.getTimeZone("Europe/Prague"),
+        ((JIRA5RestClient) tested.jiraClient).jqlDateFormat.getTimeZone());
     // assert index structure builder initialization
     Assert.assertEquals(tested.jiraIssueIndexStructureBuilder, tested.jiraClient.getIndexStructureBuilder());
     Assert.assertEquals(tested.indexName,
@@ -207,13 +215,43 @@ public class JiraRiverTest {
   }
 
   @Test
-  public void readDatetimeValue() {
-    // UNITTEST hard to do due ElasticSearch Client calls
+  public void readAndStoreDatetimeValue() throws Exception {
+    try {
+      Client client = prepareESClientForUnitTest();
+
+      JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+      tested.client = client;
+
+      tested.storeDatetimeValue("ORG1", "testProperty_1_1", Utils.parseISODateTime("2012-09-03T18:12:45"), null);
+      tested.storeDatetimeValue("ORG1", "testProperty_1_2", Utils.parseISODateTime("2012-09-03T05:12:40"), null);
+      tested.storeDatetimeValue("ORG2", "testProperty_1_1", Utils.parseISODateTime("2012-09-02T08:12:30"), null);
+      tested.storeDatetimeValue("ORG2", "testProperty_1_2", Utils.parseISODateTime("2012-09-02T05:02:20"), null);
+
+      Assert.assertEquals(Utils.parseISODateTime("2012-09-03T18:12:45"),
+          tested.readDatetimeValue("ORG1", "testProperty_1_1"));
+      Assert.assertEquals(Utils.parseISODateTime("2012-09-03T05:12:40"),
+          tested.readDatetimeValue("ORG1", "testProperty_1_2"));
+      Assert.assertEquals(Utils.parseISODateTime("2012-09-02T08:12:30"),
+          tested.readDatetimeValue("ORG2", "testProperty_1_1"));
+      Assert.assertEquals(Utils.parseISODateTime("2012-09-02T05:02:20"),
+          tested.readDatetimeValue("ORG2", "testProperty_1_2"));
+
+    } finally {
+      finalizeESClientForUnitTest();
+    }
   }
 
   @Test
-  public void storeDatetimeValue() {
-    // UNITTEST hard to do due ElasticSearch Client calls
+  public void storeDatetimeValue_Bulk() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+
+    BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+    tested.storeDatetimeValue("ORG", "prop", new Date(), esBulk);
+    tested.storeDatetimeValue("ORG", "prop2", new Date(), esBulk);
+    tested.storeDatetimeValue("ORG", "prop3", new Date(), esBulk);
+
+    Assert.assertEquals(3, esBulk.numberOfActions());
+
   }
 
   @Test
@@ -222,7 +260,7 @@ public class JiraRiverTest {
   }
 
   @Test
-  public void getESBulkRequestBuilder() throws Exception {
+  public void prepareESBulkRequestBuilder() throws Exception {
     JiraRiver tested = prepareJiraRiverInstanceForTest(null);
     Client clientMock = tested.client;
     when(clientMock.prepareBulk()).thenReturn(new BulkRequestBuilder(null));
@@ -281,6 +319,23 @@ public class JiraRiverTest {
     Assert.assertTrue(tested.isClosed());
     Assert.assertNull(tested.coordinatorThread);
     Assert.assertNull(tested.coordinatorInstance);
+
+  }
+
+  @Test
+  public void prepareESScrollSearchRequestBuilder() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    Client clientMock = tested.client;
+
+    SearchRequestBuilder srb = new SearchRequestBuilder(null);
+    when(clientMock.prepareSearch("myIndex")).thenReturn(srb);
+
+    tested.prepareESScrollSearchRequestBuilder("myIndex");
+
+    Assert.assertNotNull(srb.request().scroll());
+    Assert.assertEquals(SearchType.SCAN, srb.request().searchType());
+    verify(clientMock).prepareSearch("myIndex");
+    Mockito.verifyNoMoreInteractions(clientMock);
 
   }
 

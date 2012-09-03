@@ -125,8 +125,7 @@ public class JIRAProjectIndexer implements Runnable {
     Date lastIssueUpdatedDate = null;
     int startAt = 0;
 
-    logger.info("Go to process JIRA updates for project {} for issues updated {}", projectKey,
-        (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
+    logger.info("Go to perform {} update for JIRA project {}", fullUpdate ? "full" : "incremental", projectKey);
 
     boolean cont = true;
     while (cont) {
@@ -134,8 +133,8 @@ public class JIRAProjectIndexer implements Runnable {
         return;
 
       if (logger.isDebugEnabled())
-        logger.debug("Go to ask JIRA issues for project {} with startAt {} updated {}", projectKey, startAt,
-            (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
+        logger.debug("Go to ask for updated JIRA issues for project {} with startAt {} updated {}", projectKey,
+            startAt, (updatedAfter != null ? ("after " + updatedAfter) : "in whole history"));
 
       ChangedIssuesResults res = jiraClient.getJIRAChangedIssues(projectKey, startAt, updatedAfter, null);
 
@@ -216,7 +215,7 @@ public class JIRAProjectIndexer implements Runnable {
     if (!fullUpdate)
       return;
 
-    logger.info("Go to process JIRA deletes for project {} for issues not updated in index after {}", projectKey,
+    logger.debug("Go to process JIRA deletes for project {} for issues not updated in index after {}", projectKey,
         boundDate);
 
     String indexName = jiraIssueIndexStructureBuilder.getIssuesSearchIndexName(projectKey);
