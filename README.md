@@ -41,7 +41,7 @@ Creating the JIRA river can be done using:
 	}
 	'
 
-The above lists all the options controlling the creation of a JIRA river. 
+The example above lists all the main options controlling the creation and behaviour of a JIRA river. Full list of options with description is here:
 * `jira/urlBase` is required in order to connect to the JIRA REST API. It's only base URL, path to REST API is added automatically.
 * `jira/username` and `jira/pwd` are optional JIRA login credentials to access jira issues. Anonymous JIRA access is used if not provided.
 * `jira/jqlTimeZone` is optional [identifier of timezone](http://docs.oracle.com/javase/6/docs/api/java/util/TimeZone.html#getTimeZone%28java.lang.String%29) used to format time values into JQL when requesting updated issues. Timezone of ElasticSearch JVM is used if not provided. JQL uses timezone of jira user who perform JQL query (so this setting must reflex [jira timezone of user](https://confluence.atlassian.com/display/JIRA/Choosing+a+Time+Zone) provided by `jira/username` parameter), default timezone of JIRA in case of Anonymous access. Incorrect setting of this value may lead to some issue updates not reflected in search index during incremental update!!
@@ -54,6 +54,7 @@ The above lists all the options controlling the creation of a JIRA river.
 * `jira/maxIndexingThreads` defines maximal number of parallel indexing threads running for this river. Optional, default 1. This setting influences load on both JIRA and ElasticSearch servers during indexing. Threads are started per JIRA project update. If there is more threads allowed, then one is always dedicated for incremental updates only (so full updates do not block incremental updates for another projects).
 * `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited. See related notes later!
 * `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. See related notes later!
+* `index/field_river_name`, `index/field_project_key`, `index/fields`, `index/value_filters` can be used to change structure of indexed document. See 'JIRA issue index document structure' chapter.
 
 Time value in configuration is number representing milliseconds, but you can use next postfixes appended to the number to define units: `s` for seconds, `m` for minutes, `h` for hours, `d` for days and `w` for weeks. So for example value `5h` means five fours, `2w` means two weeks.
  
@@ -83,18 +84,20 @@ Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) is not exp
 
 Alternativelly you can store [mapping in ElasticSearch node configuration](http://www.elasticsearch.org/guide/reference/mapping/conf-mappings.html).
 
-See next chapter for description of JIRA issue indexed document structure to create better mapping for it. 
+See next chapter for description of JIRA issue indexed document structure to create better mapping meeting your needs. 
 
 JIRA issue index document structure
 -----------------------------------
-JIRA River writes this JSON document structure to the search index. Next table describes every default field: 
+JIRA River writes JSON document with following structure to the search index by default:
 
     -----------------------------------------------------------------------------------------------------------------------------
     | **index field**  | **JIRA JSON field**   | **indexed field value notes**                                                  |
     -----------------------------------------------------------------------------------------------------------------------------
-    | river            | N/A                   | name of JiraRiver document was indexed over                                    |
+    | source           | N/A                   | name of JiraRiver document was indexed over                                    |
     -----------------------------------------------------------------------------------------------------------------------------
-    | project_key      | fields.project.key    |                                                                                |
+    | project_key      | fields.project.key    | Key of project in JIRA                                                         |
+    -----------------------------------------------------------------------------------------------------------------------------
+    | project_name     | fields.project.name   | Name of project in JIRA                                                        |
     -----------------------------------------------------------------------------------------------------------------------------
     | issue_key        | key                   | Issue key from jira - also used as ID of document in the index, eg. `ORG-12`   |
     -----------------------------------------------------------------------------------------------------------------------------
@@ -116,23 +119,21 @@ JIRA River writes this JSON document structure to the search index. Next table d
     -----------------------------------------------------------------------------------------------------------------------------
     | labels           | fields.labels         | Array od String values with all labels                                         |
     -----------------------------------------------------------------------------------------------------------------------------
-    | reporter         | fields.reporter       | Object containing fields `name` (JIRA username), `emailAddress`, `displayName` |
+    | reporter         | fields.reporter       | Object with fields `username`, `email_address`, `display_name`                 |
     -----------------------------------------------------------------------------------------------------------------------------
-    | assignee         | fields.assignee       | Object containing fields `name` (JIRA username), `emailAddress`, `displayName` |
+    | assignee         | fields.assignee       | Object with fields `username`, `email_address`, `display_name`                 |
     -----------------------------------------------------------------------------------------------------------------------------
     | fix_versions     | fields.fixVersions    | Array containing Objects with `name` field                                     |
     -----------------------------------------------------------------------------------------------------------------------------
     | components       | field.components      | Array containing Objects with `name` field                                     |
     -----------------------------------------------------------------------------------------------------------------------------
 
-Code creating indexed document structure is inside `org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder` class.
+You can configure which fields from JIRA will be available in search index and under which names. See [river_configuration_example.json](/src/main/resources/templates/river_configuration_example.json) file for example of river configuration, which is used to create default configuration.
+Code used to create indexed document structure is inside `org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder` class.
+
 
 TODO List
 ---------
-* Configuration of informations about JIRA users stored in index (username, email, full name)
-* Configurable list of JIRA issue fields ommited from the indexing (if you do not want to index fields indexed by default due index size and performance reasons)
-* Configurable list of additional JIRA issue fields to be indexed (to be able to index JIRA custom fields)
-* Possibility to change name of issue fields in search index document
 * JIRA issue comments indexing
 * Implement some mechanism to allow mapping of some issue fields (Project Key, Reporter, Assignee, Status, Type, ...) to common set of fields (title, link, project, authors, dates of activity) and values (normalized set of Issue types, Statuses, authors and projects mapping) shared with other document types and/or other issue trackers to integrate them into search frontent GUI.
 * Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)

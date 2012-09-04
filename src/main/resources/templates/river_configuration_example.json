@@ -1,0 +1,47 @@
+{
+    "type" : "jira",
+    "jira" : {
+        "urlBase"               : "https://issues.jboss.org",
+        "username"              : "jira_username",
+        "pwd"                   : "jira_user_password",
+        "jqlTimeZone"           : "Europe/Prague",
+        "timeout"               : "5s",
+        "maxIssuesPerRequest"   : 50,
+        "projectKeysIndexed"    : "ORG,AS7",
+        "projectKeysExcluded"   : "ORG,IOP",
+        "indexUpdatePeriod"     : "5s",
+        "indexFullUpdatePeriod" : "1h",
+        "maxIndexingThreads"    : 1
+    },
+    "index" : {
+        "index"             : "my_jira_index",
+        "type"              : "jira_issue",
+        "field_river_name"  : "source",
+        "field_project_key" : "project_key",
+        "fields" : {
+            "project_name"   : {"jira_field" : "fields.project.name"},
+            "issue_key"      : {"jira_field" : "key"},
+            "document_url"   : {"jira_field" : "self"},
+            "issue_type"     : {"jira_field" : "fields.issuetype.name"},
+            "summary"        : {"jira_field" : "fields.summary"},
+            "status"         : {"jira_field" : "fields.status.name"},
+            "created"        : {"jira_field" : "fields.created"},
+            "updated"        : {"jira_field" : "fields.updated"},
+            "resolutiondate" : {"jira_field" : "fields.resolutiondate"},
+            "description"    : {"jira_field" : "fields.description"},
+            "labels"         : {"jira_field" : "fields.labels"},
+            "reporter"       : {"jira_field" : "fields.reporter", "value_filter" : "user"},
+            "assignee"       : {"jira_field" : "fields.assignee", "value_filter" : "user"},
+            "fix_versions"   : {"jira_field" : "fields.fixVersions", "value_filter" : "name"},
+            "components"     : {"jira_field" : "fields.components", "value_filter" : "name"}
+        },
+        "value_filters" : {
+            "user" : {
+                "name"         : "username",
+                "emailAddress" : "email_address",
+                "displayName"  : "display_name" 
+            },
+            "name" : { "name" : "name" }
+        }
+    }
+}

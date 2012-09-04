@@ -5,18 +5,24 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
+import org.elasticsearch.common.settings.SettingsException;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 
 /**
@@ -150,6 +156,35 @@ public class Utils {
   }
 
   /**
+   * Remap data in input Map. Leave here only data with defined keys, but change these keys to new ones if necessary.
+   * Some new key can be same as some other old key, but if two new keys are same, then only latest value is preserved
+   * (given by <code>mapToChange</code> key iteration order).
+   * 
+   * @param mapToChange Map to remap data inside. Must be mutable!
+   * @param remapInstructions instructions how to remap. If <code>null</code> or empty then remap is not performed and
+   *          <code>mapToChange</code> is not changed! Key in this Map must be same as key in <code>mapToChange</code>
+   *          which may leave there. Value in this map means new key of value in <code>mapToChange</code> after
+   *          remapping.
+   */
+  public static <T> void remapDataInMap(Map<T, Object> mapToChange, Map<T, T> remapInstructions) {
+    if (mapToChange == null || mapToChange.isEmpty())
+      return;
+    if (remapInstructions == null || remapInstructions.isEmpty())
+      return;
+
+    Map<T, Object> newMap = new HashMap<T, Object>();
+    for (T keyOrig : mapToChange.keySet()) {
+      if (remapInstructions.containsKey(keyOrig)) {
+        T keyNew = remapInstructions.get(keyOrig);
+        newMap.put(keyNew, mapToChange.get(keyOrig));
+      }
+    }
+
+    mapToChange.clear();
+    mapToChange.putAll(newMap);
+  }
+
+  /**
    * Parse ISO datetime string.
    * 
    * @param dateString to parse
@@ -205,6 +240,26 @@ public class Utils {
     cal.set(Calendar.SECOND, 0);
     cal.set(Calendar.MILLISECOND, 0);
     return cal.getTime();
+  }
+
+  /**
+   * Read JSON file from classpath into Map of Map structure
+   * 
+   * @param filePath path inside jar/classpath pointing to JSON file to read
+   * @return parsed JSON file
+   * @throws SettingsException
+   */
+  public static Map<String, Object> loadJSONFromJarPackagedFile(String filePath) throws SettingsException {
+    XContentParser parser = null;
+    try {
+      parser = XContentFactory.xContent(XContentType.JSON).createParser(Utils.class.getResourceAsStream(filePath));
+      return parser.mapAndClose();
+    } catch (IOException e) {
+      throw new SettingsException(e.getMessage(), e);
+    } finally {
+      if (parser != null)
+        parser.close();
+    }
   }
 
 }

@@ -61,7 +61,7 @@ public interface IJIRAClient {
    * Add index structure builder so JIRA client can obtain only fields necessary for indexing.
    * 
    * @param indexStructureBuilder
-   * @see IJIRAIssueIndexStructureBuilder#getRequiredJIRAIssueFields()
+   * @see IJIRAIssueIndexStructureBuilder#getRequiredJIRACallIssueFields()
    */
   public void setIndexStructureBuilder(IJIRAIssueIndexStructureBuilder indexStructureBuilder);
 

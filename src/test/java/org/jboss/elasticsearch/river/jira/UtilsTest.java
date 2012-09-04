@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -132,6 +133,67 @@ public class UtilsTest {
     Assert.assertEquals(2, map.size());
     Assert.assertTrue(map.containsKey("key2"));
     Assert.assertTrue(map.containsKey("key3"));
+  }
+
+  @Test
+  public void remapDataInMap() {
+    // case - no exceptions on distinct null and empty inputs
+    Utils.remapDataInMap(null, null);
+    Map<String, String> remapInstructions = new LinkedHashMap<String, String>();
+    Utils.remapDataInMap(null, remapInstructions);
+    Map<String, Object> map = new LinkedHashMap<String, Object>();
+    Utils.remapDataInMap(map, null);
+    Utils.remapDataInMap(map, remapInstructions);
+    remapInstructions.put("key1", "key1new");
+    Utils.remapDataInMap(null, remapInstructions);
+    Utils.remapDataInMap(map, remapInstructions);
+
+    // case - no change in map if remap instruction is null or empty
+    remapInstructions.clear();
+    map.put("key1", "value1");
+    map.put("key2", "value2");
+    Utils.remapDataInMap(map, null);
+    Assert.assertEquals(2, map.size());
+    Assert.assertEquals("value1", map.get("key1"));
+    Assert.assertEquals("value2", map.get("key2"));
+    Utils.remapDataInMap(map, remapInstructions);
+    Assert.assertEquals(2, map.size());
+    Assert.assertEquals("value1", map.get("key1"));
+    Assert.assertEquals("value2", map.get("key2"));
+
+    // case remap some values and filter out some other and leave some untouched
+    map.clear();
+    remapInstructions.clear();
+    map.put("key1", "value1");
+    map.put("key2", "value2");
+    map.put("key3", "value3");
+    map.put("key4", "value4");
+    map.put("key5", "value5");
+    map.put("key6", "value6");
+    map.put("key7", "value7");
+    map.put("key8", "value8");
+    map.put("key9", "value9");
+    map.put("key10", "value10");
+
+    remapInstructions.put("key1", "key1new");
+    remapInstructions.put("key3", "key3");
+    remapInstructions.put("key4", "key5");
+    remapInstructions.put("key6", "key4");
+    remapInstructions.put("key7", "key8");
+    remapInstructions.put("key8", "key7");
+    remapInstructions.put("key10", "key10new");
+
+    Utils.remapDataInMap(map, remapInstructions);
+    Assert.assertEquals(7, map.size());
+    Assert.assertEquals("value1", map.get("key1new"));
+    Assert.assertFalse(map.containsKey("key2"));
+    Assert.assertEquals("value3", map.get("key3"));
+    Assert.assertEquals("value4", map.get("key5"));
+    Assert.assertEquals("value6", map.get("key4"));
+    Assert.assertEquals("value7", map.get("key8"));
+    Assert.assertEquals("value8", map.get("key7"));
+    Assert.assertFalse(map.containsKey("key9"));
+    Assert.assertEquals("value10", map.get("key10new"));
   }
 
   @Test

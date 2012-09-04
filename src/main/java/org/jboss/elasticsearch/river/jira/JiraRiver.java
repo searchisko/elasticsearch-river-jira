@@ -167,8 +167,9 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       throw new SettingsException("jira element of configuration structure not found");
     }
 
+    Map<String, Object> indexSettings = null;
     if (settings.settings().containsKey("index")) {
-      Map<String, Object> indexSettings = (Map<String, Object>) settings.settings().get("index");
+      indexSettings = (Map<String, Object>) settings.settings().get("index");
       indexName = XContentMapValues.nodeStringValue(indexSettings.get("index"), riverName.name());
       typeName = XContentMapValues.nodeStringValue(indexSettings.get("type"), INDEX_TYPE_NAME_DEFAULT);
     } else {
@@ -181,7 +182,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
             "Creating JIRA River for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type '{}'.",
             url, jiraUser, jiraJqlTimezone, indexName, typeName);
 
-    jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName);
+    jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName,
+        indexSettings);
     jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
   }
 

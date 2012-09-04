@@ -28,11 +28,11 @@ public interface IJIRAIssueIndexStructureBuilder {
   String getIssuesSearchIndexName(String jiraProjectKey);
 
   /**
-   * Get issue fields required from JIRA to build index document.
+   * Get issue fields required from JIRA to build index document. Used to construct JIRA request.
    * 
    * @return comma separated list of fields
    */
-  String getRequiredJIRAIssueFields();
+  String getRequiredJIRACallIssueFields();
 
   /**
    * Store/Update issue obtained from JIRA in search index.

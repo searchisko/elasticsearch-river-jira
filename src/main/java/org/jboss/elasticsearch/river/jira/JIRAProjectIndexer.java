@@ -112,7 +112,6 @@ public class JIRAProjectIndexer implements Runnable {
    * @throws Exception
    * 
    */
-  @SuppressWarnings("unchecked")
   protected void processUpdate() throws Exception {
     updatedCount = 0;
     Date updatedAfter = null;
@@ -148,14 +147,14 @@ public class JIRAProjectIndexer implements Runnable {
           String issueKey = XContentMapValues.nodeStringValue(issue.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY),
               null);
           if (issueKey == null) {
-            throw new IllegalArgumentException("'key' field not found in JIRA data");
+            throw new IllegalArgumentException("Issue 'key' field not found in JIRA response for project " + projectKey
+                + " within issue data: " + issue);
           }
-          lastIssueUpdated = XContentMapValues.nodeStringValue(((Map<String, Object>) issue
-              .get(JIRA5RestIssueIndexStructureBuilder.JF_FIELDS)).get(JIRA5RestIssueIndexStructureBuilder.JF_UPDATED),
-              null);
+          lastIssueUpdated = XContentMapValues.nodeStringValue(
+              XContentMapValues.extractValue(JIRA5RestIssueIndexStructureBuilder.JF_UPDATED, issue), null);
           logger.debug("Go to update index for issue {} with updated {}", issueKey, lastIssueUpdated);
           if (lastIssueUpdated == null) {
-            throw new IllegalArgumentException("'updated' field not found in JIRA data for key " + issueKey);
+            throw new IllegalArgumentException("'updated' field not found in JIRA response data for issue " + issueKey);
           }
           if (firstIssueUpdated == null) {
             firstIssueUpdated = lastIssueUpdated;

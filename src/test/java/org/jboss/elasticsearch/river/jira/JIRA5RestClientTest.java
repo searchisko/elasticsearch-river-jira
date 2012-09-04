@@ -185,7 +185,7 @@ public class JIRA5RestClientTest {
     };
     IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
     tested.setIndexStructureBuilder(jiraIssueIndexStructureBuilderMock);
-    when(jiraIssueIndexStructureBuilderMock.getRequiredJIRAIssueFields()).thenReturn(
+    when(jiraIssueIndexStructureBuilderMock.getRequiredJIRACallIssueFields()).thenReturn(
         "key,status,issuetype,created,updated,reporter,assignee,summary,description");
 
     // case - no maxResults parameter defined

@@ -120,22 +120,27 @@ public class JIRA5RestClient implements IJIRAClient {
   @Override
   @SuppressWarnings("unchecked")
   public List<String> getAllJIRAProjects() throws Exception {
+    XContentParser parser = null;
+    try {
+      byte[] responseData = performJIRAGetRESTCall("project", null);
+      logger.debug("JIRA REST response data: {}", new String(responseData));
 
-    byte[] responseData = performJIRAGetRESTCall("project", null);
-    logger.debug("JIRA REST response data: {}", new String(responseData));
+      StringBuilder sb = new StringBuilder();
+      sb.append("{ \"projects\" : ").append(new String(responseData, "UTF-8")).append("}");
+      responseData = sb.toString().getBytes("UTF-8");
+      parser = XContentHelper.createParser(responseData, 0, responseData.length);
+      Map<String, Object> responseParsed = parser.mapAndClose();
 
-    StringBuilder sb = new StringBuilder();
-    sb.append("{ \"projects\" : ").append(new String(responseData, "UTF-8")).append("}");
-    responseData = sb.toString().getBytes("UTF-8");
-    XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
-    Map<String, Object> responseParsed = parser.mapAndClose();
+      List<String> ret = new ArrayList<String>();
+      for (Map<String, Object> mk : (List<Map<String, Object>>) responseParsed.get("projects")) {
+        ret.add((String) mk.get("key"));
+      }
 
-    List<String> ret = new ArrayList<String>();
-    for (Map<String, Object> mk : (List<Map<String, Object>>) responseParsed.get("projects")) {
-      ret.add((String) mk.get("key"));
+      return ret;
+    } finally {
+      if (parser != null)
+        parser.close();
     }
-
-    return ret;
   }
 
   /**
@@ -190,9 +195,9 @@ public class JIRA5RestClient implements IJIRAClient {
     params.add(new NameValuePair("startAt", startAt + ""));
 
     if (indexStructureBuilder != null) {
-      String fields = indexStructureBuilder.getRequiredJIRAIssueFields();
+      String fields = indexStructureBuilder.getRequiredJIRACallIssueFields();
       if (fields != null) {
-        params.add(new NameValuePair("fields", indexStructureBuilder.getRequiredJIRAIssueFields()));
+        params.add(new NameValuePair("fields", indexStructureBuilder.getRequiredJIRACallIssueFields()));
       }
     }
 
