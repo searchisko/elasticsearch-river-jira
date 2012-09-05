@@ -43,7 +43,7 @@ public class ElasticSearchIntegrationTest {
 
       JiraRiver jr = new JiraRiver(new RiverName("rt", "my_jira_river"), rs, client);
       JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder("my_jira_river",
-          "my_jira_index", "jira_issue", null);
+          "my_jira_index", "jira_issue", "http://issues-stg.jboss.org", null);
 
       String project = "ORG";
       // Date date = new Date();

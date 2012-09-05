@@ -183,7 +183,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
             url, jiraUser, jiraJqlTimezone, indexName, typeName);
 
     jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName,
-        indexSettings);
+        url, indexSettings);
     jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
   }
 

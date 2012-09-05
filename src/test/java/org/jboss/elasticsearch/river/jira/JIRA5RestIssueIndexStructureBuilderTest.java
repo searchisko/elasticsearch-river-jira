@@ -37,16 +37,17 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
   public void configuration_read_ok() {
 
     JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name",
-        "type_name", loadTestSettings("/index_structure_configuration_test_ok.json"));
+        "type_name", "http://issues-stg.jboss.org", loadTestSettings("/index_structure_configuration_test_ok.json"));
     Assert.assertEquals("river_name", tested.riverName);
     Assert.assertEquals("index_name", tested.indexName);
     Assert.assertEquals("type_name", tested.typeName);
     Assert.assertEquals("river_name", tested.indexFieldForRiverName);
+    Assert.assertEquals("link", tested.indexFieldForIssueURL);
+    Assert.assertEquals("http://issues-stg.jboss.org/browse/", tested.jiraIssueShowUrlBase);
     Assert.assertEquals("jira_project_key", tested.indexFieldForProjectKey);
 
-    Assert.assertEquals(6, tested.fieldsConfig.size());
+    Assert.assertEquals(5, tested.fieldsConfig.size());
     assertFieldConfiguration(tested.fieldsConfig, "issue_key", "key", null);
-    assertFieldConfiguration(tested.fieldsConfig, "link", "self", null);
     assertFieldConfiguration(tested.fieldsConfig, "reporter", "fields.reporter", "user2");
     assertFieldConfiguration(tested.fieldsConfig, "assignee", "fields.assignee", "user2");
     assertFieldConfiguration(tested.fieldsConfig, "fix_versions", "fields.fixVersions", "name2");
@@ -71,7 +72,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
   public void configuration_read_validation() {
 
     try {
-      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
+      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name", "http://issues-stg.jboss.org/",
           loadTestSettings("/index_structure_configuration_test_err_nojirafield.json"));
       Assert.fail("SettingsException must be thrown");
     } catch (SettingsException e) {
@@ -80,7 +81,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     }
 
     try {
-      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
+      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name", "http://issues-stg.jboss.org",
           loadTestSettings("/index_structure_configuration_test_err_emptyjirafield.json"));
       Assert.fail("SettingsException must be thrown");
     } catch (SettingsException e) {
@@ -89,7 +90,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     }
 
     try {
-      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
+      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name", "http://issues-stg.jboss.org/",
           loadTestSettings("/index_structure_configuration_test_err_unknownvaluefilter.json"));
       Assert.fail("SettingsException must be thrown");
     } catch (SettingsException e) {
@@ -99,7 +100,6 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
           e.getMessage());
     }
 
-    // TODO UNITTEST
   }
 
   @SuppressWarnings("rawtypes")
@@ -107,17 +107,17 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
   public void configuration_defaultLoading() {
 
     assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
-        null));
+        "http://issues-stg.jboss.org", null));
 
     Map<String, Object> settings = new HashMap<String, Object>();
     assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
-        settings));
+        "http://issues-stg.jboss.org", settings));
 
     settings.put(JIRA5RestIssueIndexStructureBuilder.CONFIG_FIELDS, new HashMap());
     settings.put(JIRA5RestIssueIndexStructureBuilder.CONFIG_FILTERS, new HashMap());
     settings.put(JIRA5RestIssueIndexStructureBuilder.CONFIG_FIELDRIVERNAME, " ");
     assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
-        settings));
+        "http://issues-stg.jboss.org/", settings));
 
   }
 
@@ -127,8 +127,10 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals("type_name", tested.typeName);
     Assert.assertEquals("source", tested.indexFieldForRiverName);
     Assert.assertEquals("project_key", tested.indexFieldForProjectKey);
+    Assert.assertEquals("document_url", tested.indexFieldForIssueURL);
+    Assert.assertEquals("http://issues-stg.jboss.org/browse/", tested.jiraIssueShowUrlBase);
 
-    Assert.assertEquals(15, tested.fieldsConfig.size());
+    Assert.assertEquals(14, tested.fieldsConfig.size());
     assertFieldConfiguration(tested.fieldsConfig, "project_name", "fields.project.name", null);
     assertFieldConfiguration(tested.fieldsConfig, "assignee", "fields.assignee", "user");
     assertFieldConfiguration(tested.fieldsConfig, "fix_versions", "fields.fixVersions", "name");
@@ -154,7 +156,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
   @Test
   public void getRequiredJIRACallIssueFields() {
-    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null, null);
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
+        "http://issues-stg.jboss.org/", null);
 
     // case - mandatory fields in set
     List<String> fp = Utils.parseCsvString(tested.getRequiredJIRACallIssueFields());
@@ -184,7 +187,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
   @Test
   public void addValueToTheIndex() throws Exception {
-    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null, null);
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
+        "http://issues-stg.jboss.org/", null);
 
     XContentGenerator xContentGeneratorMock = mock(XContentGenerator.class);
     XContentBuilder out = XContentBuilder.builder(preparexContentMock(xContentGeneratorMock));
@@ -297,7 +301,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
   @Test
   public void addValueToTheIndexField() throws Exception {
-    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null, null);
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
+        "http://issues-stg.jboss.org/", null);
 
     XContentGenerator xContentGeneratorMock = mock(XContentGenerator.class);
     XContentBuilder out = XContentBuilder.builder(preparexContentMock(xContentGeneratorMock));

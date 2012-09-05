@@ -2,9 +2,9 @@
     "index" : {
         "field_river_name"  : "river_name",
         "field_project_key" : "jira_project_key",
+        "field_issue_url"   : "link",
         "fields" : {
             "issue_key"      : {"jira_field" : "key"},
-            "link"           : {"jira_field" : "self"},
             "reporter"       : {"jira_field" : "fields.reporter", "value_filter" : "user2"},
             "assignee"       : {"jira_field" : "fields.assignee", "value_filter" : "user2"},
             "fix_versions"   : {"jira_field" : "fields.fixVersions", "value_filter" : "name2"},

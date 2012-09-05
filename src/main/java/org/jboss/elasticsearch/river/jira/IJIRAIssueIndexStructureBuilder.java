@@ -35,11 +35,27 @@ public interface IJIRAIssueIndexStructureBuilder {
   String getRequiredJIRACallIssueFields();
 
   /**
+   * Get key for issue from data obtained from JIRA.
+   * 
+   * @param issue data obtained from JIRA to be indexed (JSON parsed into Map of Map structure)
+   * @return
+   */
+  String extractIssueKey(Map<String, Object> issue);
+
+  /**
+   * Get date of last issue update from data obtained from JIRA.
+   * 
+   * @param issue data obtained from JIRA to be indexed (JSON parsed into Map of Map structure)
+   * @return date of last update
+   */
+  Date extractIssueUpdated(Map<String, Object> issue);
+
+  /**
    * Store/Update issue obtained from JIRA in search index.
    * 
    * @param esBulk bulk operation builder used to update issue data in search index
    * @param jiraProjectKey JIRA project key indexed issue is for
-   * @param issue data obtained from JIRA to be indexed (JSON paresd into Map of Map structure)
+   * @param issue data obtained from JIRA to be indexed (JSON parsed into Map of Map structure)
    * @throws Exception
    */
   void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception;

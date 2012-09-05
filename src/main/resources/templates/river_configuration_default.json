@@ -13,10 +13,10 @@
         "type"              : "jira_issue",
         "field_river_name"  : "source",
         "field_project_key" : "project_key",
+        "field_issue_url"   : "document_url",
         "fields" : {
             "project_name"   : {"jira_field" : "fields.project.name"},
             "issue_key"      : {"jira_field" : "key"},
-            "document_url"   : {"jira_field" : "self"},
             "issue_type"     : {"jira_field" : "fields.issuetype.name"},
             "summary"        : {"jira_field" : "fields.summary"},
             "status"         : {"jira_field" : "fields.status.name"},
@@ -37,6 +37,16 @@
                 "displayName"  : "display_name" 
             },
             "name" : { "name" : "name" }
+        },
+        "comment_mode"   : "embedded",
+        "field_comments" : "comments", 
+        "comment_fields" : {
+            "comment_id"      : {"jira_field" : "id"},
+            "comment_body"    : {"jira_field" : "body"},
+            "comment_author"  : {"jira_field" : "author", "value_filter" : "user"},
+            "comment_updater" : {"jira_field" : "updateAuthor", "value_filter" : "user"},
+            "comment_created" : {"jira_field" : "created"},
+            "comment_updated" : {"jira_field" : "updated"}
         }
     }
 }

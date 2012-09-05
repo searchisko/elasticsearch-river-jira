@@ -69,6 +69,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected static final String CONFIG_FILTERS = "value_filters";
   protected static final String CONFIG_FIELDRIVERNAME = "field_river_name";
   protected static final String CONFIG_FIELDPROJECTKEY = "field_project_key";
+  protected static final String CONFIG_FIELDISSUEURL = "field_issue_url";
 
   /**
    * Fields configuration structure. Key is name of field in search index. Value is map of configurations for given
@@ -93,9 +94,19 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected String indexFieldForProjectKey = null;
 
   /**
+   * Name of field in search index where JIRA issue URL is stored.
+   */
+  protected String indexFieldForIssueURL = null;
+
+  /**
    * Set of fields requested from JIRA during call
    */
   protected Set<String> jiraCallFieldSet = new LinkedHashSet<String>();
+
+  /**
+   * Base URL used to generate JIRA issue show URL
+   */
+  protected String jiraIssueShowUrlBase;
 
   /**
    * Constructor.
@@ -108,16 +119,23 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
    * @throws SettingsException
    */
   @SuppressWarnings("unchecked")
-  public JIRA5RestIssueIndexStructureBuilder(String riverName, String indexName, String typeName,
+  public JIRA5RestIssueIndexStructureBuilder(String riverName, String indexName, String typeName, String jiraUrlBase,
       Map<String, Object> settings) throws SettingsException {
     super();
     this.riverName = riverName;
     this.indexName = indexName;
     this.typeName = typeName;
 
+    jiraIssueShowUrlBase = jiraUrlBase;
+    if (!jiraIssueShowUrlBase.endsWith("/")) {
+      jiraIssueShowUrlBase += "/";
+    }
+    jiraIssueShowUrlBase += "browse/";
+
     if (settings != null) {
       indexFieldForRiverName = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDRIVERNAME), null);
       indexFieldForProjectKey = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDPROJECTKEY), null);
+      indexFieldForIssueURL = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDISSUEURL), null);
       filtersConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_FILTERS);
       fieldsConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_FIELDS);
     }
@@ -127,6 +145,32 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     validateConfiguration();
 
     prepareJiraCallFieldSet();
+  }
+
+  @SuppressWarnings("unchecked")
+  private void loadDefaultsIfNecessary() {
+    Map<String, Object> settingsDefault = loadDefaultSettingsMapFromFile();
+    if (filtersConfig == null || filtersConfig.isEmpty()) {
+      filtersConfig = (Map<String, Map<String, String>>) settingsDefault.get(CONFIG_FILTERS);
+    }
+    if (fieldsConfig == null || fieldsConfig.isEmpty()) {
+      fieldsConfig = (Map<String, Map<String, String>>) settingsDefault.get(CONFIG_FIELDS);
+    }
+    if (Utils.isEmpty(indexFieldForRiverName)) {
+      indexFieldForRiverName = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDRIVERNAME), null);
+    } else {
+      indexFieldForRiverName = indexFieldForRiverName.trim();
+    }
+    if (Utils.isEmpty(indexFieldForProjectKey)) {
+      indexFieldForProjectKey = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDPROJECTKEY), null);
+    } else {
+      indexFieldForProjectKey = indexFieldForProjectKey.trim();
+    }
+    if (Utils.isEmpty(indexFieldForIssueURL)) {
+      indexFieldForIssueURL = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDISSUEURL), null);
+    } else {
+      indexFieldForIssueURL = indexFieldForIssueURL.trim();
+    }
   }
 
   private void validateConfiguration() {
@@ -142,6 +186,9 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     }
     if (Utils.isEmpty(indexFieldForProjectKey)) {
       throw new SettingsException("No default 'index/field_project_key' configuration found");
+    }
+    if (Utils.isEmpty(indexFieldForIssueURL)) {
+      throw new SettingsException("No default 'index/field_issue_url' configuration found");
     }
 
     for (String idxFieldName : fieldsConfig.keySet()) {
@@ -174,27 +221,6 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   }
 
   @SuppressWarnings("unchecked")
-  private void loadDefaultsIfNecessary() {
-    Map<String, Object> settingsDefault = loadDefaultSettingsMapFromFile();
-    if (filtersConfig == null || filtersConfig.isEmpty()) {
-      filtersConfig = (Map<String, Map<String, String>>) settingsDefault.get(CONFIG_FILTERS);
-    }
-    if (fieldsConfig == null || fieldsConfig.isEmpty()) {
-      fieldsConfig = (Map<String, Map<String, String>>) settingsDefault.get(CONFIG_FIELDS);
-    }
-    if (Utils.isEmpty(indexFieldForRiverName)) {
-      indexFieldForRiverName = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDRIVERNAME), null);
-    } else {
-      indexFieldForRiverName = indexFieldForRiverName.trim();
-    }
-    if (Utils.isEmpty(indexFieldForProjectKey)) {
-      indexFieldForProjectKey = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDPROJECTKEY), null);
-    } else {
-      indexFieldForProjectKey = indexFieldForProjectKey.trim();
-    }
-  }
-
-  @SuppressWarnings("unchecked")
   private Map<String, Object> loadDefaultSettingsMapFromFile() throws SettingsException {
     Map<String, Object> json = Utils.loadJSONFromJarPackagedFile("/templates/river_configuration_default.json");
     return (Map<String, Object>) json.get("index");
@@ -212,8 +238,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 
   @Override
   public void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception {
-    esBulk.add(indexRequest(indexName).type(typeName).id(XContentMapValues.nodeStringValue(issue.get(JF_KEY), null))
-        .source(toJson(jiraProjectKey, issue)));
+    esBulk.add(indexRequest(indexName).type(typeName).id(extractIssueKey(issue)).source(toJson(jiraProjectKey, issue)));
   }
 
   @Override
@@ -229,10 +254,21 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     esBulk.add(deleteRequest(indexName).type(typeName).id(issueDocumentToDelete.getId()));
   }
 
+  @Override
+  public String extractIssueKey(Map<String, Object> issue) {
+    return XContentMapValues.nodeStringValue(issue.get(JF_KEY), null);
+  }
+
+  @Override
+  public Date extractIssueUpdated(Map<String, Object> issue) {
+    return Utils.parseISODateTime(XContentMapValues.nodeStringValue(XContentMapValues.extractValue(JF_UPDATED, issue),
+        null));
+  }
+
   /**
    * Convert JIRA returned issue REST data inot JSON document for index.
    * 
-   * @param jiraProjectKey key of jira project document is for
+   * @param jiraProjectKey key of jira project document is for.
    * @param issue issue data from JIRA REST call
    * @return JSON builder
    * @throws Exception
@@ -241,6 +277,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     XContentBuilder out = jsonBuilder().startObject();
     addValueToTheIndexField(out, indexFieldForRiverName, riverName);
     addValueToTheIndexField(out, indexFieldForProjectKey, jiraProjectKey);
+    addValueToTheIndexField(out, indexFieldForIssueURL, jiraIssueShowUrlBase + extractIssueKey(issue));
 
     for (String indexFieldName : fieldsConfig.keySet()) {
       Map<String, String> fieldConfig = fieldsConfig.get(indexFieldName);

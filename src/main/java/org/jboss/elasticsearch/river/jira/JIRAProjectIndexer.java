@@ -14,7 +14,6 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
-import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.elasticsearch.search.SearchHit;
 
 /**
@@ -122,6 +121,7 @@ public class JIRAProjectIndexer implements Runnable {
     if (updatedAfter == null)
       fullUpdate = true;
     Date lastIssueUpdatedDate = null;
+
     int startAt = 0;
 
     logger.info("Go to perform {} update for JIRA project {}", fullUpdate ? "full" : "incremental", projectKey);
@@ -140,24 +140,21 @@ public class JIRAProjectIndexer implements Runnable {
       if (res.getIssuesCount() == 0) {
         cont = false;
       } else {
-        String firstIssueUpdated = null;
-        String lastIssueUpdated = null;
+        Date firstIssueUpdatedDate = null;
         BulkRequestBuilder esBulk = esIntegrationComponent.prepareESBulkRequestBuilder();
         for (Map<String, Object> issue : res.getIssues()) {
-          String issueKey = XContentMapValues.nodeStringValue(issue.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY),
-              null);
+          String issueKey = jiraIssueIndexStructureBuilder.extractIssueKey(issue);
           if (issueKey == null) {
             throw new IllegalArgumentException("Issue 'key' field not found in JIRA response for project " + projectKey
                 + " within issue data: " + issue);
           }
-          lastIssueUpdated = XContentMapValues.nodeStringValue(
-              XContentMapValues.extractValue(JIRA5RestIssueIndexStructureBuilder.JF_UPDATED, issue), null);
-          logger.debug("Go to update index for issue {} with updated {}", issueKey, lastIssueUpdated);
-          if (lastIssueUpdated == null) {
+          lastIssueUpdatedDate = Utils.roundDateToMinutePrecise(jiraIssueIndexStructureBuilder.extractIssueUpdated(issue));
+          logger.debug("Go to update index for issue {} with updated {}", issueKey, lastIssueUpdatedDate);
+          if (lastIssueUpdatedDate == null) {
             throw new IllegalArgumentException("'updated' field not found in JIRA response data for issue " + issueKey);
           }
-          if (firstIssueUpdated == null) {
-            firstIssueUpdated = lastIssueUpdated;
+          if (firstIssueUpdatedDate == null) {
+            firstIssueUpdatedDate = lastIssueUpdatedDate;
           }
 
           jiraIssueIndexStructureBuilder.indexIssue(esBulk, projectKey, issue);
@@ -166,14 +163,12 @@ public class JIRAProjectIndexer implements Runnable {
             break;
         }
 
-        lastIssueUpdatedDate = Utils.parseISODateWithMinutePrecise(lastIssueUpdated);
-
         storeLastIssueUpdatedDate(esBulk, projectKey, lastIssueUpdatedDate);
         esIntegrationComponent.executeESBulkRequest(esBulk);
 
         // next logic depends on issues sorted by update time ascending when returned from
         // jiraClient.getJIRAChangedIssues()!!!!
-        if (!lastIssueUpdatedDate.equals(Utils.parseISODateWithMinutePrecise(firstIssueUpdated))) {
+        if (!lastIssueUpdatedDate.equals(firstIssueUpdatedDate)) {
           // processed issues updated in different times, so we can continue by issue filtering based on latest time
           // of update which is more safe for concurrent changes in JIRA
           updatedAfter = lastIssueUpdatedDate;

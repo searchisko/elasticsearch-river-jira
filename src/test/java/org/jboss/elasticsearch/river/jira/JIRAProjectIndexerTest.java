@@ -29,6 +29,8 @@ import org.elasticsearch.search.internal.InternalSearchHits;
 import org.elasticsearch.search.internal.InternalSearchResponse;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 /**
  * Unit test for {@link JIRAProjectIndexer}.
@@ -115,6 +117,7 @@ public class JIRAProjectIndexerTest {
       addIssueMock(issues, "ORG-45", "2012-08-14T08:00:00.000-0400");
       addIssueMock(issues, "ORG-46", "2012-08-14T08:01:00.000-0400");
       addIssueMock(issues, "ORG-47", "2012-08-14T08:02:10.000-0400");
+      configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
       when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
           new ChangedIssuesResults(issues, 0, 50, 3));
       BulkRequestBuilder brb = new BulkRequestBuilder(null);
@@ -158,6 +161,7 @@ public class JIRAProjectIndexerTest {
             .readDatetimeValue("ORG", JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE))
         .thenReturn(mockDateAfter);
     addIssueMock(issues, "ORG-45", "2012-08-14T08:00:20.000-0400");
+    configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, Utils.roundDateToMinutePrecise(mockDateAfter), null))
         .thenReturn(new ChangedIssuesResults(issues, 0, 50, 1));
     BulkRequestBuilder brb = new BulkRequestBuilder(null);
@@ -221,6 +225,7 @@ public class JIRAProjectIndexerTest {
     when(jiraClientMock.getJIRAChangedIssues("ORG", 0, after3, null)).thenReturn(
         new ChangedIssuesResults(issues3, 0, 3, 2));
     when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+    configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
 
     tested.processUpdate();
     Assert.assertEquals(8, tested.updatedCount);
@@ -287,6 +292,7 @@ public class JIRAProjectIndexerTest {
     when(jiraClientMock.getJIRAChangedIssues("ORG", 6, null, null)).thenReturn(
         new ChangedIssuesResults(issues3, 6, 3, 8));
     when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+    configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
 
     tested.processUpdate();
     Assert.assertEquals(8, tested.updatedCount);
@@ -332,6 +338,7 @@ public class JIRAProjectIndexerTest {
       when(jiraClientMock.getJIRAChangedIssues("ORG", 0, lastUpdatedDate, null)).thenReturn(
           new ChangedIssuesResults(issues, 0, 50, 3));
       when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+      configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
 
       tested.run();
       verify(esIntegrationMock, times(1)).reportIndexingFinished(eq("ORG"), eq(true), eq(false), eq(3), eq(0),
@@ -391,6 +398,24 @@ public class JIRAProjectIndexerTest {
           (Date) Mockito.isNotNull(), Mockito.anyLong(), eq((String) null));
 
     }
+
+  }
+
+  /**
+   * @param jiraIssueIndexStructureBuilderMock
+   */
+  @SuppressWarnings("unchecked")
+  private void configureStructureBuilderMockDefaults(IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock) {
+    when(jiraIssueIndexStructureBuilderMock.extractIssueKey(Mockito.anyMap())).thenAnswer(new Answer<String>() {
+      public String answer(InvocationOnMock invocation) throws Throwable {
+        return (String) ((Map<String, Object>) invocation.getArguments()[0]).get("key");
+      }
+    });
+    when(jiraIssueIndexStructureBuilderMock.extractIssueUpdated(Mockito.anyMap())).thenAnswer(new Answer<Date>() {
+      public Date answer(InvocationOnMock invocation) throws Throwable {
+        return Utils.parseISODateTime((String) ((Map<String, Object>) invocation.getArguments()[0]).get("updated"));
+      }
+    });
 
   }
 
@@ -522,9 +547,7 @@ public class JIRAProjectIndexerTest {
     Map<String, Object> issue = new HashMap<String, Object>();
     issues.add(issue);
     issue.put("key", key);
-    Map<String, Object> fields = new HashMap<String, Object>();
-    issue.put("fields", fields);
-    fields.put("updated", updated);
+    issue.put("updated", updated);
   }
 
 }
