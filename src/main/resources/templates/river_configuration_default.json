@@ -39,7 +39,8 @@
             "name" : { "name" : "name" }
         },
         "comment_mode"   : "embedded",
-        "field_comments" : "comments", 
+        "comment_type"   : "jira_issue_comment", 
+        "field_comments" : "comments",
         "comment_fields" : {
             "comment_id"      : {"jira_field" : "id"},
             "comment_body"    : {"jira_field" : "body"},

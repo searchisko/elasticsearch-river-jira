@@ -14,7 +14,7 @@ import org.elasticsearch.search.SearchHit;
 
 /**
  * Interface for component responsible to transform issue data obtained from JIRA instance call to the document stored
- * in ElasticSearch index.
+ * in ElasticSearch index. Implementation of this interface must be thread safe!
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */

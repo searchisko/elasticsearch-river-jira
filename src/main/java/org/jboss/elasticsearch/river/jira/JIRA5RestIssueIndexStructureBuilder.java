@@ -45,23 +45,26 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   /**
    * JIRA REST response field constants
    */
-  public static final String JF_KEY = "key";
-  public static final String JF_UPDATED = "fields.updated";
+  protected static final String JF_KEY = "key";
+  protected static final String JF_ID = "id";
+  protected static final String JF_UPDATED = "fields.updated";
+  protected static final String JF_COMMENT = "fields.comment";
+  protected static final String JF_COMMENTS = JF_COMMENT + ".comments";
 
   /**
    * Name of River to be stored in document to mark indexing source
    */
-  protected final String riverName;
+  protected String riverName;
 
   /**
    * Name of ElasticSearch index used to store issues
    */
-  protected final String indexName;
+  protected String indexName;
 
   /**
    * Name of ElasticSearch type used to store issues into index
    */
-  protected final String typeName;
+  protected String typeName;
 
   protected static final String CONFIG_FIELDS = "fields";
   protected static final String CONFIG_FIELDS_JIRAFIELD = "jira_field";
@@ -70,6 +73,9 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected static final String CONFIG_FIELDRIVERNAME = "field_river_name";
   protected static final String CONFIG_FIELDPROJECTKEY = "field_project_key";
   protected static final String CONFIG_FIELDISSUEURL = "field_issue_url";
+  protected static final String CONFIG_COMMENTMODE = "comment_mode";
+  protected static final String CONFIG_FIELDCOMMENTS = "field_comments";
+  protected static final String CONFIG_COMMENTFILEDS = "comment_fields";
 
   /**
    * Fields configuration structure. Key is name of field in search index. Value is map of configurations for given
@@ -109,6 +115,30 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected String jiraIssueShowUrlBase;
 
   /**
+   * Issue comment indexing mode.
+   */
+  protected IssueCommentIndexingMode commentIndexingMode;
+
+  /**
+   * Name of field in search index issue document where array of comments is stored in case of
+   * {@link IssueCommentIndexingMode#EMBEDDED}.
+   */
+  protected String indexFieldForComments = null;
+
+  /**
+   * Fields configuration structure for comment document. Key is name of field in search index. Value is map of
+   * configurations for given index field containing <code>CONFIG_FIELDS_xx</code> constants as keys.
+   */
+  protected Map<String, Map<String, String>> commentFieldsConfig;
+
+  /**
+   * Constructor for unit tests. Nothing is filled inside.
+   */
+  protected JIRA5RestIssueIndexStructureBuilder() {
+    super();
+  }
+
+  /**
    * Constructor.
    * 
    * @param riverName name of ElasticSearch River instance this indexer is running inside to be stored in search index
@@ -126,11 +156,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     this.indexName = indexName;
     this.typeName = typeName;
 
-    jiraIssueShowUrlBase = jiraUrlBase;
-    if (!jiraIssueShowUrlBase.endsWith("/")) {
-      jiraIssueShowUrlBase += "/";
-    }
-    jiraIssueShowUrlBase += "browse/";
+    constructJIRAIssueShowUrlBase(jiraUrlBase);
 
     if (settings != null) {
       indexFieldForRiverName = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDRIVERNAME), null);
@@ -138,6 +164,11 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
       indexFieldForIssueURL = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDISSUEURL), null);
       filtersConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_FILTERS);
       fieldsConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_FIELDS);
+
+      commentIndexingMode = IssueCommentIndexingMode.parseConfiguration(XContentMapValues.nodeStringValue(
+          settings.get(CONFIG_COMMENTMODE), null));
+      indexFieldForComments = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDCOMMENTS), null);
+      commentFieldsConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_COMMENTFILEDS);
     }
 
     loadDefaultsIfNecessary();
@@ -145,6 +176,19 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     validateConfiguration();
 
     prepareJiraCallFieldSet();
+  }
+
+  /**
+   * Construct value for {@link #jiraIssueShowUrlBase}.
+   * 
+   * @param jiraUrlBase base URL of jira instance
+   */
+  protected void constructJIRAIssueShowUrlBase(String jiraUrlBase) {
+    jiraIssueShowUrlBase = jiraUrlBase;
+    if (!jiraIssueShowUrlBase.endsWith("/")) {
+      jiraIssueShowUrlBase += "/";
+    }
+    jiraIssueShowUrlBase += "browse/";
   }
 
   @SuppressWarnings("unchecked")
@@ -171,6 +215,20 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     } else {
       indexFieldForIssueURL = indexFieldForIssueURL.trim();
     }
+
+    if (commentIndexingMode == null) {
+      commentIndexingMode = IssueCommentIndexingMode.parseConfiguration(XContentMapValues.nodeStringValue(
+          settingsDefault.get(CONFIG_COMMENTMODE), null));
+    }
+    if (Utils.isEmpty(indexFieldForComments)) {
+      indexFieldForComments = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDCOMMENTS), null);
+    } else {
+      indexFieldForComments = indexFieldForComments.trim();
+    }
+
+    if (commentFieldsConfig == null || commentFieldsConfig.isEmpty()) {
+      commentFieldsConfig = (Map<String, Map<String, String>>) settingsDefault.get(CONFIG_COMMENTFILEDS);
+    }
   }
 
   private void validateConfiguration() {
@@ -190,6 +248,15 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     if (Utils.isEmpty(indexFieldForIssueURL)) {
       throw new SettingsException("No default 'index/field_issue_url' configuration found");
     }
+    if (commentIndexingMode == null) {
+      throw new SettingsException("No default 'index/comment_mode' configuration found");
+    }
+    if (commentFieldsConfig == null) {
+      throw new SettingsException("No default 'index/comment_fields' configuration found");
+    }
+    if (Utils.isEmpty(indexFieldForComments)) {
+      throw new SettingsException("No default 'index/field_comments' configuration found");
+    }
 
     for (String idxFieldName : fieldsConfig.keySet()) {
       if (Utils.isEmpty(idxFieldName)) {
@@ -205,10 +272,25 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
             + "' defined in 'index/fields/" + idxFieldName + "/value_filter'");
       }
     }
+    for (String idxFieldName : commentFieldsConfig.keySet()) {
+      if (Utils.isEmpty(idxFieldName)) {
+        throw new SettingsException("Empty key found in 'index/comment_fields' map.");
+      }
+      Map<String, String> fc = commentFieldsConfig.get(idxFieldName);
+      if (Utils.isEmpty(fc.get(CONFIG_FIELDS_JIRAFIELD))) {
+        throw new SettingsException("'jira_field' is not defined in 'index/comment_fields/" + idxFieldName + "'");
+      }
+      String fil = fc.get(CONFIG_FIELDS_VALUEFILTER);
+      if (fil != null && !filtersConfig.containsKey(fil)) {
+        throw new SettingsException("Filter definition not found for filter name '" + fil
+            + "' defined in 'index/comment_fields/" + idxFieldName + "/value_filter'");
+      }
+    }
 
   }
 
-  private void prepareJiraCallFieldSet() {
+  protected void prepareJiraCallFieldSet() {
+    jiraCallFieldSet.clear();
     // fields always necessary to get from jira
     jiraCallFieldSet.add(getJiraCallFieldName(JF_UPDATED));
     // other fields from configuration
@@ -217,6 +299,9 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
       if (jf != null) {
         jiraCallFieldSet.add(jf);
       }
+    }
+    if (commentIndexingMode != null && commentIndexingMode != IssueCommentIndexingMode.NONE) {
+      jiraCallFieldSet.add(getJiraCallFieldName(JF_COMMENT));
     }
   }
 
@@ -237,8 +322,25 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   }
 
   @Override
+  public String extractIssueKey(Map<String, Object> issue) {
+    return XContentMapValues.nodeStringValue(issue.get(JF_KEY), null);
+  }
+
+  @Override
+  public Date extractIssueUpdated(Map<String, Object> issue) {
+    return Utils.parseISODateTime(XContentMapValues.nodeStringValue(XContentMapValues.extractValue(JF_UPDATED, issue),
+        null));
+  }
+
+  public String extractCommentId(Map<String, Object> comment) {
+    return XContentMapValues.nodeStringValue(comment.get(JF_ID), null);
+  }
+
+  @Override
   public void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception {
-    esBulk.add(indexRequest(indexName).type(typeName).id(extractIssueKey(issue)).source(toJson(jiraProjectKey, issue)));
+    esBulk.add(indexRequest(indexName).type(typeName).id(extractIssueKey(issue))
+        .source(prepareIssueIndexedDocument(jiraProjectKey, issue)));
+    // TODO add issue comments into index if configured as separate documents
   }
 
   @Override
@@ -254,40 +356,87 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     esBulk.add(deleteRequest(indexName).type(typeName).id(issueDocumentToDelete.getId()));
   }
 
-  @Override
-  public String extractIssueKey(Map<String, Object> issue) {
-    return XContentMapValues.nodeStringValue(issue.get(JF_KEY), null);
-  }
-
-  @Override
-  public Date extractIssueUpdated(Map<String, Object> issue) {
-    return Utils.parseISODateTime(XContentMapValues.nodeStringValue(XContentMapValues.extractValue(JF_UPDATED, issue),
-        null));
-  }
-
   /**
-   * Convert JIRA returned issue REST data inot JSON document for index.
+   * Convert JIRA returned issue REST data into JSON document to be stored in search index.
    * 
    * @param jiraProjectKey key of jira project document is for.
    * @param issue issue data from JIRA REST call
-   * @return JSON builder
+   * @return JSON builder with issue document for index
    * @throws Exception
    */
-  protected XContentBuilder toJson(String jiraProjectKey, Map<String, Object> issue) throws Exception {
+  @SuppressWarnings({ "unchecked" })
+  protected XContentBuilder prepareIssueIndexedDocument(String jiraProjectKey, Map<String, Object> issue)
+      throws Exception {
     XContentBuilder out = jsonBuilder().startObject();
     addValueToTheIndexField(out, indexFieldForRiverName, riverName);
     addValueToTheIndexField(out, indexFieldForProjectKey, jiraProjectKey);
-    addValueToTheIndexField(out, indexFieldForIssueURL, jiraIssueShowUrlBase + extractIssueKey(issue));
+    addValueToTheIndexField(out, indexFieldForIssueURL, prepareJIRAGUIUrl(extractIssueKey(issue), null));
 
     for (String indexFieldName : fieldsConfig.keySet()) {
       Map<String, String> fieldConfig = fieldsConfig.get(indexFieldName);
-      Map<String, String> filter = null;
-      if (fieldConfig.get(CONFIG_FIELDS_VALUEFILTER) != null) {
-        filter = filtersConfig.get(fieldConfig.get(CONFIG_FIELDS_VALUEFILTER));
+      addValueToTheIndex(out, indexFieldName, fieldConfig.get(CONFIG_FIELDS_JIRAFIELD), issue,
+          fieldConfig.get(CONFIG_FIELDS_VALUEFILTER));
+    }
+
+    if (commentIndexingMode == IssueCommentIndexingMode.EMBEDDED) {
+      List<Map<String, Object>> comments = (List<Map<String, Object>>) XContentMapValues.extractValue(JF_COMMENTS,
+          issue);
+      if (comments != null && !comments.isEmpty()) {
+        out.startArray(indexFieldForComments);
+        for (Map<String, Object> comment : comments) {
+          out.startObject();
+          addValueToTheIndexField(out, indexFieldForIssueURL,
+              prepareJIRAGUIUrl(extractIssueKey(issue), extractCommentId(comment)));
+          for (String indexFieldName : commentFieldsConfig.keySet()) {
+            Map<String, String> commentFieldConfig = commentFieldsConfig.get(indexFieldName);
+            addValueToTheIndex(out, indexFieldName, commentFieldConfig.get(CONFIG_FIELDS_JIRAFIELD), comment,
+                commentFieldConfig.get(CONFIG_FIELDS_VALUEFILTER));
+          }
+          out.endObject();
+        }
+        out.endArray();
       }
-      addValueToTheIndex(out, indexFieldName, fieldConfig.get(CONFIG_FIELDS_JIRAFIELD), issue, filter);
     }
     return out.endObject();
+  }
+
+  /**
+   * Prepare URL of issue or comment in JIRA GUI.
+   * 
+   * @param issueKey mandatory key of JIRA issue.
+   * @param commentId id of comment, may be null
+   * @return URL to show issue or comment in JIRA GUI
+   */
+  protected String prepareJIRAGUIUrl(String issueKey, String commentId) {
+    if (commentId == null) {
+      return jiraIssueShowUrlBase + issueKey;
+    } else {
+      return jiraIssueShowUrlBase + issueKey + "?focusedCommentId=" + commentId
+          + "&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-" + commentId;
+    }
+  }
+
+  /**
+   * Get defined value from values structure and add it into index document. Calls
+   * {@link #addValueToTheIndex(XContentBuilder, String, String, Map, Map)} and receive filter from
+   * {@link #filtersConfig} based on passed <code>valueFieldFilterName</code>)
+   * 
+   * @param out content builder to add indexed value field into
+   * @param indexField name of field for index
+   * @param valuePath path to get value from <code>values</code> structure. Dot notation for nested values can be used
+   *          here (see {@link XContentMapValues#extractValue(String, Map)}).
+   * @param values structure to get value from. Can be <code>null</code> - nothing added in this case, but not
+   *          exception.
+   * @param valueFieldFilterName name of filter definition to get it from {@link #filtersConfig}
+   * @throws Exception
+   */
+  protected void addValueToTheIndex(XContentBuilder out, String indexField, String valuePath,
+      Map<String, Object> values, String valueFieldFilterName) throws Exception {
+    Map<String, String> filter = null;
+    if (!Utils.isEmpty(valueFieldFilterName)) {
+      filter = filtersConfig.get(valueFieldFilterName);
+    }
+    addValueToTheIndex(out, indexField, valuePath, values, filter);
   }
 
   /**

@@ -45,6 +45,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals("link", tested.indexFieldForIssueURL);
     Assert.assertEquals("http://issues-stg.jboss.org/browse/", tested.jiraIssueShowUrlBase);
     Assert.assertEquals("jira_project_key", tested.indexFieldForProjectKey);
+    Assert.assertEquals(IssueCommentIndexingMode.CHILD, tested.commentIndexingMode);
+    Assert.assertEquals("all_comments", tested.indexFieldForComments);
 
     Assert.assertEquals(5, tested.fieldsConfig.size());
     assertFieldConfiguration(tested.fieldsConfig, "issue_key", "key", null);
@@ -61,6 +63,13 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals(2, userFilter.size());
     Assert.assertEquals("username2", userFilter.get("name"));
     Assert.assertEquals("display_name2", userFilter.get("displayName"));
+
+    Assert.assertEquals(4, tested.commentFieldsConfig.size());
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_body", "body", null);
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_author2", "author", "user2");
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_updater", "updateAuthor", "user2");
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_created", "created", null);
+
   }
 
   @SuppressWarnings("unchecked")
@@ -100,6 +109,15 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
           e.getMessage());
     }
 
+    try {
+      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name", "http://issues-stg.jboss.org/",
+          loadTestSettings("/index_structure_configuration_test_err_nojirafieldcomment.json"));
+      Assert.fail("SettingsException must be thrown");
+    } catch (SettingsException e) {
+      System.out.println(e.getMessage());
+      Assert.assertEquals("'jira_field' is not defined in 'index/comment_fields/comment_author'", e.getMessage());
+    }
+
   }
 
   @SuppressWarnings("rawtypes")
@@ -129,6 +147,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals("project_key", tested.indexFieldForProjectKey);
     Assert.assertEquals("document_url", tested.indexFieldForIssueURL);
     Assert.assertEquals("http://issues-stg.jboss.org/browse/", tested.jiraIssueShowUrlBase);
+    Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED, tested.commentIndexingMode);
+    Assert.assertEquals("comments", tested.indexFieldForComments);
 
     Assert.assertEquals(14, tested.fieldsConfig.size());
     assertFieldConfiguration(tested.fieldsConfig, "project_name", "fields.project.name", null);
@@ -144,6 +164,13 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals("username", userFilter.get("name"));
     Assert.assertEquals("email_address", userFilter.get("emailAddress"));
     Assert.assertEquals("display_name", userFilter.get("displayName"));
+
+    Assert.assertEquals(6, tested.commentFieldsConfig.size());
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_id", "id", null);
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_body", "body", null);
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_author", "author", "user");
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_updater", "updateAuthor", "user");
+    assertFieldConfiguration(tested.commentFieldsConfig, "comment_updated", "updated", null);
   }
 
   private void assertFieldConfiguration(Map<String, Map<String, String>> fieldsConfig, String indexFieldName,
@@ -158,9 +185,13 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
   public void getRequiredJIRACallIssueFields() {
     JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
         "http://issues-stg.jboss.org/", null);
+    tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
+    tested.prepareJiraCallFieldSet();
 
     // case - mandatory fields in set
     List<String> fp = Utils.parseCsvString(tested.getRequiredJIRACallIssueFields());
+
+    Assert.assertEquals(13, fp.size());
     Assert.assertTrue(fp.contains("updated"));
     Assert.assertTrue(fp.contains("project"));
 
@@ -169,7 +200,6 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertTrue(fp.contains("summary"));
     Assert.assertTrue(fp.contains("status"));
     Assert.assertTrue(fp.contains("created"));
-    Assert.assertTrue(fp.contains("updated"));
     Assert.assertTrue(fp.contains("resolutiondate"));
     Assert.assertTrue(fp.contains("description"));
     Assert.assertTrue(fp.contains("labels"));
@@ -177,11 +207,56 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertTrue(fp.contains("reporter"));
     Assert.assertTrue(fp.contains("components"));
     Assert.assertTrue(fp.contains("fixVersions"));
+    Assert.assertFalse(fp.contains("comment"));
+
+    // case - comments enabled
+    tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
+    tested.prepareJiraCallFieldSet();
+    fp = Utils.parseCsvString(tested.getRequiredJIRACallIssueFields());
+    Assert.assertEquals(14, fp.size());
+    Assert.assertTrue(fp.contains("comment"));
+    tested.commentIndexingMode = IssueCommentIndexingMode.CHILD;
+    tested.prepareJiraCallFieldSet();
+    fp = Utils.parseCsvString(tested.getRequiredJIRACallIssueFields());
+    Assert.assertEquals(14, fp.size());
+    Assert.assertTrue(fp.contains("comment"));
+    tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
+    tested.prepareJiraCallFieldSet();
+    fp = Utils.parseCsvString(tested.getRequiredJIRACallIssueFields());
+    Assert.assertEquals(14, fp.size());
+    Assert.assertTrue(fp.contains("comment"));
 
   }
 
   @Test
-  public void toJson() {
+  public void constructJIRAIssueShowUrlBase() {
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder();
+
+    tested.constructJIRAIssueShowUrlBase("http://issues.jboss.org");
+    Assert.assertEquals("http://issues.jboss.org/browse/", tested.jiraIssueShowUrlBase);
+
+    tested.constructJIRAIssueShowUrlBase("http://jira.jboss.org/");
+    Assert.assertEquals("http://jira.jboss.org/browse/", tested.jiraIssueShowUrlBase);
+
+  }
+
+  @Test
+  public void prepareJIRAGUIUrl() {
+
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder();
+    tested.constructJIRAIssueShowUrlBase("http://issues.jboss.org");
+
+    Assert.assertEquals("http://issues.jboss.org/browse/ORG-1250", tested.prepareJIRAGUIUrl("ORG-1250", null));
+
+    Assert
+        .assertEquals(
+            "http://issues.jboss.org/browse/ORG-1250?focusedCommentId=1234&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-1234",
+            tested.prepareJIRAGUIUrl("ORG-1250", "1234"));
+
+  }
+
+  @Test
+  public void prepareIssueIndexedDocument() {
     // TODO UNITTEST
   }
 
@@ -194,20 +269,20 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     XContentBuilder out = XContentBuilder.builder(preparexContentMock(xContentGeneratorMock));
 
     // case - no exception if values parameter is null
-    tested.addValueToTheIndex(out, "testfield", "testpath", null, null);
+    tested.addValueToTheIndex(out, "testfield", "testpath", null, (Map<String, String>) null);
     verify(xContentGeneratorMock, times(0)).writeFieldName(Mockito.anyString());
 
     // case - no exception if value is not found
     reset(xContentGeneratorMock);
     Map<String, Object> values = new HashMap<String, Object>();
-    tested.addValueToTheIndex(out, "testfield", "testpath", values, null);
+    tested.addValueToTheIndex(out, "testfield", "testpath", values, (Map<String, String>) null);
     verify(xContentGeneratorMock, times(0)).writeFieldName(Mockito.anyString());
 
     // case - get correctly value from first level of nesting, no filtering on null filter
     reset(xContentGeneratorMock);
     values.put("myKey", "myValue");
     values.put("myKey2", "myValue2");
-    tested.addValueToTheIndex(out, "testfield", "myKey2", values, null);
+    tested.addValueToTheIndex(out, "testfield", "myKey2", values, (Map<String, String>) null);
     verify(xContentGeneratorMock, times(1)).writeFieldName(Mockito.anyString());
     verify(xContentGeneratorMock).writeFieldName("testfield");
     verify(xContentGeneratorMock).writeString("myValue2");
