@@ -10,7 +10,6 @@ import static org.elasticsearch.client.Requests.indexRequest;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -125,10 +124,41 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 
     loadDefaultsIfNecessary();
 
-    // TODO validate filtersConfig
-    // TODO validate fieldsConfig - project key field is mandatory!
+    validateConfiguration();
 
     prepareJiraCallFieldSet();
+  }
+
+  private void validateConfiguration() {
+
+    if (filtersConfig == null) {
+      throw new SettingsException("No default 'index/value_filters' configuration found");
+    }
+    if (fieldsConfig == null) {
+      throw new SettingsException("No default 'index/fields' configuration found");
+    }
+    if (Utils.isEmpty(indexFieldForRiverName)) {
+      throw new SettingsException("No default 'index/field_river_name' configuration found");
+    }
+    if (Utils.isEmpty(indexFieldForProjectKey)) {
+      throw new SettingsException("No default 'index/field_project_key' configuration found");
+    }
+
+    for (String idxFieldName : fieldsConfig.keySet()) {
+      if (Utils.isEmpty(idxFieldName)) {
+        throw new SettingsException("Empty key found in 'index/fields' map.");
+      }
+      Map<String, String> fc = fieldsConfig.get(idxFieldName);
+      if (Utils.isEmpty(fc.get(CONFIG_FIELDS_JIRAFIELD))) {
+        throw new SettingsException("'jira_field' is not defined in 'index/fields/" + idxFieldName + "'");
+      }
+      String fil = fc.get(CONFIG_FIELDS_VALUEFILTER);
+      if (fil != null && !filtersConfig.containsKey(fil)) {
+        throw new SettingsException("Filter definition not found for filter name '" + fil
+            + "' defined in 'index/fields/" + idxFieldName + "/value_filter'");
+      }
+    }
+
   }
 
   private void prepareJiraCallFieldSet() {
@@ -149,15 +179,8 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     if (filtersConfig == null || filtersConfig.isEmpty()) {
       filtersConfig = (Map<String, Map<String, String>>) settingsDefault.get(CONFIG_FILTERS);
     }
-    if (filtersConfig == null) {
-      filtersConfig = new HashMap<String, Map<String, String>>();
-    }
-
     if (fieldsConfig == null || fieldsConfig.isEmpty()) {
       fieldsConfig = (Map<String, Map<String, String>>) settingsDefault.get(CONFIG_FIELDS);
-    }
-    if (fieldsConfig == null) {
-      fieldsConfig = new HashMap<String, Map<String, String>>();
     }
     if (Utils.isEmpty(indexFieldForRiverName)) {
       indexFieldForRiverName = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDRIVERNAME), null);
@@ -173,7 +196,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 
   @SuppressWarnings("unchecked")
   private Map<String, Object> loadDefaultSettingsMapFromFile() throws SettingsException {
-    Map<String, Object> json = Utils.loadJSONFromJarPackagedFile("/templates/river_configuration_example.json");
+    Map<String, Object> json = Utils.loadJSONFromJarPackagedFile("/templates/river_configuration_default.json");
     return (Map<String, Object>) json.get("index");
   }
 

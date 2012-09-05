@@ -25,14 +25,13 @@ Creating the JIRA river can be done using:
 	        "urlBase"               : "https://issues.jboss.org",
 	        "username"              : "jira_username",
 	        "pwd"                   : "jira_user_password",
-	        "jqlTimeZone"           : "Europe/Prague",
+	        "jqlTimeZone"           : "America/New York",
 	        "timeout"               : "5s",
 	        "maxIssuesPerRequest"   : 50,
 	        "projectKeysIndexed"    : "ORG,AS7",
-	        "projectKeysExcluded"   : "ORG,IOP",
-	        "indexUpdatePeriod"     : "5s",
+	        "indexUpdatePeriod"     : "5m",
 	        "indexFullUpdatePeriod" : "1h",
-	        "maxIndexingThreads"    : 1
+	        "maxIndexingThreads"    : 2
 	    },
 	    "index" : {
 	        "index" : "my_jira_index",
@@ -128,7 +127,7 @@ JIRA River writes JSON document with following structure to the search index by 
     | components       | field.components      | Array containing Objects with `name` field                                     |
     -----------------------------------------------------------------------------------------------------------------------------
 
-You can configure which fields from JIRA will be available in search index and under which names. See [river_configuration_example.json](/src/main/resources/templates/river_configuration_example.json) file for example of river configuration, which is used to create default configuration.
+You can configure which fields from JIRA will be available in search index and under which names. See [river_configuration_example.json](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/templates/river_configuration_default.json) file for example of river configuration, which is used to create default configuration.
 Code used to create indexed document structure is inside `org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder` class.
 
 

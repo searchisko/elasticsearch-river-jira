@@ -243,7 +243,7 @@ public class Utils {
   }
 
   /**
-   * Read JSON file from classpath into Map of Map structure
+   * Read JSON file from classpath into Map of Map structure.
    * 
    * @param filePath path inside jar/classpath pointing to JSON file to read
    * @return parsed JSON file

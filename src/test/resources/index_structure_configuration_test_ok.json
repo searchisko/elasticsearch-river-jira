@@ -1,0 +1,21 @@
+{
+    "index" : {
+        "field_river_name"  : "river_name",
+        "field_project_key" : "jira_project_key",
+        "fields" : {
+            "issue_key"      : {"jira_field" : "key"},
+            "link"           : {"jira_field" : "self"},
+            "reporter"       : {"jira_field" : "fields.reporter", "value_filter" : "user2"},
+            "assignee"       : {"jira_field" : "fields.assignee", "value_filter" : "user2"},
+            "fix_versions"   : {"jira_field" : "fields.fixVersions", "value_filter" : "name2"},
+            "components"     : {"jira_field" : "fields.components", "value_filter" : "name2"}
+        },
+        "value_filters" : {
+            "user2" : {
+                "name"         : "username2",
+                "displayName"  : "display_name2" 
+            },
+            "name2" : { "name" : "name" }
+        }
+    }
+}

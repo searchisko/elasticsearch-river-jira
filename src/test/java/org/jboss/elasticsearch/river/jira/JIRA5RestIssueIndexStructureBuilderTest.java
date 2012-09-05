@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentGenerator;
@@ -32,14 +33,11 @@ import org.mockito.Mockito;
  */
 public class JIRA5RestIssueIndexStructureBuilderTest {
 
-  @SuppressWarnings("unchecked")
   @Test
   public void configuration_read_ok() {
 
-    Map<String, Object> settings = Utils.loadJSONFromJarPackagedFile("/river_configuration_test.json");
-
     JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name",
-        "type_name", (Map<String, Object>) settings.get("index"));
+        "type_name", loadTestSettings("/index_structure_configuration_test_ok.json"));
     Assert.assertEquals("river_name", tested.riverName);
     Assert.assertEquals("index_name", tested.indexName);
     Assert.assertEquals("type_name", tested.typeName);
@@ -62,11 +60,45 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals(2, userFilter.size());
     Assert.assertEquals("username2", userFilter.get("name"));
     Assert.assertEquals("display_name2", userFilter.get("displayName"));
+  }
 
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> loadTestSettings(String file) {
+    return (Map<String, Object>) Utils.loadJSONFromJarPackagedFile(file).get("index");
   }
 
   @Test
   public void configuration_read_validation() {
+
+    try {
+      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
+          loadTestSettings("/index_structure_configuration_test_err_nojirafield.json"));
+      Assert.fail("SettingsException must be thrown");
+    } catch (SettingsException e) {
+      System.out.println(e.getMessage());
+      Assert.assertEquals("'jira_field' is not defined in 'index/fields/reporter'", e.getMessage());
+    }
+
+    try {
+      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
+          loadTestSettings("/index_structure_configuration_test_err_emptyjirafield.json"));
+      Assert.fail("SettingsException must be thrown");
+    } catch (SettingsException e) {
+      System.out.println(e.getMessage());
+      Assert.assertEquals("'jira_field' is not defined in 'index/fields/link'", e.getMessage());
+    }
+
+    try {
+      new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
+          loadTestSettings("/index_structure_configuration_test_err_unknownvaluefilter.json"));
+      Assert.fail("SettingsException must be thrown");
+    } catch (SettingsException e) {
+      System.out.println(e.getMessage());
+      Assert.assertEquals(
+          "Filter definition not found for filter name 'name3' defined in 'index/fields/fix_versions/value_filter'",
+          e.getMessage());
+    }
+
     // TODO UNITTEST
   }
 
