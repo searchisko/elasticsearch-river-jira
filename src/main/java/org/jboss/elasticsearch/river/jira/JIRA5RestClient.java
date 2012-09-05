@@ -26,8 +26,9 @@ import org.apache.commons.httpclient.params.HttpConnectionManagerParams;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.SettingsException;
-import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
 
 /**
  * Class used to call JIRA 5 series functions to obtain JIRA content over REST API version 2. One instance of this class
@@ -128,7 +129,7 @@ public class JIRA5RestClient implements IJIRAClient {
       StringBuilder sb = new StringBuilder();
       sb.append("{ \"projects\" : ").append(new String(responseData, "UTF-8")).append("}");
       responseData = sb.toString().getBytes("UTF-8");
-      parser = XContentHelper.createParser(responseData, 0, responseData.length);
+      parser = XContentFactory.xContent(XContentType.JSON).createParser(responseData);
       Map<String, Object> responseParsed = parser.mapAndClose();
 
       List<String> ret = new ArrayList<String>();
@@ -162,7 +163,7 @@ public class JIRA5RestClient implements IJIRAClient {
     byte[] responseData = performJIRAChangedIssuesREST(projectKey, startAt, updatedAfter, updatedBefore);
     logger.debug("JIRA REST response data: {}", new String(responseData));
 
-    XContentParser parser = XContentHelper.createParser(responseData, 0, responseData.length);
+    XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(responseData);
     Map<String, Object> responseParsed = parser.mapAndClose();
     Integer startAtRet = Utils.nodeIntegerValue(responseParsed.get("startAt"));
     Integer maxResults = Utils.nodeIntegerValue(responseParsed.get("maxResults"));
