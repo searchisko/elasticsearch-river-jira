@@ -3,8 +3,7 @@
         "_timestamp"  : { "enabled" : true },
         "properties" : {
             "project_key" : {"type" : "string", "analyzer" : "keyword"},
-            "source"      : {"type" : "string", "analyzer" : "keyword"},
-            "issue_key"   : {"type" : "string", "analyzer" : "keyword"}
+            "source"      : {"type" : "string", "analyzer" : "keyword"}
         }
     }
 }

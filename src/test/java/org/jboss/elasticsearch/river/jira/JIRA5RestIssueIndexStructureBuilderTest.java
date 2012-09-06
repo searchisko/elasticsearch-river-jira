@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -193,7 +194,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     tested.prepareJiraCallFieldSet();
 
     // case - mandatory fields in set
-    List<String> fp = Utils.parseCsvString(tested.getRequiredJIRACallIssueFields());
+    String s = tested.getRequiredJIRACallIssueFields();
+    List<String> fp = Utils.parseCsvString(s);
 
     Assert.assertEquals(13, fp.size());
     Assert.assertTrue(fp.contains("updated"));
@@ -260,13 +262,95 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
   }
 
   @Test
-  public void buildSearchForIndexedDocumentsNotUpdatedAfter() {
-    // TODO UNITTEST
+  public void buildSearchForIndexedDocumentsNotUpdatedAfter() throws IOException {
+
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
+        "issue_type", "http://issues-stg.jboss.org/", null);
+    tested.commentTypeName = "comment_type";
+
+    // case - comments NONE
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
+      SearchRequestBuilder srb = new SearchRequestBuilder(null);
+      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", Utils.parseISODateTime("2012-09-06T12:22:19Z"));
+      Assert.assertArrayEquals(new String[] { "issue_type" }, srb.request().types());
+      TestUtils.assertStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json",
+          srb.toString());
+    }
+
+    // case - comments EMBEDDED
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
+      SearchRequestBuilder srb = new SearchRequestBuilder(null);
+      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", Utils.parseISODateTime("2012-09-06T12:22:19Z"));
+      Assert.assertArrayEquals(new String[] { "issue_type" }, srb.request().types());
+      TestUtils.assertStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json",
+          srb.toString());
+    }
+
+    // case - comments EMBEDDED
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.CHILD;
+      SearchRequestBuilder srb = new SearchRequestBuilder(null);
+      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", Utils.parseISODateTime("2012-09-06T12:22:19Z"));
+      Assert.assertArrayEquals(new String[] { "issue_type", "comment_type" }, srb.request().types());
+      TestUtils.assertStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json",
+          srb.toString());
+    }
+
+    // case - comments EMBEDDED
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
+      SearchRequestBuilder srb = new SearchRequestBuilder(null);
+      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", Utils.parseISODateTime("2012-09-06T12:22:19Z"));
+      Assert.assertArrayEquals(new String[] { "issue_type", "comment_type" }, srb.request().types());
+      TestUtils.assertStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json",
+          srb.toString());
+    }
+
   }
 
   @Test
-  public void prepareIssueIndexedDocument() {
-    // TODO UNITTEST
+  public void prepareIssueIndexedDocument() throws Exception {
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
+        "issue_type", "http://issues-stg.jboss.org/", null);
+
+    // case - no comments
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
+
+      String res = tested.prepareIssueIndexedDocument("ORG",
+          TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501")).string();
+      TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_NOCOMMENT.json", res);
+    }
+
+    // case - comments as child so not in this document
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.CHILD;
+
+      String res = tested.prepareIssueIndexedDocument("ORG",
+          TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501")).string();
+      TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_NOCOMMENT.json", res);
+    }
+
+    // case - comments as standalone so not in this document
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
+
+      String res = tested.prepareIssueIndexedDocument("ORG",
+          TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501")).string();
+      TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_NOCOMMENT.json", res);
+    }
+
+    // case - comments as embedded so present in this document
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
+
+      String res = tested.prepareIssueIndexedDocument("ORG",
+          TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501")).string();
+      System.out.println(res);
+      TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_COMMENTS.json", res);
+    }
   }
 
   @Test

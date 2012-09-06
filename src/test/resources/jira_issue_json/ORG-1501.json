@@ -1,0 +1,137 @@
+{
+
+    "expand": "editmeta,renderedFields,transitions,changelog,operations",
+    "id": "12473164",
+    "self": "https://issues.jboss.org/rest/api/2/issue/12473164",
+    "key": "ORG-1501",
+    "fields": {
+        "summary": "Project FORGEPLUGINS in JIRA should have the same notification scheme as project FORGE",
+        "issuetype": {
+            "self": "https://issues.jboss.org/rest/api/2/issuetype/3",
+            "id": "3",
+            "description": "A task that needs to be done.",
+            "iconUrl": "https://issues.jboss.org/images/icons/task.gif",
+            "name": "Task",
+            "subtask": false
+        },
+        "status": {
+            "self": "https://issues.jboss.org/rest/api/2/status/6",
+            "description": "The issue is considered finished, the resolution is correct. Issues which are closed can be reopened.",
+            "iconUrl": "https://issues.jboss.org/images/icons/status_closed.gif",
+            "name": "Closed",
+            "id": "6"
+        },
+        "labels": [ ],
+        "assignee": {
+            "self": "https://issues.jboss.org/rest/api/2/user?username=velias",
+            "name": "velias",
+            "emailAddress": "velias@redhat.com",
+            "avatarUrls": {
+                "16x16": "https://community.jboss.org/people/velias/avatar/16.png",
+                "48x48": "https://community.jboss.org/people/velias/avatar/48.png"
+            },
+            "displayName": "Vlastimil Eliáš",
+            "active": true
+        },
+        "fixVersions": [ ],
+        "resolutiondate": "2012-08-28T02:46:13.000-0400",
+        "reporter": {
+            "self": "https://issues.jboss.org/rest/api/2/user?username=gastaldi",
+            "name": "gastaldi",
+            "emailAddress": "gegastaldi@gmail.com",
+            "avatarUrls": {
+                "16x16": "https://community.jboss.org/people/gastaldi/avatar/16.png",
+                "48x48": "https://community.jboss.org/people/gastaldi/avatar/48.png"
+            },
+            "displayName": "George Gastaldi",
+            "active": true
+        },
+        "project": {
+            "self": "https://issues.jboss.org/rest/api/2/project/ORG",
+            "id": "12310330",
+            "key": "ORG",
+            "name": "jboss.org",
+            "avatarUrls": {
+                "16x16": "https://issues.jboss.org/secure/projectavatar?size=small&pid=12310330&avatarId=10011",
+                "48x48": "https://issues.jboss.org/secure/projectavatar?pid=12310330&avatarId=10011"
+            }
+        },
+        "updated": "2012-08-28T09:26:03.000-0400",
+        "created": "2012-08-28T00:07:21.000-0400",
+        "description": "As for now, it is not possible to receive updates about the FORGEPLUGINS project.\r\n\r\nThe same notification scheme set for \r\nhttps://issues.jboss.org/plugins/servlet/project-config/FORGE/notifications should be used in https://issues.jboss.org/plugins/servlet/project-config/FORGEPLUGINS/notifications\r\n\r\n",
+        "components": [
+            {
+                "self": "https://issues.jboss.org/rest/api/2/component/12312945",
+                "id": "12312945",
+                "name": "issues.jboss.org (JIRA)",
+                "description": "Issue tracking application."
+            }
+        ],
+        "comment": {
+            "startAt": 0,
+            "maxResults": 2,
+            "total": 2,
+            "comments": [
+                {
+                    "self": "https://issues.jboss.org/rest/api/2/issue/12473164/comment/12714153",
+                    "id": "12714153",
+                    "author": {
+                        "self": "https://issues.jboss.org/rest/api/2/user?username=velias",
+                        "name": "velias",
+                        "emailAddress": "velias@redhat.com",
+                        "avatarUrls": {
+                            "16x16": "https://community.jboss.org/people/velias/avatar/16.png",
+                            "48x48": "https://community.jboss.org/people/velias/avatar/48.png"
+                        },
+                        "displayName": "Vlastimil Eliáš",
+                        "active": true
+                    },
+                    "body": "Notification scheme is set now.",
+                    "updateAuthor": {
+                        "self": "https://issues.jboss.org/rest/api/2/user?username=velias",
+                        "name": "velias",
+                        "emailAddress": "velias@redhat.com",
+                        "avatarUrls": {
+                            "16x16": "https://community.jboss.org/people/velias/avatar/16.png",
+                            "48x48": "https://community.jboss.org/people/velias/avatar/48.png"
+                        },
+                        "displayName": "Vlastimil Eliáš",
+                        "active": true
+                    },
+                    "created": "2012-08-28T02:46:13.000-0400",
+                    "updated": "2012-08-28T02:46:13.000-0400"
+                },
+                {
+                    "self": "https://issues.jboss.org/rest/api/2/issue/12473164/comment/12714252",
+                    "id": "12714252",
+                    "author": {
+                        "self": "https://issues.jboss.org/rest/api/2/user?username=gastaldi",
+                        "name": "gastaldi",
+                        "emailAddress": "gegastaldi@gmail.com",
+                        "avatarUrls": {
+                            "16x16": "https://community.jboss.org/people/gastaldi/avatar/16.png",
+                            "48x48": "https://community.jboss.org/people/gastaldi/avatar/48.png"
+                        },
+                        "displayName": "George Gastaldi",
+                        "active": true
+                    },
+                    "body": "Excellent ! Thanks !",
+                    "updateAuthor": {
+                        "self": "https://issues.jboss.org/rest/api/2/user?username=gastaldi",
+                        "name": "gastaldi",
+                        "emailAddress": "gegastaldi@gmail.com",
+                        "avatarUrls": {
+                            "16x16": "https://community.jboss.org/people/gastaldi/avatar/16.png",
+                            "48x48": "https://community.jboss.org/people/gastaldi/avatar/48.png"
+                        },
+                        "displayName": "George Gastaldi",
+                        "active": true
+                    },
+                    "created": "2012-08-28T09:26:03.000-0400",
+                    "updated": "2012-08-28T09:26:03.000-0400"
+                }
+            ]
+        }
+    }
+
+}

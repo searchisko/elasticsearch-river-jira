@@ -1,0 +1,108 @@
+{
+
+    "expand": "editmeta,renderedFields,transitions,changelog,operations",
+    "id": "12473788",
+    "self": "https://issues.jboss.org/rest/api/2/issue/12473788",
+    "key": "ORG-1514",
+    "fields": {
+        "summary": "Assigning a Jira to someone else doesnt reset \"Work in progress\".",
+        "issuetype": {
+            "self": "https://issues.jboss.org/rest/api/2/issuetype/1",
+            "id": "1",
+            "description": "A problem which impairs or prevents the functions of the product.",
+            "iconUrl": "https://issues.jboss.org/images/icons/bug.gif",
+            "name": "Bug",
+            "subtask": false
+        },
+        "status": {
+            "self": "https://issues.jboss.org/rest/api/2/status/5",
+            "description": "A resolution has been taken, and it is awaiting verification by reporter. From here issues are either reopened, or are closed.",
+            "iconUrl": "https://issues.jboss.org/images/icons/status_resolved.gif",
+            "name": "Resolved",
+            "id": "5"
+        },
+        "labels": [ ],
+        "assignee": {
+            "self": "https://issues.jboss.org/rest/api/2/user?username=velias",
+            "name": "velias",
+            "emailAddress": "velias@redhat.com",
+            "avatarUrls": {
+                "16x16": "https://community.jboss.org/people/velias/avatar/16.png",
+                "48x48": "https://community.jboss.org/people/velias/avatar/48.png"
+            },
+            "displayName": "Vlastimil Eliáš",
+            "active": true
+        },
+        "fixVersions": [ ],
+        "resolutiondate": "2012-09-06T03:27:25.000-0400",
+        "reporter": {
+            "self": "https://issues.jboss.org/rest/api/2/user?username=rhusar",
+            "name": "rhusar",
+            "emailAddress": "rhusar@redhat.com",
+            "avatarUrls": {
+                "16x16": "https://community.jboss.org/people/rhusar/avatar/16.png",
+                "48x48": "https://community.jboss.org/people/rhusar/avatar/48.png"
+            },
+            "displayName": "Radoslav Husar",
+            "active": true
+        },
+        "project": {
+            "self": "https://issues.jboss.org/rest/api/2/project/ORG",
+            "id": "12310330",
+            "key": "ORG",
+            "name": "jboss.org",
+            "avatarUrls": {
+                "16x16": "https://issues.jboss.org/secure/projectavatar?size=small&pid=12310330&avatarId=10011",
+                "48x48": "https://issues.jboss.org/secure/projectavatar?pid=12310330&avatarId=10011"
+            }
+        },
+        "updated": "2012-09-06T03:27:25.000-0400",
+        "created": "2012-09-05T11:53:24.000-0400",
+        "description": "I have assigned the jira that i was working on -- so I am not working on it anymore -- but after i assigned it, i cannot stop progress because only the current assignee can do that.\r\n\r\nBefore, this \"flag\" was reset upon assign.\r\n\r\nEg here https://issues.jboss.org/browse/JBQA-6703",
+        "components": [
+            {
+                "self": "https://issues.jboss.org/rest/api/2/component/12312945",
+                "id": "12312945",
+                "name": "issues.jboss.org (JIRA)",
+                "description": "Issue tracking application."
+            }
+        ],
+        "comment": {
+            "startAt": 0,
+            "maxResults": 1,
+            "total": 1,
+            "comments": [
+                {
+                    "self": "https://issues.jboss.org/rest/api/2/issue/12473788/comment/12716241",
+                    "id": "12716241",
+                    "author": {
+                        "self": "https://issues.jboss.org/rest/api/2/user?username=velias",
+                        "name": "velias",
+                        "emailAddress": "velias@redhat.com",
+                        "avatarUrls": {
+                            "16x16": "https://community.jboss.org/people/velias/avatar/16.png",
+                            "48x48": "https://community.jboss.org/people/velias/avatar/48.png"
+                        },
+                        "displayName": "Vlastimil Eliáš",
+                        "active": true
+                    },
+                    "body": "'Coding In Progress' is not flag, it's issue status which is controlled by workflow defined for given project, and changed by exact user actions. \r\nI do not found any sign in JIRA documentation this status was changed by Assignee change in older versions of JIRA.\r\nYou simply need to contact new assignee and ask him to change status.",
+                    "updateAuthor": {
+                        "self": "https://issues.jboss.org/rest/api/2/user?username=velias",
+                        "name": "velias",
+                        "emailAddress": "velias@redhat.com",
+                        "avatarUrls": {
+                            "16x16": "https://community.jboss.org/people/velias/avatar/16.png",
+                            "48x48": "https://community.jboss.org/people/velias/avatar/48.png"
+                        },
+                        "displayName": "Vlastimil Eliáš",
+                        "active": true
+                    },
+                    "created": "2012-09-06T03:27:25.000-0400",
+                    "updated": "2012-09-06T03:27:25.000-0400"
+                }
+            ]
+        }
+    }
+
+}
