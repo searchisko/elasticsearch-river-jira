@@ -13,10 +13,10 @@
         "type"              : "jira_issue",
         "field_river_name"  : "source",
         "field_project_key" : "project_key",
-        "field_issue_url"   : "document_url",
+        "field_issue_key"   : "issue_key",
+        "field_jira_url"    : "document_url",
         "fields" : {
             "project_name"   : {"jira_field" : "fields.project.name"},
-            "issue_key"      : {"jira_field" : "key"},
             "issue_type"     : {"jira_field" : "fields.issuetype.name"},
             "summary"        : {"jira_field" : "fields.summary"},
             "status"         : {"jira_field" : "fields.status.name"},

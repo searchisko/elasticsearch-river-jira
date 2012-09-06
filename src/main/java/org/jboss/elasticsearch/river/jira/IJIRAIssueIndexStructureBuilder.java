@@ -61,22 +61,23 @@ public interface IJIRAIssueIndexStructureBuilder {
   void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception;
 
   /**
-   * Construct search request to find issues not updated after given date. Used during full index update to remove
-   * issues not presented in JIRA anymore. Results from this query are processed by
+   * Construct search request to find issues and comment indexed documents not updated after given date. Used during
+   * full index update to remove issues not presented in JIRA anymore. Results from this query are processed by
    * {@link #deleteIssue(BulkRequestBuilder, SearchHit)}
    * 
    * @param srb search request builder to add necessary conditions into
    * @param jiraProjectKey key of jira project to search issues for
    * @param date bound date for search. All issues updated before this date must be found by constructed query
    */
-  void buildSearchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date);
+  void buildSearchForIndexedDocumentsNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date);
 
   /**
-   * Delete issue from search index. Query to obtain issues to be deleted is constructed using
-   * {@link #buildSearchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder, String, Date)}
+   * Delete issues related document (issue or comment document) from search index. Query to obtain documents to be
+   * deleted is constructed using
+   * {@link #buildSearchForIndexedDocumentsNotUpdatedAfter(SearchRequestBuilder, String, Date)}
    * 
-   * @param esBulk bulk operation builder used to delete issue data from search index
-   * @param issueDocumentToDelete found issue document to delete from index
+   * @param esBulk bulk operation builder used to delete data from search index
+   * @param issueDocumentToDelete found issue or comment document to delete from index
    * @throws Exception
    */
   void deleteIssue(BulkRequestBuilder esBulk, SearchHit issueDocumentToDelete) throws Exception;

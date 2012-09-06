@@ -42,14 +42,16 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals("index_name", tested.indexName);
     Assert.assertEquals("type_name", tested.typeName);
     Assert.assertEquals("river_name", tested.indexFieldForRiverName);
-    Assert.assertEquals("link", tested.indexFieldForIssueURL);
+    Assert.assertEquals("link", tested.indexFieldForJiraURL);
     Assert.assertEquals("http://issues-stg.jboss.org/browse/", tested.jiraIssueShowUrlBase);
     Assert.assertEquals("jira_project_key", tested.indexFieldForProjectKey);
+    Assert.assertEquals("jira_issue_key", tested.indexFieldForIssueKey);
     Assert.assertEquals(IssueCommentIndexingMode.CHILD, tested.commentIndexingMode);
     Assert.assertEquals("all_comments", tested.indexFieldForComments);
+    Assert.assertEquals("jira_issue_comment_type", tested.commentTypeName);
 
     Assert.assertEquals(5, tested.fieldsConfig.size());
-    assertFieldConfiguration(tested.fieldsConfig, "issue_key", "key", null);
+    assertFieldConfiguration(tested.fieldsConfig, "created", "fields.created", null);
     assertFieldConfiguration(tested.fieldsConfig, "reporter", "fields.reporter", "user2");
     assertFieldConfiguration(tested.fieldsConfig, "assignee", "fields.assignee", "user2");
     assertFieldConfiguration(tested.fieldsConfig, "fix_versions", "fields.fixVersions", "name2");
@@ -145,12 +147,14 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals("type_name", tested.typeName);
     Assert.assertEquals("source", tested.indexFieldForRiverName);
     Assert.assertEquals("project_key", tested.indexFieldForProjectKey);
-    Assert.assertEquals("document_url", tested.indexFieldForIssueURL);
+    Assert.assertEquals("issue_key", tested.indexFieldForIssueKey);
+    Assert.assertEquals("document_url", tested.indexFieldForJiraURL);
     Assert.assertEquals("http://issues-stg.jboss.org/browse/", tested.jiraIssueShowUrlBase);
     Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED, tested.commentIndexingMode);
     Assert.assertEquals("comments", tested.indexFieldForComments);
+    Assert.assertEquals("jira_issue_comment", tested.commentTypeName);
 
-    Assert.assertEquals(14, tested.fieldsConfig.size());
+    Assert.assertEquals(13, tested.fieldsConfig.size());
     assertFieldConfiguration(tested.fieldsConfig, "project_name", "fields.project.name", null);
     assertFieldConfiguration(tested.fieldsConfig, "assignee", "fields.assignee", "user");
     assertFieldConfiguration(tested.fieldsConfig, "fix_versions", "fields.fixVersions", "name");
@@ -256,7 +260,22 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
   }
 
   @Test
+  public void buildSearchForIndexedDocumentsNotUpdatedAfter() {
+    // TODO UNITTEST
+  }
+
+  @Test
   public void prepareIssueIndexedDocument() {
+    // TODO UNITTEST
+  }
+
+  @Test
+  public void prepareCommentIndexedDocument() {
+    // TODO UNITTEST
+  }
+
+  @Test
+  public void indexIssue() {
     // TODO UNITTEST
   }
 

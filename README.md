@@ -51,12 +51,12 @@ The example above lists all the main options controlling the creation and behavi
 * `jira/indexUpdatePeriod`  time value, defines how ofter is search index updated from JIRA instance. Optional, default 5 minutes.
 * `jira/indexFullUpdatePeriod` time value, defines how ofter is search index updated from JIRA instance in full update mode. Optional, default 12 hours. You can use `0` to disable automatic full updates. Full update updates all issues in search index from JIRA, and removes issues deleted in JIRA from search index also. This brings more load to both JIRA and ElasticSearch servers, and may run for long time in case of JIRA instance with many issues. Incremental updates are performed between full updates as defined by `indexUpdatePeriod` parameter.
 * `jira/maxIndexingThreads` defines maximal number of parallel indexing threads running for this river. Optional, default 1. This setting influences load on both JIRA and ElasticSearch servers during indexing. Threads are started per JIRA project update. If there is more threads allowed, then one is always dedicated for incremental updates only (so full updates do not block incremental updates for another projects).
-* `index/index` defines name of search index where JIRA issues are stored. Parameter is optional, name of river is used if ommited. See related notes later!
-* `index/type` defines document type used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. See related notes later!
+* `index/index` defines name of search [index](http://www.elasticsearch.org/guide/appendix/glossary.html#index) where JIRA issues are stored. Parameter is optional, name of river is used if ommited. See related notes later!
+* `index/type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. See related notes later!
 * `index/field_river_name`, `index/field_project_key`, `index/fields`, `index/value_filters` can be used to change structure of indexed issue document. See 'JIRA issue index document structure' chapter.
 * `index/comment_mode` defines mode of issue comments indexing `none` - no comments indexed, `embedded` - comments indexed as array in issue document, `child` - comment indexed as separate document with [parent-child relation](http://www.elasticsearch.org/guide/reference/mapping/parent-field.html) to issue document, `standalone` - comment indexed as separate document with issue key stored in normal field. Setting is optional, `embedded` value is default if not provided.
-* `index/comment_type` defines document type used when issue comment is stored into search index in `child` or `standalone` mode. Parameter is optional, `jira_issue_comment` is used if ommited. See related notes later!
-* `index/field_comments`, `index/comment_fields` can be used to change structure of indexed comment document. See 'JIRA issue index document structure' chapter.
+* `index/comment_type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue comment is stored into search index in `child` or `standalone` mode. Parameter is optional, `jira_issue_comment` is used if ommited. See related notes later!
+* `index/field_comments`, `index/comment_fields` can be used to change structure comment informations in indexed documents. See 'JIRA issue index document structure' chapter.
 
 Time value in configuration is number representing milliseconds, but you can use next postfixes appended to the number to define units: `s` for seconds, `m` for minutes, `h` for hours, `d` for days and `w` for weeks. So for example value `5h` means five fours, `2w` means two weeks.
  
@@ -67,29 +67,33 @@ To get rid of some unwanted WARN log messages add next line to the [logging conf
 
 Notes for Index and Document type mapping creation
 --------------------------------------------------
-Configured Search index is NOT explicitly created by river code. You need to [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-create-index.html) BEFORE river creation.
+Configured Search [index](http://www.elasticsearch.org/guide/appendix/glossary.html#index) is NOT explicitly created by river code. You need to [create it manually](http://www.elasticsearch.org/guide/reference/api/admin-indices-create-index.html) BEFORE river creation.
 
 	curl -XPUT 'http://localhost:9200/my_jira_index/'
 
-Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) for issue is not explicitly created by river code for configured document type. The river REQUIRES [Automatic Timestamp Field](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) and `keyword` analyzer for `project_key` field to be able to correctly remove issues deleted in JIRA from index during full update! So you need to create issue type mapping manually BEFORE river creation, with next content at least:
+Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) for issue is not explicitly created by river code for configured document type. The river REQUIRES [Automatic Timestamp Field](http://www.elasticsearch.org/guide/reference/mapping/timestamp-field.html) and `keyword` analyzer for `project_key` and `source` fields to be able to correctly remove issues deleted in JIRA from index during full update! So you need to create issue type mapping manually BEFORE river creation, with next content at least:
 
 	curl -XPUT localhost:9200/my_jira_index/jira_issue/_mapping -d '
 	{
 	    "jira_issue" : {
-	        "_timestamp"  : { "enabled" : true },
+	        "_timestamp" : { "enabled" : true },
 	        "properties" : {
-	            "project_key" : {"type" : "string", "analyzer" : "keyword"}
+	            "project_key" : {"type" : "string", "analyzer" : "keyword"},
+	            "source"      : {"type" : "string", "analyzer" : "keyword"}
 	        }
 	    }
 	}
 	'
+
 Same apply for 'comment' mapping if you use `child` or `standalone` mode!
+
 	curl -XPUT localhost:9200/my_jira_index/jira_issue_comment/_mapping -d '
 	{
 	    "jira_issue_comment" : {
-	        "_timestamp"  : { "enabled" : true },
+	        "_timestamp" : { "enabled" : true },
 	        "properties" : {
-	            "project_key" : {"type" : "string", "analyzer" : "keyword"}
+	            "project_key" : {"type" : "string", "analyzer" : "keyword"},
+	            "source"      : {"type" : "string", "analyzer" : "keyword"}
 	        }
 	    }
 	}
@@ -97,11 +101,11 @@ Same apply for 'comment' mapping if you use `child` or `standalone` mode!
 
 Alternativelly you can store [mapping in ElasticSearch node configuration](http://www.elasticsearch.org/guide/reference/mapping/conf-mappings.html).
 
-See next chapter for description of JIRA issue indexed document structure to create better mapping meeting your needs. 
+See next chapter for description of JIRA issue indexed document structure to create better mappings meeting your needs. 
 
 JIRA issue index document structure
 -----------------------------------
-JIRA River writes JSON document with following structure to the search index by default:
+JIRA River writes JSON document with following structure to the search index by default. Issue key is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index.
 
     -----------------------------------------------------------------------------------------------------------------------------
     | **index field**  | **JIRA JSON field**   | **indexed field value notes**                                                  |
@@ -143,7 +147,7 @@ JIRA River writes JSON document with following structure to the search index by 
     | comments         | field.comment         | Array of comments (comment indexing in `embedded` mode is used by default)     |
     -----------------------------------------------------------------------------------------------------------------------------
 
-JIRA River uses following structure to store comments in search index by default:
+JIRA River uses following structure to store comment informations in search index by default. Issue key is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index in `child` or `standalone` mode.
 
     -----------------------------------------------------------------------------------------------------------------------------
     | **index field**  | **JIRA comment JSON field** | **indexed field value notes**                                            |

@@ -39,6 +39,10 @@ import org.mockito.stubbing.Answer;
  */
 public class JIRAProjectIndexerTest {
 
+  // TODO UNITTEST write some integration tests for JIRAProjectIndexer documents update and delete process within
+  // embedded inmemmory
+  // elastic search node
+
   /**
    * Main method used to run integration tests with real JIRA call.
    * 
@@ -464,7 +468,8 @@ public class JIRAProjectIndexerTest {
       Assert.assertEquals(0, tested.deleteCount);
       verify(jiraIssueIndexStructureBuilderMock).getIssuesSearchIndexName("ORG");
       verify(esIntegrationMock).refreshSearchIndex(jiraIndexName);
-      verify(jiraIssueIndexStructureBuilderMock).buildSearchForIndexedIssuesNotUpdatedAfter(srbmock, "ORG", boundDate);
+      verify(jiraIssueIndexStructureBuilderMock).buildSearchForIndexedDocumentsNotUpdatedAfter(srbmock, "ORG",
+          boundDate);
       verify(esIntegrationMock).prepareESScrollSearchRequestBuilder(jiraIndexName);
       verify(esIntegrationMock).executeESSearchRequest(srbmock);
 
@@ -511,7 +516,8 @@ public class JIRAProjectIndexerTest {
       Assert.assertEquals(5, tested.deleteCount);
       verify(jiraIssueIndexStructureBuilderMock).getIssuesSearchIndexName("ORG");
       verify(esIntegrationMock).refreshSearchIndex(jiraIndexName);
-      verify(jiraIssueIndexStructureBuilderMock).buildSearchForIndexedIssuesNotUpdatedAfter(srbmock, "ORG", boundDate);
+      verify(jiraIssueIndexStructureBuilderMock).buildSearchForIndexedDocumentsNotUpdatedAfter(srbmock, "ORG",
+          boundDate);
       verify(esIntegrationMock).prepareESScrollSearchRequestBuilder(jiraIndexName);
       verify(esIntegrationMock).executeESSearchRequest(srbmock);
       verify(esIntegrationMock).prepareESBulkRequestBuilder();

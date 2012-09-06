@@ -37,4 +37,12 @@ public class IssueCommentIndexingModeTest {
     }
   }
 
+  @Test
+  public void isExtraDocumentIndexed() {
+    Assert.assertFalse(IssueCommentIndexingMode.NONE.isExtraDocumentIndexed());
+    Assert.assertFalse(IssueCommentIndexingMode.EMBEDDED.isExtraDocumentIndexed());
+    Assert.assertTrue(IssueCommentIndexingMode.STANDALONE.isExtraDocumentIndexed());
+    Assert.assertTrue(IssueCommentIndexingMode.CHILD.isExtraDocumentIndexed());
+  }
+
 }

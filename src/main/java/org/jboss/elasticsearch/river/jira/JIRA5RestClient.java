@@ -93,8 +93,6 @@ public class JIRA5RestClient implements IJIRAClient {
           new UsernamePasswordCredentials(jiraUsername, jiraPassword));
       isAuthConfigured = true;
     }
-
-    // TODO HTTP Proxy authentication
   }
 
   /**

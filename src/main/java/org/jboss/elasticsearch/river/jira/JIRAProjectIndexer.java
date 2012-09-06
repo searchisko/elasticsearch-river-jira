@@ -217,7 +217,7 @@ public class JIRAProjectIndexer implements Runnable {
 
     logger.debug("go to delete indexed issues for project {} not updated after {}", projectKey, boundDate);
     SearchRequestBuilder srb = esIntegrationComponent.prepareESScrollSearchRequestBuilder(indexName);
-    jiraIssueIndexStructureBuilder.buildSearchForIndexedIssuesNotUpdatedAfter(srb, projectKey, boundDate);
+    jiraIssueIndexStructureBuilder.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, projectKey, boundDate);
 
     SearchResponse scrollResp = esIntegrationComponent.executeESSearchRequest(srb);
 

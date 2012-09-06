@@ -52,7 +52,7 @@ public class ElasticSearchIntegrationTest {
       SearchRequestBuilder srb = jr.prepareESScrollSearchRequestBuilder(structureBuilder
           .getIssuesSearchIndexName(project));
 
-      structureBuilder.buildSearchForIndexedIssuesNotUpdatedAfter(srb, project, date);
+      structureBuilder.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, project, date);
 
       System.out.println(srb);
 

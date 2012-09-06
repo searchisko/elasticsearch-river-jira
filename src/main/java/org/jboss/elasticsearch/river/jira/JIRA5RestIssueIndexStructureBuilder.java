@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
@@ -72,9 +73,11 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected static final String CONFIG_FILTERS = "value_filters";
   protected static final String CONFIG_FIELDRIVERNAME = "field_river_name";
   protected static final String CONFIG_FIELDPROJECTKEY = "field_project_key";
-  protected static final String CONFIG_FIELDISSUEURL = "field_issue_url";
+  protected static final String CONFIG_FIELDISSUEKEY = "field_issue_key";
+  protected static final String CONFIG_FIELDJIRAURL = "field_jira_url";
   protected static final String CONFIG_COMMENTMODE = "comment_mode";
   protected static final String CONFIG_FIELDCOMMENTS = "field_comments";
+  protected static final String CONFIG_COMMENTTYPE = "comment_type";
   protected static final String CONFIG_COMMENTFILEDS = "comment_fields";
 
   /**
@@ -100,9 +103,14 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected String indexFieldForProjectKey = null;
 
   /**
-   * Name of field in search index where JIRA issue URL is stored.
+   * Name of field in search index where JIRA issue key is stored.
    */
-  protected String indexFieldForIssueURL = null;
+  protected String indexFieldForIssueKey = null;
+
+  /**
+   * Name of field in search index where JIRA GUI URL (to issue or comment) is stored.
+   */
+  protected String indexFieldForJiraURL = null;
 
   /**
    * Set of fields requested from JIRA during call
@@ -110,7 +118,9 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected Set<String> jiraCallFieldSet = new LinkedHashSet<String>();
 
   /**
-   * Base URL used to generate JIRA issue show URL
+   * Base URL used to generate JIRA GUI issue show URL.
+   * 
+   * @see #prepareJIRAGUIUrl(String, String)
    */
   protected String jiraIssueShowUrlBase;
 
@@ -124,6 +134,12 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
    * {@link IssueCommentIndexingMode#EMBEDDED}.
    */
   protected String indexFieldForComments = null;
+
+  /**
+   * Name of ElasticSearch type used to store issues comments into index in case of
+   * {@link IssueCommentIndexingMode#STANDALONE} or {@link IssueCommentIndexingMode#CHILD}.
+   */
+  protected String commentTypeName;
 
   /**
    * Fields configuration structure for comment document. Key is name of field in search index. Value is map of
@@ -161,14 +177,17 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     if (settings != null) {
       indexFieldForRiverName = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDRIVERNAME), null);
       indexFieldForProjectKey = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDPROJECTKEY), null);
-      indexFieldForIssueURL = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDISSUEURL), null);
+      indexFieldForIssueKey = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDISSUEKEY), null);
+      indexFieldForJiraURL = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDJIRAURL), null);
       filtersConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_FILTERS);
       fieldsConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_FIELDS);
 
       commentIndexingMode = IssueCommentIndexingMode.parseConfiguration(XContentMapValues.nodeStringValue(
           settings.get(CONFIG_COMMENTMODE), null));
       indexFieldForComments = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDCOMMENTS), null);
+      commentTypeName = XContentMapValues.nodeStringValue(settings.get(CONFIG_COMMENTTYPE), null);
       commentFieldsConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_COMMENTFILEDS);
+
     }
 
     loadDefaultsIfNecessary();
@@ -210,10 +229,15 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     } else {
       indexFieldForProjectKey = indexFieldForProjectKey.trim();
     }
-    if (Utils.isEmpty(indexFieldForIssueURL)) {
-      indexFieldForIssueURL = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDISSUEURL), null);
+    if (Utils.isEmpty(indexFieldForIssueKey)) {
+      indexFieldForIssueKey = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDISSUEKEY), null);
     } else {
-      indexFieldForIssueURL = indexFieldForIssueURL.trim();
+      indexFieldForIssueKey = indexFieldForIssueKey.trim();
+    }
+    if (Utils.isEmpty(indexFieldForJiraURL)) {
+      indexFieldForJiraURL = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_FIELDJIRAURL), null);
+    } else {
+      indexFieldForJiraURL = indexFieldForJiraURL.trim();
     }
 
     if (commentIndexingMode == null) {
@@ -225,7 +249,11 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     } else {
       indexFieldForComments = indexFieldForComments.trim();
     }
-
+    if (Utils.isEmpty(commentTypeName)) {
+      commentTypeName = XContentMapValues.nodeStringValue(settingsDefault.get(CONFIG_COMMENTTYPE), null);
+    } else {
+      commentTypeName = commentTypeName.trim();
+    }
     if (commentFieldsConfig == null || commentFieldsConfig.isEmpty()) {
       commentFieldsConfig = (Map<String, Map<String, String>>) settingsDefault.get(CONFIG_COMMENTFILEDS);
     }
@@ -245,14 +273,20 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     if (Utils.isEmpty(indexFieldForProjectKey)) {
       throw new SettingsException("No default 'index/field_project_key' configuration found");
     }
-    if (Utils.isEmpty(indexFieldForIssueURL)) {
-      throw new SettingsException("No default 'index/field_issue_url' configuration found");
+    if (Utils.isEmpty(indexFieldForIssueKey)) {
+      throw new SettingsException("No default 'index/field_issue_key' configuration found");
+    }
+    if (Utils.isEmpty(indexFieldForJiraURL)) {
+      throw new SettingsException("No default 'index/field_jira_url' configuration found");
     }
     if (commentIndexingMode == null) {
       throw new SettingsException("No default 'index/comment_mode' configuration found");
     }
     if (commentFieldsConfig == null) {
       throw new SettingsException("No default 'index/comment_fields' configuration found");
+    }
+    if (commentTypeName == null) {
+      throw new SettingsException("No default 'index/comment_type' configuration found");
     }
     if (Utils.isEmpty(indexFieldForComments)) {
       throw new SettingsException("No default 'index/field_comments' configuration found");
@@ -338,22 +372,44 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 
   @Override
   public void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception {
-    esBulk.add(indexRequest(indexName).type(typeName).id(extractIssueKey(issue))
+
+    String issueKey = extractIssueKey(issue);
+    esBulk.add(indexRequest(indexName).type(typeName).id(issueKey)
         .source(prepareIssueIndexedDocument(jiraProjectKey, issue)));
-    // TODO add issue comments into index if configured as separate documents
+
+    if (commentIndexingMode.isExtraDocumentIndexed()) {
+      List<Map<String, Object>> comments = extractIssueComments(issue);
+      if (comments != null && !comments.isEmpty()) {
+        for (Map<String, Object> comment : comments) {
+          String commentId = extractCommentId(comment);
+          IndexRequest irq = indexRequest(indexName).type(commentTypeName).id(commentId)
+              .source(prepareCommentIndexedDocument(jiraProjectKey, issueKey, comment));
+          if (commentIndexingMode == IssueCommentIndexingMode.CHILD) {
+            irq.parent(issueKey);
+          }
+          esBulk.add(irq);
+        }
+      }
+    }
+
   }
 
   @Override
-  public void buildSearchForIndexedIssuesNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date) {
+  public void buildSearchForIndexedDocumentsNotUpdatedAfter(SearchRequestBuilder srb, String jiraProjectKey, Date date) {
     FilterBuilder filterTime = FilterBuilders.rangeFilter("_timestamp").lt(date);
     FilterBuilder filterProject = FilterBuilders.termFilter(indexFieldForProjectKey, jiraProjectKey);
-    FilterBuilder filter = FilterBuilders.boolFilter().must(filterTime).must(filterProject);
-    srb.setTypes(typeName).setQuery(QueryBuilders.matchAllQuery()).addField("_id").setFilter(filter);
+    FilterBuilder filterSource = FilterBuilders.termFilter(indexFieldForRiverName, riverName);
+    FilterBuilder filter = FilterBuilders.boolFilter().must(filterTime).must(filterProject).must(filterSource);
+    srb.setQuery(QueryBuilders.matchAllQuery()).addField("_id").setFilter(filter);
+    if (commentIndexingMode.isExtraDocumentIndexed())
+      srb.setTypes(typeName, commentTypeName);
+    else
+      srb.setTypes(typeName);
   }
 
   @Override
-  public void deleteIssue(BulkRequestBuilder esBulk, SearchHit issueDocumentToDelete) throws Exception {
-    esBulk.add(deleteRequest(indexName).type(typeName).id(issueDocumentToDelete.getId()));
+  public void deleteIssue(BulkRequestBuilder esBulk, SearchHit documentToDelete) throws Exception {
+    esBulk.add(deleteRequest(indexName).type(documentToDelete.getType()).id(documentToDelete.getId()));
   }
 
   /**
@@ -364,13 +420,15 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
    * @return JSON builder with issue document for index
    * @throws Exception
    */
-  @SuppressWarnings({ "unchecked" })
   protected XContentBuilder prepareIssueIndexedDocument(String jiraProjectKey, Map<String, Object> issue)
       throws Exception {
+    String issueKey = extractIssueKey(issue);
+
     XContentBuilder out = jsonBuilder().startObject();
     addValueToTheIndexField(out, indexFieldForRiverName, riverName);
     addValueToTheIndexField(out, indexFieldForProjectKey, jiraProjectKey);
-    addValueToTheIndexField(out, indexFieldForIssueURL, prepareJIRAGUIUrl(extractIssueKey(issue), null));
+    addValueToTheIndexField(out, indexFieldForIssueKey, issueKey);
+    addValueToTheIndexField(out, indexFieldForJiraURL, prepareJIRAGUIUrl(issueKey, null));
 
     for (String indexFieldName : fieldsConfig.keySet()) {
       Map<String, String> fieldConfig = fieldsConfig.get(indexFieldName);
@@ -379,25 +437,54 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     }
 
     if (commentIndexingMode == IssueCommentIndexingMode.EMBEDDED) {
-      List<Map<String, Object>> comments = (List<Map<String, Object>>) XContentMapValues.extractValue(JF_COMMENTS,
-          issue);
+      List<Map<String, Object>> comments = extractIssueComments(issue);
       if (comments != null && !comments.isEmpty()) {
         out.startArray(indexFieldForComments);
         for (Map<String, Object> comment : comments) {
           out.startObject();
-          addValueToTheIndexField(out, indexFieldForIssueURL,
-              prepareJIRAGUIUrl(extractIssueKey(issue), extractCommentId(comment)));
-          for (String indexFieldName : commentFieldsConfig.keySet()) {
-            Map<String, String> commentFieldConfig = commentFieldsConfig.get(indexFieldName);
-            addValueToTheIndex(out, indexFieldName, commentFieldConfig.get(CONFIG_FIELDS_JIRAFIELD), comment,
-                commentFieldConfig.get(CONFIG_FIELDS_VALUEFILTER));
-          }
+          addCommonFieldsToCommentIndexedDocument(out, issueKey, comment);
           out.endObject();
         }
         out.endArray();
       }
     }
     return out.endObject();
+  }
+
+  /**
+   * Convert JIRA returned REST data into JSON document to be stored in search index for comments in child and
+   * standalone mode.
+   * 
+   * @param projectKey key of jira project document is for.
+   * @param issueKey this comment is for
+   * @param comment data from JIRA REST call
+   * @return JSON builder with comment document for index
+   * @throws Exception
+   */
+  protected XContentBuilder prepareCommentIndexedDocument(String projectKey, String issueKey,
+      Map<String, Object> comment) throws Exception {
+    XContentBuilder out = jsonBuilder().startObject();
+    addValueToTheIndexField(out, indexFieldForRiverName, riverName);
+    addValueToTheIndexField(out, indexFieldForProjectKey, projectKey);
+    addValueToTheIndexField(out, indexFieldForIssueKey, issueKey);
+    addCommonFieldsToCommentIndexedDocument(out, issueKey, comment);
+    return out.endObject();
+  }
+
+  private void addCommonFieldsToCommentIndexedDocument(XContentBuilder out, String issueKey, Map<String, Object> comment)
+      throws Exception {
+    addValueToTheIndexField(out, indexFieldForJiraURL, prepareJIRAGUIUrl(issueKey, extractCommentId(comment)));
+    for (String indexFieldName : commentFieldsConfig.keySet()) {
+      Map<String, String> commentFieldConfig = commentFieldsConfig.get(indexFieldName);
+      addValueToTheIndex(out, indexFieldName, commentFieldConfig.get(CONFIG_FIELDS_JIRAFIELD), comment,
+          commentFieldConfig.get(CONFIG_FIELDS_VALUEFILTER));
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<Map<String, Object>> extractIssueComments(Map<String, Object> issue) {
+    List<Map<String, Object>> comments = (List<Map<String, Object>>) XContentMapValues.extractValue(JF_COMMENTS, issue);
+    return comments;
   }
 
   /**

@@ -17,28 +17,31 @@ public enum IssueCommentIndexingMode {
   /**
    * Comments are not placed into search index.
    */
-  NONE("none"),
+  NONE("none", false),
 
   /**
    * Comments are placed into search index as array in same document where issue is stored.
    */
-  EMBEDDED("embedded"),
+  EMBEDDED("embedded", false),
 
   /**
    * Comments are placed into search index in separate document with parent-child relation to issue document.
    */
-  CHILD("child"),
+  CHILD("child", true),
 
   /**
    * Comments are placed into search index in separate document with issue key only in one field (no any other link to
    * issue document).
    */
-  STANDALONE("standalone");
+  STANDALONE("standalone", true);
 
   private String configValue;
 
-  private IssueCommentIndexingMode(String configValue) {
+  private boolean extraDocumentIndexed;
+
+  private IssueCommentIndexingMode(String configValue, boolean extraDocumentIndexed) {
     this.configValue = configValue;
+    this.extraDocumentIndexed = extraDocumentIndexed;
   }
 
   /**
@@ -48,6 +51,15 @@ public enum IssueCommentIndexingMode {
    */
   public String getConfigValue() {
     return configValue;
+  }
+
+  /**
+   * Check if extra document is placed into search index for comment in this mode.
+   * 
+   * @return true if extra document is placed into search index
+   */
+  public boolean isExtraDocumentIndexed() {
+    return extraDocumentIndexed;
   }
 
   /**
