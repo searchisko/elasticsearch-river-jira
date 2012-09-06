@@ -481,8 +481,14 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     }
   }
 
+  /**
+   * Get comments for issue from JIRA JSON data.
+   * 
+   * @param issue Map of Maps issue data structure loaded from JIRA.
+   * @return list of comments if available in issu data
+   */
   @SuppressWarnings("unchecked")
-  private List<Map<String, Object>> extractIssueComments(Map<String, Object> issue) {
+  protected List<Map<String, Object>> extractIssueComments(Map<String, Object> issue) {
     List<Map<String, Object>> comments = (List<Map<String, Object>>) XContentMapValues.extractValue(JF_COMMENTS, issue);
     return comments;
   }

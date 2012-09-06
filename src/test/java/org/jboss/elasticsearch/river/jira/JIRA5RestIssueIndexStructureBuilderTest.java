@@ -348,14 +348,19 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
       String res = tested.prepareIssueIndexedDocument("ORG",
           TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501")).string();
-      System.out.println(res);
       TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_COMMENTS.json", res);
     }
   }
 
   @Test
-  public void prepareCommentIndexedDocument() {
-    // TODO UNITTEST
+  public void prepareCommentIndexedDocument() throws Exception {
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
+        "issue_type", "http://issues-stg.jboss.org/", null);
+    Map<String, Object> issue = TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501");
+    List<Map<String, Object>> comments = tested.extractIssueComments(issue);
+
+    String res = tested.prepareCommentIndexedDocument("ORG", "ORG-1501", comments.get(0)).string();
+    TestUtils.assertStringFromClasspathFile("/asserts/prepareCommentIndexedDocument_ORG-1501_1.json", res);
   }
 
   @Test
