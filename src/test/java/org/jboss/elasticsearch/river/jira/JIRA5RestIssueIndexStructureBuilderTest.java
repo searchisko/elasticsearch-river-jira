@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContent;
@@ -324,7 +325,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
       TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_NOCOMMENT.json", res);
     }
 
-    // case - comments as child so not in this document
+    // case - comments as CHILD so not in this document
     {
       tested.commentIndexingMode = IssueCommentIndexingMode.CHILD;
 
@@ -333,7 +334,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
       TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_NOCOMMENT.json", res);
     }
 
-    // case - comments as standalone so not in this document
+    // case - comments as STANDALONE so not in this document
     {
       tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
 
@@ -342,7 +343,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
       TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_NOCOMMENT.json", res);
     }
 
-    // case - comments as embedded so present in this document
+    // case - comments as EMBEDDED so present in this document
     {
       tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
 
@@ -350,6 +351,17 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
           TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501")).string();
       TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1501_COMMENTS.json", res);
     }
+
+    // case - comments as EMBEDDED but not in source so no present in this document
+    {
+      tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
+
+      String res = tested.prepareIssueIndexedDocument("ORG",
+          TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1513")).string();
+      System.out.println(res);
+      TestUtils.assertStringFromClasspathFile("/asserts/prepareIssueIndexedDocument_ORG-1513_NOCOMMENTS.json", res);
+    }
+
   }
 
   @Test
@@ -364,8 +376,50 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
   }
 
   @Test
-  public void indexIssue() {
-    // TODO UNITTEST
+  public void indexIssue() throws Exception {
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
+        "issue_type", "http://issues-stg.jboss.org/", null);
+
+    // case - comments NONE
+    {
+      BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+      tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
+      tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
+      Assert.assertEquals(1, esBulk.request().numberOfActions());
+    }
+
+    // case - comments EMBEDDED
+    {
+      BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+      tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
+      tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
+      Assert.assertEquals(1, esBulk.request().numberOfActions());
+    }
+
+    // case - comments CHILD
+    {
+      BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+      tested.commentIndexingMode = IssueCommentIndexingMode.CHILD;
+      tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
+      Assert.assertEquals(3, esBulk.request().numberOfActions());
+    }
+
+    // case - comments STANDALONE with comments in issue
+    {
+      BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+      tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
+      tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
+      Assert.assertEquals(3, esBulk.request().numberOfActions());
+    }
+
+    // case - comments STANDALONE without comments in issue
+    {
+      BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+      tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
+      tested.indexIssue(esBulk, "ORG-15013", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-15013"));
+      Assert.assertEquals(1, esBulk.request().numberOfActions());
+    }
+
   }
 
   @Test
