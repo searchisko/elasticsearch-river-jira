@@ -1,4 +1,4 @@
-package org.jboss.elasticsearch.river.jira;
+package org.jboss.elasticsearch.river.jira.testtools;
 
 /**
  * Mock thread class used in unit tests to check if some lifecycle methods was called correctly.

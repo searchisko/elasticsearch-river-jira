@@ -518,11 +518,11 @@ public class JIRAProjectIndexerTest {
       verify(esIntegrationMock).executeESSearchRequest(srbmock);
       verify(esIntegrationMock).prepareESBulkRequestBuilder();
       verify(esIntegrationMock, times(3)).executeESScrollSearchNextRequest(Mockito.any(SearchResponse.class));
-      verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit1_1);
-      verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit1_2);
-      verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit2_1);
-      verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit2_2);
-      verify(jiraIssueIndexStructureBuilderMock).deleteIssue(brbmock, hit2_3);
+      verify(jiraIssueIndexStructureBuilderMock).deleteIssueDocument(brbmock, hit1_1);
+      verify(jiraIssueIndexStructureBuilderMock).deleteIssueDocument(brbmock, hit1_2);
+      verify(jiraIssueIndexStructureBuilderMock).deleteIssueDocument(brbmock, hit2_1);
+      verify(jiraIssueIndexStructureBuilderMock).deleteIssueDocument(brbmock, hit2_2);
+      verify(jiraIssueIndexStructureBuilderMock).deleteIssueDocument(brbmock, hit2_3);
       verify(esIntegrationMock).executeESBulkRequest(brbmock);
 
       Mockito.verifyNoMoreInteractions(jiraClientMock);

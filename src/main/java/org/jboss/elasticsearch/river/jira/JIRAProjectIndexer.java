@@ -69,6 +69,11 @@ public class JIRAProjectIndexer implements Runnable {
   protected int deleteCount = 0;
 
   /**
+   * Number of issue comments deleted during this indexing.
+   */
+  protected int deleteCommentsCount = 0;
+
+  /**
    * @param projectKey JIRA project key for project to be indexed by this indexer.
    * @param jiraClient configured JIRA client to be used to obtain informations from JIRA.
    * @param esIntegrationComponent to be used to call River component and ElasticSearch functions
@@ -148,7 +153,8 @@ public class JIRAProjectIndexer implements Runnable {
             throw new IllegalArgumentException("Issue 'key' field not found in JIRA response for project " + projectKey
                 + " within issue data: " + issue);
           }
-          lastIssueUpdatedDate = Utils.roundDateToMinutePrecise(jiraIssueIndexStructureBuilder.extractIssueUpdated(issue));
+          lastIssueUpdatedDate = Utils.roundDateToMinutePrecise(jiraIssueIndexStructureBuilder
+              .extractIssueUpdated(issue));
           logger.debug("Go to update index for issue {} with updated {}", issueKey, lastIssueUpdatedDate);
           if (lastIssueUpdatedDate == null) {
             throw new IllegalArgumentException("'updated' field not found in JIRA response data for issue " + issueKey);
@@ -205,6 +211,7 @@ public class JIRAProjectIndexer implements Runnable {
       throw new IllegalArgumentException("boundDate must be set");
 
     deleteCount = 0;
+    deleteCommentsCount = 0;
 
     if (!fullUpdate)
       return;
@@ -227,8 +234,11 @@ public class JIRAProjectIndexer implements Runnable {
       while (scrollResp.hits().hits().length > 0) {
         for (SearchHit hit : scrollResp.getHits()) {
           logger.debug("Go to delete indexed issue for document id {}", hit.getId());
-          deleteCount++;
-          jiraIssueIndexStructureBuilder.deleteIssue(esBulk, hit);
+          if (jiraIssueIndexStructureBuilder.deleteIssueDocument(esBulk, hit)) {
+            deleteCount++;
+          } else {
+            deleteCommentsCount++;
+          }
         }
         scrollResp = esIntegrationComponent.executeESScrollSearchNextRequest(scrollResp);
       }

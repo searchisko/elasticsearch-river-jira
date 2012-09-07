@@ -30,6 +30,7 @@ import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 import org.jboss.elasticsearch.river.jira.testtools.ESRealClientTestBase;
+import org.jboss.elasticsearch.river.jira.testtools.MockThread;
 import org.junit.Test;
 import org.mockito.Mockito;
 

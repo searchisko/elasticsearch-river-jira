@@ -34,8 +34,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 /**
- * jUnit test for {@link JIRAProjectIndexer} which tests search index update processes against embedded inmemmory
- * elastic search node.<br>
+ * jUnit test for {@link JIRAProjectIndexer} which tests search index update processes against embedded inmemory elastic
+ * search node.<br>
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -53,13 +53,13 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
     try {
       Client client = prepareESClientForUnitTest();
 
-      JiraRiver jiraRiverMock = prepareJiraRiverInstanceForTest(client);
+      JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
       IJIRAClient jClientMock = jiraRiverMock.jiraClient;
 
       JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
           CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
       structureBuilder.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
-      prepareIndexStructures(client);
+      initIndexStructures(client, structureBuilder.commentIndexingMode);
 
       // run 1 to insert documents
       Date dateStartRun1 = new Date();
@@ -67,10 +67,8 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
           structureBuilder);
       Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
-
-      ChangedIssuesResults changedIssues = prepareChangedIssues("ORG-1501", "ORG-1513", "ORG-1514");
       when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, Utils.roundDateToMinutePrecise(lastIssueUpdatedDate), null))
-          .thenReturn(changedIssues);
+          .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
 
       tested.run();
 
@@ -91,11 +89,9 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
       Date dateStartRun2 = new Date();
       Mockito.reset(jClientMock);
       tested = new JIRAProjectIndexer(PROJECT_KEY, false, jClientMock, jiraRiverMock, structureBuilder);
-
-      changedIssues = prepareChangedIssues("ORG-1501-updated");
       when(
           jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, Utils.roundDateToMinutePrecise(lastIssueUpdatedDate2), null))
-          .thenReturn(changedIssues);
+          .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501-updated"));
 
       tested.run();
 
@@ -122,14 +118,13 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
     try {
       Client client = prepareESClientForUnitTest();
 
-      JiraRiver jiraRiverMock = prepareJiraRiverInstanceForTest(client);
+      JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
       IJIRAClient jClientMock = jiraRiverMock.jiraClient;
 
       JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
           CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
       structureBuilder.commentIndexingMode = IssueCommentIndexingMode.CHILD;
-
-      prepareIndexStructures(client);
+      initIndexStructures(client, structureBuilder.commentIndexingMode);
 
       // run 1 to insert documents
       Date dateStartRun1 = new Date();
@@ -137,10 +132,8 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
           structureBuilder);
       Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
-
-      ChangedIssuesResults changedIssues = prepareChangedIssues("ORG-1501", "ORG-1513", "ORG-1514");
       when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, Utils.roundDateToMinutePrecise(lastIssueUpdatedDate), null))
-          .thenReturn(changedIssues);
+          .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
 
       tested.run();
 
@@ -155,17 +148,18 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514");
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "12714153", "12714252", "12716241");
       assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun1, "ORG-1501", "ORG-1513", "ORG-1514");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1513");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1514", "12716241");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1501", "12714153", "12714252");
 
       // run 2 to update one document
       Thread.sleep(100);
       Date dateStartRun2 = new Date();
       Mockito.reset(jClientMock);
       tested = new JIRAProjectIndexer(PROJECT_KEY, false, jClientMock, jiraRiverMock, structureBuilder);
-
-      changedIssues = prepareChangedIssues("ORG-1501-updated");
       when(
           jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, Utils.roundDateToMinutePrecise(lastIssueUpdatedDate2), null))
-          .thenReturn(changedIssues);
+          .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501-updated"));
 
       tested.run();
 
@@ -185,6 +179,9 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
       assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE_COMMENT, dateStartRun2, "12714153", "12714253");
       assertDocumentsUpdatedBeforeDate(client, CFG_TYPE_ISSUE, dateStartRun2, "ORG-1513", "ORG-1514");
       assertDocumentsUpdatedBeforeDate(client, CFG_TYPE_ISSUE_COMMENT, dateStartRun2, "12716241", "12714252");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1513");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1514", "12716241");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1501", "12714153", "12714252", "12714253");
 
     } finally {
       finalizeESClientForUnitTest();
@@ -193,13 +190,220 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
   }
 
   @Test
-  public void fullUpdateCommentsCHILD() {
-    // TODO UNITTEST
+  public void fullUpdateCommentsEMBEDDED() throws Exception {
+    try {
+      Client client = prepareESClientForUnitTest();
+
+      JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
+      IJIRAClient jClientMock = jiraRiverMock.jiraClient;
+
+      JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
+          CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+      structureBuilder.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
+      initIndexStructures(client, structureBuilder.commentIndexingMode);
+      initDocumentsForProjectAAA(jiraRiverMock, structureBuilder);
+
+      // run 1 to insert documents
+      Date dateStartRun1 = new Date();
+      JIRAProjectIndexer tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock,
+          structureBuilder);
+      Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
+      tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
+      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
+
+      tested.run();
+
+      Assert.assertEquals(3, tested.updatedCount);
+      Assert.assertEquals(0, tested.deleteCount);
+      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertNotNull(tested.startTime);
+
+      Date lastIssueUpdatedDate2 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:27:25.000-0400");
+      Assert.assertEquals(lastIssueUpdatedDate2, tested.readLastIssueUpdatedDate(PROJECT_KEY));
+
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514", "AAA-1", "AAA-2");
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT);
+      assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun1, "ORG-1501", "ORG-1513", "ORG-1514");
+
+      // run 2 to update one document
+      Thread.sleep(100);
+      Date dateStartRun2 = new Date();
+      Mockito.reset(jClientMock);
+      tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock, structureBuilder);
+      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1513", "ORG-1501-updated"));
+
+      tested.run();
+
+      Assert.assertEquals(2, tested.updatedCount);
+      Assert.assertEquals(1, tested.deleteCount);
+      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertNotNull(tested.startTime);
+
+      Date lastIssueUpdatedDate3 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:28:21.000-0400");
+      Assert.assertEquals(lastIssueUpdatedDate3, tested.readLastIssueUpdatedDate(PROJECT_KEY));
+
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "AAA-1", "AAA-2");
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT);
+      assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun2, "ORG-1501", "ORG-1513");
+      assertDocumentsUpdatedBeforeDate(client, CFG_TYPE_ISSUE, dateStartRun2, "AAA-1", "AAA-2");
+
+    } finally {
+      finalizeESClientForUnitTest();
+    }
   }
 
   @Test
-  public void fullUpdateCommentsEMBEDDED() {
-    // TODO UNITTEST
+  public void fullUpdateCommentsCHILD() throws Exception {
+    try {
+      Client client = prepareESClientForUnitTest();
+
+      JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
+      IJIRAClient jClientMock = jiraRiverMock.jiraClient;
+
+      JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
+          CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+      structureBuilder.commentIndexingMode = IssueCommentIndexingMode.CHILD;
+      initIndexStructures(client, structureBuilder.commentIndexingMode);
+      initDocumentsForProjectAAA(jiraRiverMock, structureBuilder);
+
+      // run 1 to insert documents
+      Date dateStartRun1 = new Date();
+      JIRAProjectIndexer tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock,
+          structureBuilder);
+      Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
+      tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
+      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
+
+      tested.run();
+
+      Assert.assertEquals(3, tested.updatedCount);
+      Assert.assertEquals(0, tested.deleteCount);
+      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertNotNull(tested.startTime);
+
+      Date lastIssueUpdatedDate2 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:27:25.000-0400");
+      Assert.assertEquals(lastIssueUpdatedDate2, tested.readLastIssueUpdatedDate(PROJECT_KEY));
+
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514", "AAA-1", "AAA-2");
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "12714153", "12714252", "12716241");
+      assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun1, "ORG-1501", "ORG-1513", "ORG-1514");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1513");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1514", "12716241");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1501", "12714153", "12714252");
+
+      // run 2 to update one document
+      Thread.sleep(100);
+      Date dateStartRun2 = new Date();
+      Mockito.reset(jClientMock);
+      tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock, structureBuilder);
+      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1513", "ORG-1501-updated"));
+
+      tested.run();
+
+      Assert.assertEquals(2, tested.updatedCount);
+      Assert.assertEquals(1, tested.deleteCount);
+      Assert.assertEquals(2, tested.deleteCommentsCount);
+      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertNotNull(tested.startTime);
+
+      Date lastIssueUpdatedDate3 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:28:21.000-0400");
+      Assert.assertEquals(lastIssueUpdatedDate3, tested.readLastIssueUpdatedDate(PROJECT_KEY));
+
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "AAA-1", "AAA-2");
+      // note comment "12714252" was removed and "12714253" was added in "ORG-1501-updated"
+      // comment 12716241 removed due "ORG-1514" remove
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "12714153", "12714253");
+      assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun2, "ORG-1501", "ORG-1513");
+      assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE_COMMENT, dateStartRun2, "12714153", "12714253");
+      assertDocumentsUpdatedBeforeDate(client, CFG_TYPE_ISSUE, dateStartRun2, "AAA-1", "AAA-2");
+      assertDocumentsUpdatedBeforeDate(client, CFG_TYPE_ISSUE_COMMENT, dateStartRun2);
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1513");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1501", "12714153", "12714253");
+
+    } finally {
+      finalizeESClientForUnitTest();
+    }
+
+  }
+
+  @Test
+  public void fullUpdateCommentsSTANDALONE() throws Exception {
+    try {
+      Client client = prepareESClientForUnitTest();
+
+      JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
+      IJIRAClient jClientMock = jiraRiverMock.jiraClient;
+
+      JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
+          CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+      structureBuilder.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
+      initIndexStructures(client, structureBuilder.commentIndexingMode);
+      initDocumentsForProjectAAA(jiraRiverMock, structureBuilder);
+
+      // run 1 to insert documents
+      Date dateStartRun1 = new Date();
+      JIRAProjectIndexer tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock,
+          structureBuilder);
+      Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
+      tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
+      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
+
+      tested.run();
+
+      Assert.assertEquals(3, tested.updatedCount);
+      Assert.assertEquals(0, tested.deleteCount);
+      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertNotNull(tested.startTime);
+
+      Date lastIssueUpdatedDate2 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:27:25.000-0400");
+      Assert.assertEquals(lastIssueUpdatedDate2, tested.readLastIssueUpdatedDate(PROJECT_KEY));
+
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514", "AAA-1", "AAA-2");
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "12714153", "12714252", "12716241");
+      assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun1, "ORG-1501", "ORG-1513", "ORG-1514");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1513");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1514");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1501");
+
+      // run 2 to update one document
+      Thread.sleep(100);
+      Date dateStartRun2 = new Date();
+      Mockito.reset(jClientMock);
+      tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock, structureBuilder);
+      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1513", "ORG-1501-updated"));
+
+      tested.run();
+
+      Assert.assertEquals(2, tested.updatedCount);
+      Assert.assertEquals(1, tested.deleteCount);
+      Assert.assertEquals(2, tested.deleteCommentsCount);
+      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertNotNull(tested.startTime);
+
+      Date lastIssueUpdatedDate3 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:28:21.000-0400");
+      Assert.assertEquals(lastIssueUpdatedDate3, tested.readLastIssueUpdatedDate(PROJECT_KEY));
+
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "AAA-1", "AAA-2");
+      // note comment "12714252" was removed and "12714253" was added in "ORG-1501-updated"
+      // comment 12716241 removed due "ORG-1514" remove
+      assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "12714153", "12714253");
+      assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun2, "ORG-1501", "ORG-1513");
+      assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE_COMMENT, dateStartRun2, "12714153", "12714253");
+      assertDocumentsUpdatedBeforeDate(client, CFG_TYPE_ISSUE, dateStartRun2, "AAA-1", "AAA-2");
+      assertDocumentsUpdatedBeforeDate(client, CFG_TYPE_ISSUE_COMMENT, dateStartRun2);
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1513");
+      assertChildDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT, "ORG-1501");
+
+    } finally {
+      finalizeESClientForUnitTest();
+    }
+
   }
 
   /**
@@ -216,6 +420,26 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
         .setQuery(QueryBuilders.matchAllQuery());
 
     assertImplSearchResults(client, srb, documentIds);
+  }
+
+  /**
+   * Assert child documents with given id's exists in {@value #CFG_INDEX_NAME} search index for given parent, and no any
+   * other exists here.
+   * 
+   * @param client to be used
+   * @param documentType type of document to check
+   * @param parentDocumentId id of parent to check childs for
+   * @param childDocumentIds list of document id's to check
+   * 
+   */
+  protected void assertChildDocumentsInIndex(Client client, String documentType, String parentDocumentId,
+      String... childDocumentIds) {
+
+    SearchRequestBuilder srb = client.prepareSearch(CFG_INDEX_NAME).setTypes(documentType)
+        .setQuery(QueryBuilders.matchAllQuery());
+    srb.setFilter(FilterBuilders.termFilter("_parent", parentDocumentId));
+
+    assertImplSearchResults(client, srb, childDocumentIds);
   }
 
   private void assertImplSearchResults(Client client, SearchRequestBuilder srb, String... documentIds) {
@@ -273,7 +497,7 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
     assertImplSearchResults(client, srb, documentIds);
   }
 
-  protected ChangedIssuesResults prepareChangedIssues(String... issueKeys) throws IOException {
+  protected ChangedIssuesResults prepareChangedIssuesJIRACallResults(String... issueKeys) throws IOException {
     List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
     if (issueKeys != null) {
       for (String key : issueKeys) {
@@ -283,7 +507,7 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
     return new ChangedIssuesResults(list, 0, 50, list.size());
   }
 
-  protected JiraRiver prepareJiraRiverInstanceForTest(Client client) throws Exception {
+  protected JiraRiver initJiraRiverInstanceForTest(Client client) throws Exception {
     Map<String, Object> settings = new HashMap<String, Object>();
     Settings gs = mock(Settings.class);
     RiverSettings rs = new RiverSettings(gs, settings);
@@ -294,12 +518,36 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
     return tested;
   }
 
-  protected void prepareIndexStructures(Client client) throws Exception {
+  protected void initIndexStructures(Client client, IssueCommentIndexingMode commentMode) throws Exception {
     client.admin().indices().prepareCreate(CFG_INDEX_NAME).execute().actionGet();
     client.admin().indices().preparePutMapping(CFG_INDEX_NAME).setType(CFG_TYPE_ISSUE)
-        .setSource(TestUtils.readStringFromClasspathFile("/templates/jira_issue.json")).execute().actionGet();
-    client.admin().indices().preparePutMapping(CFG_INDEX_NAME).setType(CFG_TYPE_ISSUE_COMMENT)
-        .setSource(TestUtils.readStringFromClasspathFile("/templates/jira_issue_comment.json")).execute().actionGet();
+        .setSource(TestUtils.readStringFromClasspathFile("/mappings/jira_issue.json")).execute().actionGet();
+    if (commentMode.isExtraDocumentIndexed()) {
+      String commentMappingFilePath = "/mappings/jira_issue_comment.json";
+      if (commentMode == IssueCommentIndexingMode.CHILD)
+        commentMappingFilePath = "/mappings/jira_issue_comment-child.json";
+
+      client.admin().indices().preparePutMapping(CFG_INDEX_NAME).setType(CFG_TYPE_ISSUE_COMMENT)
+          .setSource(TestUtils.readStringFromClasspathFile(commentMappingFilePath)).execute().actionGet();
+    }
+  }
+
+  /**
+   * Adds two issues from <code>AAA</code> project into search index for tests - keys <code>AAA-1</code> and
+   * <code>AAA-2</code>
+   * 
+   * @param jiraRiverMock to be used
+   * @param structureBuilder to be used
+   * @throws Exception
+   */
+  protected void initDocumentsForProjectAAA(JiraRiver jiraRiverMock,
+      JIRA5RestIssueIndexStructureBuilder structureBuilder) throws Exception {
+    IJIRAClient jiraClientMock = mock(IJIRAClient.class);
+    JIRAProjectIndexer tested = new JIRAProjectIndexer("AAA", true, jiraClientMock, jiraRiverMock, structureBuilder);
+    ChangedIssuesResults changedIssues = prepareChangedIssuesJIRACallResults("AAA-1", "AAA-2");
+    when(jiraClientMock.getJIRAChangedIssues("AAA", 0, null, null)).thenReturn(changedIssues);
+    tested.run();
+    jiraRiverMock.refreshSearchIndex(CFG_INDEX_NAME);
   }
 
 }

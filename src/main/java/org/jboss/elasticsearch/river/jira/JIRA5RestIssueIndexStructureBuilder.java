@@ -408,8 +408,9 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   }
 
   @Override
-  public void deleteIssue(BulkRequestBuilder esBulk, SearchHit documentToDelete) throws Exception {
+  public boolean deleteIssueDocument(BulkRequestBuilder esBulk, SearchHit documentToDelete) throws Exception {
     esBulk.add(deleteRequest(indexName).type(documentToDelete.getType()).id(documentToDelete.getId()));
+    return typeName.equals(documentToDelete.getType());
   }
 
   /**

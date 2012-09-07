@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Date;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.jboss.elasticsearch.river.jira.testtools.MockThread;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;

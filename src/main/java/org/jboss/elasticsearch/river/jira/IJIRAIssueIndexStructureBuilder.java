@@ -63,7 +63,7 @@ public interface IJIRAIssueIndexStructureBuilder {
   /**
    * Construct search request to find issues and comment indexed documents not updated after given date. Used during
    * full index update to remove issues not presented in JIRA anymore. Results from this query are processed by
-   * {@link #deleteIssue(BulkRequestBuilder, SearchHit)}
+   * {@link #deleteIssueDocument(BulkRequestBuilder, SearchHit)}
    * 
    * @param srb search request builder to add necessary conditions into
    * @param jiraProjectKey key of jira project to search issues for
@@ -78,8 +78,9 @@ public interface IJIRAIssueIndexStructureBuilder {
    * 
    * @param esBulk bulk operation builder used to delete data from search index
    * @param issueDocumentToDelete found issue or comment document to delete from index
+   * @return true if deleted document is issue, else otherwise (eg. if deleted document is comment)
    * @throws Exception
    */
-  void deleteIssue(BulkRequestBuilder esBulk, SearchHit issueDocumentToDelete) throws Exception;
+  boolean deleteIssueDocument(BulkRequestBuilder esBulk, SearchHit issueDocumentToDelete) throws Exception;
 
 }
