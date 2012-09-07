@@ -24,6 +24,7 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.internal.InternalSearchHit;
 import org.elasticsearch.search.internal.InternalSearchHits;
 import org.elasticsearch.search.internal.InternalSearchResponse;
@@ -389,6 +390,10 @@ public class JIRAProjectIndexerTest {
       when(esIntegrationMock.executeESScrollSearchNextRequest(sr1)).thenReturn(sr2);
       when(esIntegrationMock.executeESScrollSearchNextRequest(sr2)).thenReturn(prepareSearchResponse("scrlid3"));
 
+      when(
+          jiraIssueIndexStructureBuilderMock.deleteIssueDocument(Mockito.any(BulkRequestBuilder.class),
+              Mockito.any(SearchHit.class))).thenReturn(true);
+
       tested.run();
       // verify updatedAfter is null in this call, not value read from store, because we run full update here!
       verify(jiraClientMock, times(1)).getJIRAChangedIssues("ORG", 0, null, null);
@@ -506,6 +511,9 @@ public class JIRAProjectIndexerTest {
       when(esIntegrationMock.executeESScrollSearchNextRequest(sr1)).thenReturn(sr2);
 
       when(esIntegrationMock.executeESScrollSearchNextRequest(sr2)).thenReturn(prepareSearchResponse("scrlid3"));
+
+      when(jiraIssueIndexStructureBuilderMock.deleteIssueDocument(Mockito.eq(brbmock), Mockito.any(SearchHit.class)))
+          .thenReturn(true);
 
       tested.processDelete(boundDate);
 
