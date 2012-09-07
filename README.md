@@ -54,7 +54,7 @@ The example above lists all the main options controlling the creation and behavi
 * `index/index` defines name of search [index](http://www.elasticsearch.org/guide/appendix/glossary.html#index) where JIRA issues are stored. Parameter is optional, name of river is used if ommited. See related notes later!
 * `index/type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. See related notes later!
 * `index/field_river_name`, `index/field_project_key`, `index/fields`, `index/value_filters` can be used to change structure of indexed issue document. See 'JIRA issue index document structure' chapter.
-* `index/comment_mode` defines mode of issue comments indexing `none` - no comments indexed, `embedded` - comments indexed as array in issue document, `child` - comment indexed as separate document with [parent-child relation](http://www.elasticsearch.org/guide/reference/mapping/parent-field.html) to issue document, `standalone` - comment indexed as separate document with issue key stored in normal field. Setting is optional, `embedded` value is default if not provided.
+* `index/comment_mode` defines mode of issue comments indexing: `none` - no comments indexed, `embedded` - comments indexed as array in issue document, `child` - comment indexed as separate document with [parent-child relation](http://www.elasticsearch.org/guide/reference/mapping/parent-field.html) to issue document, `standalone` - comment indexed as separate document. Setting is optional, `embedded` value is default if not provided.
 * `index/comment_type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue comment is stored into search index in `child` or `standalone` mode. Parameter is optional, `jira_issue_comment` is used if ommited. See related notes later!
 * `index/field_comments`, `index/comment_fields` can be used to change structure comment informations in indexed documents. See 'JIRA issue index document structure' chapter.
 
@@ -179,7 +179,6 @@ Code used to create indexed document structure is inside `org.jboss.elasticsearc
 
 TODO List
 ---------
-* JIRA issue comments indexing
 * Implement some mechanism to allow mapping of some issue fields (Project Key, Reporter, Assignee, Status, Type, ...) to common set of fields (title, link, project, authors, dates of activity) and values (normalized set of Issue types, Statuses, authors and projects mapping) shared with other document types and/or other issue trackers to integrate them into search frontent GUI.
 * Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)
 * Implement some mechanism which allows to initiate full reindex of all issues for defined JIRA project (calleable over REST)
