@@ -56,7 +56,7 @@
                 "48x48": "https://issues.jboss.org/secure/projectavatar?pid=12310330&avatarId=10011"
             }
         },
-        "updated": "2012-09-06T02:26:53.000-0400",
+        "updated": "2012-09-06T03:28:21.000-0400",
         "created": "2012-08-28T00:07:21.000-0400",
         "description": "As for now, it is not possible to receive updates about the FORGEPLUGINS project.\r\n\r\nThe same notification scheme set for \r\nhttps://issues.jboss.org/plugins/servlet/project-config/FORGE/notifications should be used in https://issues.jboss.org/plugins/servlet/project-config/FORGEPLUGINS/notifications\r\n\r\n",
         "components": [
@@ -102,8 +102,8 @@
                     "updated": "2012-08-28T02:46:13.000-0400"
                 },
                 {
-                    "self": "https://issues.jboss.org/rest/api/2/issue/12473164/comment/12714252",
-                    "id": "12714252",
+                    "self": "https://issues.jboss.org/rest/api/2/issue/12473164/comment/12714253",
+                    "id": "12714253",
                     "author": {
                         "self": "https://issues.jboss.org/rest/api/2/user?username=gastaldi",
                         "name": "gastaldi",
@@ -115,7 +115,7 @@
                         "displayName": "George Gastaldi",
                         "active": true
                     },
-                    "body": "Excellent ! Thanks !",
+                    "body": "Tested, Works.",
                     "updateAuthor": {
                         "self": "https://issues.jboss.org/rest/api/2/user?username=gastaldi",
                         "name": "gastaldi",
@@ -127,8 +127,8 @@
                         "displayName": "George Gastaldi",
                         "active": true
                     },
-                    "created": "2012-08-28T09:26:03.000-0400",
-                    "updated": "2012-08-28T09:26:03.000-0400"
+                    "created": "2012-09-06T03:28:21.000-0400",
+                    "updated": "2012-09-06T03:28:21.000-0400"
                 }
             ]
         }

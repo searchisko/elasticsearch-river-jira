@@ -12,8 +12,4 @@
         "indexFullUpdatePeriod" : "1h",
         "maxIndexingThreads"    : 2
     },
-    "index" : {
-        "index"             : "my_jira_index",
-        "type"              : "jira_issue",
-    }
 }

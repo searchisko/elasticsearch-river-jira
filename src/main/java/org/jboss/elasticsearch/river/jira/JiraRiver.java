@@ -43,7 +43,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    */
   protected static final long JIRA_PROJECTS_REFRESH_TIME = 30 * 60 * 1000;
 
-  protected static final String INDEX_TYPE_NAME_DEFAULT = "jira_issue";
+  public static final String INDEX_TYPE_NAME_DEFAULT = "jira_issue";
 
   /**
    * ElasticSearch client to be used for indexing
@@ -78,12 +78,12 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   /**
    * Config - name of ElasticSearch index used to store issues from this river
    */
-  protected final String indexName;
+  protected String indexName;
 
   /**
    * Config - name of ElasticSearch type used to store issues from this river in index
    */
-  protected final String typeName;
+  protected String typeName;
 
   /**
    * Thread running {@link JIRAProjectIndexerCoordinator} is stored here.
@@ -122,6 +122,14 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    */
   protected long allIndexedProjectsKeysNextRefresh = 0;
 
+  /**
+   * Public constructor used by ElasticSearch.
+   * 
+   * @param riverName
+   * @param settings
+   * @param client
+   * @throws MalformedURLException
+   */
   @SuppressWarnings({ "unchecked" })
   @Inject
   public JiraRiver(RiverName riverName, RiverSettings settings, Client client) throws MalformedURLException {
@@ -185,6 +193,16 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName,
         url, indexSettings);
     jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
+  }
+
+  /**
+   * Constructor for unit tests, nothing is initialized in river.
+   * 
+   * @param riverName
+   * @param settings
+   */
+  protected JiraRiver(RiverName riverName, RiverSettings settings) {
+    super(riverName, settings);
   }
 
   /**

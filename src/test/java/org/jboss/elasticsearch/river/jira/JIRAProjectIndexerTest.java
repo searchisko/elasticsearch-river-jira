@@ -39,10 +39,6 @@ import org.mockito.stubbing.Answer;
  */
 public class JIRAProjectIndexerTest {
 
-  // TODO UNITTEST write some integration tests for JIRAProjectIndexer documents update and delete process within
-  // embedded inmemmory
-  // elastic search node
-
   /**
    * Main method used to run integration tests with real JIRA call.
    * 
