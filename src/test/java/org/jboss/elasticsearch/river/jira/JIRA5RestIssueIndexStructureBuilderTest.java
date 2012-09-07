@@ -24,6 +24,7 @@ import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentGenerator;
+import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;

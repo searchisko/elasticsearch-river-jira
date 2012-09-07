@@ -28,6 +28,8 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 import org.elasticsearch.search.SearchHit;
+import org.jboss.elasticsearch.river.jira.testtools.ESRealClientTestBase;
+import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
 import org.junit.Test;
 import org.mockito.Mockito;
 

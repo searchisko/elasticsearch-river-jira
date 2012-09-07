@@ -3,7 +3,7 @@
  * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  */
-package org.jboss.elasticsearch.river.jira;
+package org.jboss.elasticsearch.river.jira.testtools;
 
 import static org.mockito.Mockito.mock;
 
@@ -20,10 +20,14 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
+import org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder;
+import org.jboss.elasticsearch.river.jira.JiraRiver;
+import org.jboss.elasticsearch.river.jira.Utils;
 import org.junit.Test;
 
 /**
- * Class for ElasticSearch integration tests against some running ES cluster. This is not Unit test!
+ * Class for ElasticSearch integration tests against some running ES cluster. This is not Unit test but helper for tests
+ * during development!
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */

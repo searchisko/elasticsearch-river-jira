@@ -3,13 +3,14 @@
  * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  */
-package org.jboss.elasticsearch.river.jira;
+package org.jboss.elasticsearch.river.jira.testtools;
 
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.jboss.elasticsearch.river.jira.Utils;
 import org.junit.Assert;
 
 /**
@@ -17,7 +18,7 @@ import org.junit.Assert;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class TestUtils {
+public abstract class TestUtils {
 
   /**
    * Assert passed string is same as contnt of given file loaded from classpath.
