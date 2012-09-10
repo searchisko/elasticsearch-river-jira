@@ -104,8 +104,12 @@ public class JIRAProjectIndexer implements Runnable {
       long timeElapsed = (System.currentTimeMillis() - startTime);
       esIntegrationComponent.reportIndexingFinished(projectKey, false, fullUpdate, updatedCount, deleteCount, new Date(
           startTime), timeElapsed, e.getMessage());
-      logger.error("Failed {} update for JIRA project {} due: {}", e, fullUpdate ? "full" : "incremental", projectKey,
-          e.getMessage());
+      Throwable cause = e;
+      // do not log stacktrace for some operational exceptions to keep log file much clear
+      if (cause instanceof IOException)
+        cause = null;
+      logger.error("Failed {} update for JIRA project {} due: {}", cause, fullUpdate ? "full" : "incremental",
+          projectKey, e.getMessage());
     }
   }
 
@@ -114,7 +118,6 @@ public class JIRAProjectIndexer implements Runnable {
    * method. A {@link #fullUpdate} field can be updated inside of this method.
    * 
    * @throws Exception
-   * 
    */
   protected void processUpdate() throws Exception {
     updatedCount = 0;
