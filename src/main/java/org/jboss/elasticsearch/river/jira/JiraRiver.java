@@ -88,6 +88,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   protected String typeName;
 
   /**
+   * Config - Base URL of JIRA instance to index by this river
+   */
+  protected String jiraUrlBase = null;
+
+  /**
    * Config - name of ElasticSearch index used to store river activity records - null means no activity stored
    */
   protected String activityLogIndexName;
@@ -148,19 +153,18 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     super(riverName, settings);
     this.client = client;
 
-    String url = null;
     String jiraUser = null;
     String jiraJqlTimezone = TimeZone.getDefault().getDisplayName();
 
     if (settings.settings().containsKey("jira")) {
       Map<String, Object> jiraSettings = (Map<String, Object>) settings.settings().get("jira");
-      url = XContentMapValues.nodeStringValue(jiraSettings.get("urlBase"), null);
-      if (Utils.isEmpty(url)) {
+      jiraUrlBase = XContentMapValues.nodeStringValue(jiraSettings.get("urlBase"), null);
+      if (Utils.isEmpty(jiraUrlBase)) {
         throw new SettingsException("jira/urlBase element of configuration structure not found or empty");
       }
       Integer timeout = new Long(parseTimeValue(jiraSettings, "timeout", 5, TimeUnit.SECONDS)).intValue();
       jiraUser = XContentMapValues.nodeStringValue(jiraSettings.get("username"), "Anonymous access");
-      jiraClient = new JIRA5RestClient(url, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
+      jiraClient = new JIRA5RestClient(jiraUrlBase, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
           XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
       jiraClient.setListJIRAIssuesMax(XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIssuesPerRequest"), 50));
       if (jiraSettings.get("jqlTimeZone") != null) {
@@ -213,7 +217,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     logger
         .info(
             "Creating JIRA River for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type for issues '{}'.",
-            url, jiraUser, jiraJqlTimezone, indexName, typeName);
+            jiraUrlBase, jiraUser, jiraJqlTimezone, indexName, typeName);
     if (activityLogIndexName != null) {
       logger.info(
           "Activity log for JIRA River is enabled. Search index name '{}', document type for index updates '{}'.",
@@ -221,7 +225,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     }
 
     jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName,
-        url, indexSettings);
+        jiraUrlBase, indexSettings);
     jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
   }
 
