@@ -46,6 +46,9 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
   private static final String CFG_TYPE_ISSUE = "jira_issue";
   private static final String CFG_TYPE_ISSUE_COMMENT = "jira_issue_comment";
 
+  private static final String CFG_TYPE_ACTIVITY = "jira_river_indexupdate";
+  private static final String CFG_INDEX_NAME_ACTIVITY = "activity_index";
+
   private static final String PROJECT_KEY = "ORG";
 
   @Test
@@ -55,6 +58,8 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
 
       JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
       IJIRAClient jClientMock = jiraRiverMock.jiraClient;
+      jiraRiverMock.activityLogIndexName = CFG_INDEX_NAME_ACTIVITY;
+      jiraRiverMock.activityLogTypeName = CFG_TYPE_ACTIVITY;
 
       JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
           CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
@@ -83,6 +88,7 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514");
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT);
       assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun1, "ORG-1501", "ORG-1513", "ORG-1514");
+      assertNumDocumentsInIndex(client, CFG_INDEX_NAME_ACTIVITY, CFG_TYPE_ACTIVITY, 1);
 
       // run 2 to update one document
       Thread.sleep(100);
@@ -107,6 +113,8 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE_COMMENT);
       assertDocumentsUpdatedAfterDate(client, CFG_TYPE_ISSUE, dateStartRun2, "ORG-1501");
       assertDocumentsUpdatedBeforeDate(client, CFG_TYPE_ISSUE, dateStartRun2, "ORG-1513", "ORG-1514");
+
+      assertNumDocumentsInIndex(client, CFG_INDEX_NAME_ACTIVITY, CFG_TYPE_ACTIVITY, 2);
 
     } finally {
       finalizeESClientForUnitTest();
@@ -454,6 +462,26 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
   }
 
   /**
+   * Assert number of documents of given type in search index.
+   * 
+   * @param client to be used
+   * @param indexName name of index to check documents in
+   * @param documentType type of document to check
+   * @param expectedNum expected number of documents
+   * 
+   */
+  protected void assertNumDocumentsInIndex(Client client, String indexName, String documentType, int expectedNum) {
+
+    client.admin().indices().prepareRefresh(indexName).execute().actionGet();
+
+    SearchRequestBuilder srb = client.prepareSearch(indexName).setTypes(documentType)
+        .setQuery(QueryBuilders.matchAllQuery());
+
+    SearchResponse resp = srb.execute().actionGet();
+    Assert.assertEquals("Documents number is wrong", expectedNum, resp.hits().getTotalHits());
+  }
+
+  /**
    * Assert documents with given id's exists in {@value #CFG_INDEX_NAME} search index and was NOT updated after given
    * bound date (so was updated before).
    * 
@@ -520,6 +548,7 @@ public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
 
   protected void initIndexStructures(Client client, IssueCommentIndexingMode commentMode) throws Exception {
     client.admin().indices().prepareCreate(CFG_INDEX_NAME).execute().actionGet();
+    client.admin().indices().prepareCreate(CFG_INDEX_NAME_ACTIVITY).execute().actionGet();
     client.admin().indices().preparePutMapping(CFG_INDEX_NAME).setType(CFG_TYPE_ISSUE)
         .setSource(TestUtils.readStringFromClasspathFile("/mappings/jira_issue.json")).execute().actionGet();
     if (commentMode.isExtraDocumentIndexed()) {

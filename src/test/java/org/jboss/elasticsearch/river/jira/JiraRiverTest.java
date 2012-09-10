@@ -22,6 +22,7 @@ import junit.framework.Assert;
 
 import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
@@ -31,6 +32,7 @@ import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 import org.jboss.elasticsearch.river.jira.testtools.ESRealClientTestBase;
 import org.jboss.elasticsearch.river.jira.testtools.MockThread;
+import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -68,14 +70,14 @@ public class JiraRiverTest extends ESRealClientTestBase {
     Assert.assertEquals(5 * 60 * 1000, tested.indexUpdatePeriod);
     Assert.assertEquals(12 * 60 * 60 * 1000, tested.indexFullUpdatePeriod);
     Assert.assertEquals("my_jira_river", tested.indexName);
-    Assert.assertEquals(JiraRiver.INDEX_TYPE_NAME_DEFAULT, tested.typeName);
+    Assert.assertEquals(JiraRiver.INDEX_ISSUE_TYPE_NAME_DEFAULT, tested.typeName);
     Assert.assertEquals(50, tested.jiraClient.getListJIRAIssuesMax());
 
     Map<String, Object> indexSettings = new HashMap<String, Object>();
     toplevelSettingsAdd.put("index", indexSettings);
     tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", jiraSettings, toplevelSettingsAdd, false);
     Assert.assertEquals("my_jira_river", tested.indexName);
-    Assert.assertEquals(JiraRiver.INDEX_TYPE_NAME_DEFAULT, tested.typeName);
+    Assert.assertEquals(JiraRiver.INDEX_ISSUE_TYPE_NAME_DEFAULT, tested.typeName);
     Assert.assertEquals(tested.jiraIssueIndexStructureBuilder, tested.jiraClient.getIndexStructureBuilder());
 
     // case - test river configuration reading
@@ -274,20 +276,52 @@ public class JiraRiverTest extends ESRealClientTestBase {
   public void reportIndexingFinished() throws Exception {
     IJIRAProjectIndexerCoordinator coordMock = mock(IJIRAProjectIndexerCoordinator.class);
 
-    // case - report correctly
     JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    Client clientMock = tested.client;
     tested.coordinatorInstance = coordMock;
 
-    tested.reportIndexingFinished("ORG", true, false, 10, 0, null, 10, null);
-    verify(coordMock, times(1)).reportIndexingFinished("ORG", true, false);
+    // case - report correctly - no activity log
+    {
+      tested.reportIndexingFinished("ORG", true, false, 10, 0, null, 10, null);
+      verify(coordMock, times(1)).reportIndexingFinished("ORG", true, false);
+      Mockito.verifyZeroInteractions(clientMock);
+    }
+    {
+      reset(coordMock);
+      tested.reportIndexingFinished("AAA", false, true, 0, 0, null, 10, null);
+      verify(coordMock, times(1)).reportIndexingFinished("AAA", false, true);
+      Mockito.verifyZeroInteractions(clientMock);
+    }
 
-    reset(coordMock);
-    tested.reportIndexingFinished("AAA", false, true, 0, 0, null, 10, null);
-    verify(coordMock, times(1)).reportIndexingFinished("AAA", false, true);
+    // report correctly with activity log
+    tested.activityLogIndexName = "alindex";
+    tested.activityLogTypeName = "altype";
+    {
+      IndexRequestBuilder irb = new IndexRequestBuilder(null);
+      when(clientMock.prepareIndex("alindex", "altype")).thenReturn(irb);
+      tested.reportIndexingFinished("AAA", false, true, 0, 0, null, 10, null);
+      Assert.assertNotNull(irb.request().source());
+    }
 
     // case - no exception if coordinatorInstance is null
     tested = prepareJiraRiverInstanceForTest(null);
     tested.reportIndexingFinished("ORG", true, false, 0, 0, null, 10, null);
+
+  }
+
+  @Test
+  public void prepareUpdateActivityLogDocument() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+
+    TestUtils.assertStringFromClasspathFile(
+        "/asserts/prepareUpdateActivityLogDocument_1.json",
+        tested.prepareUpdateActivityLogDocument("ORG", true, true, 10, 1,
+            Utils.parseISODateTime("2012-09-10T12:55:58Z"), 1250, null).string());
+
+    TestUtils.assertStringFromClasspathFile(
+        "/asserts/prepareUpdateActivityLogDocument_2.json",
+        tested.prepareUpdateActivityLogDocument("ORG", false, false, 5, 0,
+            Utils.parseISODateTime("2012-09-10T12:56:50Z"), 125, "Error message").string());
 
   }
 

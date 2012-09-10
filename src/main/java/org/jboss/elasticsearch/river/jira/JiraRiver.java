@@ -32,7 +32,7 @@ import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 
 /**
- * JIRA River implementation class
+ * JIRA River implementation class.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -43,7 +43,9 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    */
   protected static final long JIRA_PROJECTS_REFRESH_TIME = 30 * 60 * 1000;
 
-  public static final String INDEX_TYPE_NAME_DEFAULT = "jira_issue";
+  public static final String INDEX_ISSUE_TYPE_NAME_DEFAULT = "jira_issue";
+
+  public static final String INDEX_ACTIVITY_TYPE_NAME_DEFAULT = "jira_river_indexupdate";
 
   /**
    * ElasticSearch client to be used for indexing
@@ -84,6 +86,16 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * Config - name of ElasticSearch type used to store issues from this river in index
    */
   protected String typeName;
+
+  /**
+   * Config - name of ElasticSearch index used to store river activity records - null means no activity stored
+   */
+  protected String activityLogIndexName;
+
+  /**
+   * Config - name of ElasticSearch type used to store river activity records in index
+   */
+  protected String activityLogTypeName;
 
   /**
    * Thread running {@link JIRAProjectIndexerCoordinator} is stored here.
@@ -172,23 +184,41 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
             jiraSettings.get("projectKeysExcluded"), null));
       }
     } else {
-      throw new SettingsException("jira element of configuration structure not found");
+      throw new SettingsException("'jira' element of river configuration structure not found");
     }
 
     Map<String, Object> indexSettings = null;
     if (settings.settings().containsKey("index")) {
       indexSettings = (Map<String, Object>) settings.settings().get("index");
       indexName = XContentMapValues.nodeStringValue(indexSettings.get("index"), riverName.name());
-      typeName = XContentMapValues.nodeStringValue(indexSettings.get("type"), INDEX_TYPE_NAME_DEFAULT);
+      typeName = XContentMapValues.nodeStringValue(indexSettings.get("type"), INDEX_ISSUE_TYPE_NAME_DEFAULT);
     } else {
       indexName = riverName.name();
-      typeName = INDEX_TYPE_NAME_DEFAULT;
+      typeName = INDEX_ISSUE_TYPE_NAME_DEFAULT;
+    }
+
+    Map<String, Object> activityLogSettings = null;
+    if (settings.settings().containsKey("activity_log")) {
+      activityLogSettings = (Map<String, Object>) settings.settings().get("activity_log");
+      activityLogIndexName = Utils
+          .trimToNull(XContentMapValues.nodeStringValue(activityLogSettings.get("index"), null));
+      if (activityLogIndexName == null) {
+        throw new SettingsException(
+            "'activity_log/index' element of river configuration structure must be defined with some string");
+      }
+      activityLogTypeName = Utils.trimToNull(XContentMapValues.nodeStringValue(activityLogSettings.get("type"),
+          INDEX_ACTIVITY_TYPE_NAME_DEFAULT));
     }
 
     logger
         .info(
-            "Creating JIRA River for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type '{}'.",
+            "Creating JIRA River for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type for issues '{}'.",
             url, jiraUser, jiraJqlTimezone, indexName, typeName);
+    if (activityLogIndexName != null) {
+      logger.info(
+          "Activity log for JIRA River is enabled. Search index name '{}', document type for index updates '{}'.",
+          activityLogIndexName, activityLogTypeName);
+    }
 
     jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName,
         url, indexSettings);
@@ -286,7 +316,49 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     if (coordinatorInstance != null) {
       coordinatorInstance.reportIndexingFinished(jiraProjectKey, finishedOK, fullUpdate);
     }
-    // TODO log JIRA project indexing result for statistics and info reasons
+    if (activityLogIndexName != null) {
+      try {
+        client
+            .prepareIndex(activityLogIndexName, activityLogTypeName)
+            .setSource(
+                prepareUpdateActivityLogDocument(jiraProjectKey, finishedOK, fullUpdate, issuesUpdated, issuesDeleted,
+                    startDate, timeElapsed, errorMessage)).execute().actionGet();
+      } catch (Exception e) {
+        logger.error("Error during update result witing to the audit log {}", e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Prepare document to log update activity result.
+   * 
+   * @param projectKey
+   * @param finishedOK
+   * @param fullUpdate
+   * @param issuesUpdated
+   * @param issuesDeleted
+   * @param startDate
+   * @param timeElapsed
+   * @param errorMessage
+   * @return document to store into search index
+   * 
+   * @see #reportIndexingFinished(String, boolean, boolean, int, int, Date, long, String)
+   * @throws IOException
+   */
+  protected XContentBuilder prepareUpdateActivityLogDocument(String projectKey, boolean finishedOK, boolean fullUpdate,
+      int issuesUpdated, int issuesDeleted, Date startDate, long timeElapsed, String errorMessage) throws IOException {
+    XContentBuilder builder = jsonBuilder().startObject();
+    builder.field("projectKey", projectKey);
+    builder.field("updateType", fullUpdate ? "FULL" : "INCREMENTAL");
+    builder.field("result", finishedOK ? "OK" : "ERROR");
+    builder.field("startDate", startDate).field("timeElapsed", timeElapsed + "ms");
+    builder.field("issuesUpdated", issuesUpdated).field("issuesDeleted", issuesDeleted);
+    if (!finishedOK && !Utils.isEmpty(errorMessage)) {
+      builder.field("errorMessage", errorMessage);
+    }
+    builder.endObject();
+
+    return builder;
   }
 
   @Override

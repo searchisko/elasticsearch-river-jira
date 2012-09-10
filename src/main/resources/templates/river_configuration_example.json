@@ -12,4 +12,12 @@
         "indexFullUpdatePeriod" : "1h",
         "maxIndexingThreads"    : 2
     },
+    "index" : {
+        "index" : "my_jira_index",
+        "type"  : "jira_issue"
+    },
+    "activity_log": {
+        "index" : "jira_river_activity",
+        "type"  : "jira_river_indexupdate"
+    }
 }

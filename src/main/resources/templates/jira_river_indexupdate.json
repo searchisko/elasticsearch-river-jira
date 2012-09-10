@@ -1,0 +1,9 @@
+{
+    "jira_river_indexupdate" : {
+        "properties" : {
+            "projectKey" : {"type" : "string", "analyzer" : "keyword"},
+            "updateType" : {"type" : "string", "analyzer" : "keyword"},
+            "result"     : {"type" : "string", "analyzer" : "keyword"}
+        }
+    }
+}
