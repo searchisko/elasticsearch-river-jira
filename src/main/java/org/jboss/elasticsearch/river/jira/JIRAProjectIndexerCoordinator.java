@@ -144,6 +144,8 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
     }
   }
 
+  protected long lastQueueFillTime = 0;
+
   /**
    * Process coordination tasks in one loop of coordinator.
    * 
@@ -151,7 +153,9 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    * @throws InterruptedException id interrupted
    */
   protected void processLoopTask() throws Exception, InterruptedException {
-    if (projectKeysToIndexQueue.isEmpty()) {
+    long now = System.currentTimeMillis();
+    if (projectKeysToIndexQueue.isEmpty() || (lastQueueFillTime < (now - COORDINATOR_THREAD_WAITS_SLOW))) {
+      lastQueueFillTime = now;
       fillProjectKeysToIndexQueue();
     }
     if (projectKeysToIndexQueue.isEmpty()) {
@@ -182,7 +186,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
             continue;
           }
         }
-        if (projectIndexUpdateNecessary(projectKey)) {
+        if (!projectKeysToIndexQueue.contains(projectKey) && projectIndexUpdateNecessary(projectKey)) {
           projectKeysToIndexQueue.add(projectKey);
         }
       }

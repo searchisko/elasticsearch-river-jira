@@ -162,6 +162,7 @@ public class JIRAProjectIndexerCoordinatorTest {
       Assert.assertEquals(4, tested.projectKeysToIndexQueue.size());
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("ORG"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("AAA"));
+      Assert.assertFalse(tested.projectKeysToIndexQueue.contains("BBB"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("CCC"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("DDD"));
     }
@@ -182,10 +183,33 @@ public class JIRAProjectIndexerCoordinatorTest {
       Assert.assertEquals(4, tested.projectKeysToIndexQueue.size());
       Assert.assertFalse(tested.projectKeysToIndexQueue.contains("ORG"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("AAA"));
+      Assert.assertTrue(tested.projectKeysToIndexQueue.contains("BBB"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("CCC"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("DDD"));
+    }
 
-      // case - exception when interrupted from ES server
+    // case - some project available for index update, but in queue already, so do not schedule it for processing now
+    {
+      reset(esIntegrationMock);
+      tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, indexUpdatePeriod, 2, -1);
+      tested.projectKeysToIndexQueue.add("ORG");
+      when(
+          esIntegrationMock.readDatetimeValue(Mockito.eq(Mockito.anyString()),
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(null);
+
+      when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
+      tested.fillProjectKeysToIndexQueue();
+      Assert.assertFalse(tested.projectKeysToIndexQueue.isEmpty());
+      Assert.assertEquals(5, tested.projectKeysToIndexQueue.size());
+      Assert.assertTrue(tested.projectKeysToIndexQueue.contains("ORG"));
+      Assert.assertTrue(tested.projectKeysToIndexQueue.contains("AAA"));
+      Assert.assertTrue(tested.projectKeysToIndexQueue.contains("BBB"));
+      Assert.assertTrue(tested.projectKeysToIndexQueue.contains("CCC"));
+      Assert.assertTrue(tested.projectKeysToIndexQueue.contains("DDD"));
+    }
+
+    // case - exception when interrupted from ES server
+    {
       reset(esIntegrationMock);
       when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
       when(esIntegrationMock.isClosed()).thenReturn(true);
@@ -524,8 +548,8 @@ public class JIRAProjectIndexerCoordinatorTest {
       Assert.assertEquals(JIRAProjectIndexerCoordinator.COORDINATOR_THREAD_WAITS_QUICK, tested.coordinatorThreadWaits);
     }
 
-    // case - projectKeysToIndexQueue is not empty so no fillProjectKeysToIndexQueue() is called but startIndexers is
-    // called
+    // case - projectKeysToIndexQueue is not empty, no fillProjectKeysToIndexQueue() is called because called in near
+    // history, but startIndexers is called
     {
       reset(esIntegrationMock);
       tested.projectIndexers.clear();
@@ -539,6 +563,31 @@ public class JIRAProjectIndexerCoordinatorTest {
       Assert.assertEquals(1, tested.projectIndexers.size());
       verify(esIntegrationMock, times(0)).getAllIndexedProjectsKeys();
       verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"),
+          Mockito.any(Runnable.class));
+      Assert.assertEquals(JIRAProjectIndexerCoordinator.COORDINATOR_THREAD_WAITS_QUICK, tested.coordinatorThreadWaits);
+    }
+
+    // case - projectKeysToIndexQueue is not empty, but fillProjectKeysToIndexQueue() is called because called long ago,
+    // then startIndexers is called
+    {
+      reset(esIntegrationMock);
+      tested.lastQueueFillTime = System.currentTimeMillis()
+          - JIRAProjectIndexerCoordinator.COORDINATOR_THREAD_WAITS_SLOW - 1;
+      tested.projectIndexers.clear();
+      tested.projectKeysToIndexQueue.clear();
+      tested.projectKeysToIndexQueue.add("ORG");
+      when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG,AAA"));
+      when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"), Mockito.any(Runnable.class)))
+          .thenReturn(new MockThread());
+      when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_AAA"), Mockito.any(Runnable.class)))
+          .thenReturn(new MockThread());
+
+      tested.processLoopTask();
+      Assert.assertEquals(2, tested.projectIndexers.size());
+      verify(esIntegrationMock, times(1)).getAllIndexedProjectsKeys();
+      verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"),
+          Mockito.any(Runnable.class));
+      verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_AAA"),
           Mockito.any(Runnable.class));
       Assert.assertEquals(JIRAProjectIndexerCoordinator.COORDINATOR_THREAD_WAITS_QUICK, tested.coordinatorThreadWaits);
     }
