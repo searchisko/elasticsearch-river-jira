@@ -53,7 +53,7 @@ The example above lists all the main options controlling the creation and behavi
 * `jira/maxIndexingThreads` defines maximal number of parallel indexing threads running for this river. Optional, default 1. This setting influences load on both JIRA and ElasticSearch servers during indexing. Threads are started per JIRA project update. If there is more threads allowed, then one is always dedicated for incremental updates only (so full updates do not block incremental updates for another projects).
 * `index/index` defines name of search [index](http://www.elasticsearch.org/guide/appendix/glossary.html#index) where JIRA issues are stored. Parameter is optional, name of river is used if ommited. See related notes later!
 * `index/type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue is stored into search index. Parameter is optional, `jira_issue` is used if ommited. See related notes later!
-* `index/field_river_name`, `index/field_project_key`, `index/fields`, `index/value_filters` can be used to change structure of indexed issue document. See 'JIRA issue index document structure' chapter.
+* `index/field_river_name`, `index/field_project_key`, `index/field_issue_key`, `index/field_jira_url` `index/fields`, `index/value_filters` can be used to change structure of indexed issue document. See 'JIRA issue index document structure' chapter.
 * `index/comment_mode` defines mode of issue comments indexing: `none` - no comments indexed, `embedded` - comments indexed as array in issue document, `child` - comment indexed as separate document with [parent-child relation](http://www.elasticsearch.org/guide/reference/mapping/parent-field.html) to issue document, `standalone` - comment indexed as separate document. Setting is optional, `embedded` value is default if not provided.
 * `index/comment_type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue comment is stored into search index in `child` or `standalone` mode. Parameter is optional, `jira_issue_comment` is used if ommited. See related notes later!
 * `index/field_comments`, `index/comment_fields` can be used to change structure comment informations in indexed documents. See 'JIRA issue index document structure' chapter.
@@ -105,76 +105,76 @@ See next chapter for description of JIRA issue indexed document structure to cre
 
 JIRA issue index document structure
 -----------------------------------
-JIRA River writes JSON document with following structure to the search index by default. Issue key is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index.
-
-    -----------------------------------------------------------------------------------------------------------------------------
-    | **index field**  | **JIRA JSON field**   | **indexed field value notes**                                                  |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | source           | N/A                   | name of JiraRiver document was indexed over                                    |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | document_url     | N/A                   | URL to show issue in JIRA GUI                                                  |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | project_key      | fields.project.key    | Key of project in JIRA                                                         |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | project_name     | fields.project.name   | Name of project in JIRA                                                        |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | issue_key        | key                   | Issue key from jira - also used as ID of document in the index, eg. `ORG-12`   |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | issue_type       | fields.issuetype.name | Name of issue type, eg. `Bug`, `Feature Request` etc.                          |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | summary          | fields.summary        | Title of issue                                                                 |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | status           | fields.status.name    | Name of issue status, eg. `Open`, `Resolved`, `Closed` etc.                    |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | created          | fields.created        | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | updated          | fields.updated        | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | resolutiondate   | fields.resolutiondate | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | description      | fields.description    | Main description text for issue. May contain JIRA WIKI syntax                  |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | labels           | fields.labels         | Array od String values with all labels                                         |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | reporter         | fields.reporter       | Object with fields `username`, `email_address`, `display_name`                 |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | assignee         | fields.assignee       | Object with fields `username`, `email_address`, `display_name`                 |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | fix_versions     | fields.fixVersions    | Array containing Objects with `name` field                                     |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | components       | field.components      | Array containing Objects with `name` field                                     |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | comments         | field.comment         | Array of comments (comment indexing in `embedded` mode is used by default)     |
-    -----------------------------------------------------------------------------------------------------------------------------
-
-JIRA River uses following structure to store comment informations in search index by default. Issue key is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index in `child` or `standalone` mode.
-
-    -----------------------------------------------------------------------------------------------------------------------------
-    | **index field**  | **JIRA comment JSON field** | **indexed field value notes**                                            |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | source           | N/A                   | name of JiraRiver comment was indexed over, not used in `embedded` mode        |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | project_key      | N/A                   | Key of project in JIRA comment is for, not used in `embedded` mode             |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | issue_key        | N/A                   | key of issue comment is for, not used in `embedded` mode                       |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | document_url     | N/A                   | URL to show comment in JIRA GUI                                                |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | comment_id       | id                    | Name of project in JIRA                                                        |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | comment_body     | body                  | Comment text. May contain JIRA WIKI syntax                                     |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | comment_created  | created               | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | comment_updated  | updated               | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | comment_author   | author                | Object with fields `username`, `email_address`, `display_name`                 |
-    -----------------------------------------------------------------------------------------------------------------------------
-    | comment_updater  | updateAuthor          | Object with fields `username`, `email_address`, `display_name`                 |
-    -----------------------------------------------------------------------------------------------------------------------------
-
-
 You can configure which fields from JIRA will be available in search index and under which names. See [river_configuration_default.json](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/templates/river_configuration_default.json) file for example of river configuration, which is used to create default configuration.
+
+JIRA River writes JSON document with following structure to the search index for issue by default. Issue key is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index.
+
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | **index field**  | **JIRA JSON field**   | **indexed field value notes**                                                  | **river configuration** |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | source           | N/A                   | name of JiraRiver document was indexed over                                    | index/field_river_name  |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | document_url     | N/A                   | URL to show issue in JIRA GUI                                                  | index/field_jira_url    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | project_key      | fields.project.key    | Key of project in JIRA                                                         | index/field_project_key |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | project_name     | fields.project.name   | Name of project in JIRA                                                        | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | issue_key        | key                   | Issue key from jira - also used as ID of document in the index, eg. `ORG-12`   | index/field_issue_key   |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | issue_type       | fields.issuetype.name | Name of issue type, eg. `Bug`, `Feature Request` etc.                          | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | summary          | fields.summary        | Title of issue                                                                 | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | status           | fields.status.name    | Name of issue status, eg. `Open`, `Resolved`, `Closed` etc.                    | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | created          | fields.created        | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | updated          | fields.updated        | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | resolutiondate   | fields.resolutiondate | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | description      | fields.description    | Main description text for issue. May contain JIRA WIKI syntax                  | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | labels           | fields.labels         | Array od String values with all labels                                         | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | reporter         | fields.reporter       | Object with fields `username`, `email_address`, `display_name`                 | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | assignee         | fields.assignee       | Object with fields `username`, `email_address`, `display_name`                 | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | fix_versions     | fields.fixVersions    | Array containing Objects with `name` field                                     | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | components       | field.components      | Array containing Objects with `name` field                                     | index/fields            |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | comments         | field.comment         | Array of comments (comment indexing in `embedded` mode is used by default)     | index/field_comments    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+
+JIRA River uses following structure to store comment informations in search index by default. Comment id is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index in `child` or `standalone` mode.
+
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | **index field**  | **JIRA comment JSON field** | **indexed field value notes**                                            | **river configuration** |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | source           | N/A                   | name of JiraRiver comment was indexed over, not used in `embedded` mode        | index/field_river_name  |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | project_key      | N/A                   | Key of project in JIRA comment is for, not used in `embedded` mode             | index/field_project_key |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | issue_key        | N/A                   | key of issue comment is for, not used in `embedded` mode                       | index/field_issue_key   |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | document_url     | N/A                   | URL to show comment in JIRA GUI                                                | index/field_jira_url    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | comment_id       | id                    | Name of project in JIRA                                                        | index/comment_fields    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | comment_body     | body                  | Comment text. May contain JIRA WIKI syntax                                     | index/comment_fields    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | comment_created  | created               | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       | index/comment_fields    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | comment_updated  | updated               | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                       | index/comment_fields    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | comment_author   | author                | Object with fields `username`, `email_address`, `display_name`                 | index/comment_fields    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+    | comment_updater  | updateAuthor          | Object with fields `username`, `email_address`, `display_name`                 | index/comment_fields    |
+    -------------------------------------------------------------------------------------------------------------------------------------------------------
+
 Code used to create indexed document structure is inside `org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder` class.
 
 TODO List
