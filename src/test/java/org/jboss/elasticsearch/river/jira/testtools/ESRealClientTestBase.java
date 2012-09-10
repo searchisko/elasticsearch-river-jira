@@ -66,7 +66,8 @@ public abstract class ESRealClientTestBase {
       // Make sure that the index and metadata are not stored on the disk
       // path.data folder is created but we make sure it is removed after test finishes
       Settings settings = org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder()
-          .put("index.store.type", "memory").put("gateway.type", "none").put("path.data", tempFolderName).build();
+          .put("index.store.type", "memory").put("gateway.type", "none").put("http.enabled", "false")
+          .put("path.data", tempFolderName).build();
 
       node = NodeBuilder.nodeBuilder().settings(settings).local(true).node();
 
