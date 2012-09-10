@@ -39,7 +39,7 @@ import org.mockito.Mockito;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JIRAProjectIndexerTest_Integration extends ESRealClientTestBase {
+public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
   private static final String CFG_RIVER_NAME = "jira_river";
   private static final String CFG_INDEX_NAME = CFG_RIVER_NAME;

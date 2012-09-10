@@ -23,7 +23,6 @@ import org.elasticsearch.river.RiverSettings;
 import org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder;
 import org.jboss.elasticsearch.river.jira.JiraRiver;
 import org.jboss.elasticsearch.river.jira.Utils;
-import org.junit.Test;
 
 /**
  * Class for ElasticSearch integration tests against some running ES cluster. This is not Unit test but helper for tests
@@ -31,7 +30,7 @@ import org.junit.Test;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class ElasticSearchIntegrationTest {
+public abstract class ElasticSearchIntegrationTest {
 
   public static void main(String[] args) throws MalformedURLException {
 
@@ -68,11 +67,6 @@ public class ElasticSearchIntegrationTest {
     } finally {
       client.close();
     }
-  }
-
-  @Test
-  public void notest() {
-
   }
 
 }
