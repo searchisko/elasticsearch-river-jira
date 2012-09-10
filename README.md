@@ -71,6 +71,10 @@ To get rid of some unwanted WARN log messages add next line to the [logging conf
 
 	org.apache.commons.httpclient: ERROR
 
+And to get rid of extensive INFO messages from index update runs use:
+
+	org.jboss.elasticsearch.river.jira.JIRAProjectIndexer: WARN
+
 
 Notes for Index and Document type mapping creation
 --------------------------------------------------
