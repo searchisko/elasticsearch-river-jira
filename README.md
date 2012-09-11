@@ -3,7 +3,7 @@ JIRA River Plugin for ElasticSearch
 
 The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/software/jira) issues and issue comments into [ElasticSearch](http://www.elasticsearch.org). It's implemented as ElasticSearch [river](http://www.elasticsearch.org/guide/reference/river/) [plugin](http://www.elasticsearch.org/guide/reference/modules/plugins.html) and uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) to obtain issus from JIRA instance.
 
-**This plugin is in beta phase of development now. All basic functionality is here and working, new features are added now.**
+**First version of this plugin released. All basic functionality is here and working in 1.0.0 release, new features will be added, see ToDo list later.**
 
 In order to install the plugin into ElasticSearch, simply run: `bin/plugin -install jbossorg/elasticsearch-river-jira/1.0.0`.
 
@@ -11,6 +11,8 @@ In order to install the plugin into ElasticSearch, simply run: `bin/plugin -inst
     | JIRA Plugin    | ElasticSearch    | JIRA version | JIRA REST API version |
     ----------------------------------------------------------------------------
     | master         | 0.19 -> master   | 5+           | 2                     |
+    ----------------------------------------------------------------------------
+    | 1.0.0          | 0.19             | 5+           | 2                     |
     ----------------------------------------------------------------------------
 
 The JIRA river indexes JIRA issues and comments, and makes them searchable by ElasticSearch. JIRA is pooled periodically to detect changed issues (search operation with JQL query over `updatedDate` field) to update search index in incremental update mode. 
