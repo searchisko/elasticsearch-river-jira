@@ -30,6 +30,7 @@ import org.elasticsearch.river.AbstractRiverComponent;
 import org.elasticsearch.river.River;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
+import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor;
 
 /**
  * JIRA River implementation class.
@@ -164,8 +165,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       }
       Integer timeout = new Long(parseTimeValue(jiraSettings, "timeout", 5, TimeUnit.SECONDS)).intValue();
       jiraUser = XContentMapValues.nodeStringValue(jiraSettings.get("username"), "Anonymous access");
-      jiraClient = new JIRA5RestClient(jiraUrlBase, XContentMapValues.nodeStringValue(jiraSettings.get("username"), null),
-          XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
+      jiraClient = new JIRA5RestClient(jiraUrlBase, XContentMapValues.nodeStringValue(jiraSettings.get("username"),
+          null), XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
       jiraClient.setListJIRAIssuesMax(XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIssuesPerRequest"), 50));
       if (jiraSettings.get("jqlTimeZone") != null) {
         TimeZone tz = TimeZone.getTimeZone(XContentMapValues.nodeStringValue(jiraSettings.get("jqlTimeZone"), null));
@@ -214,9 +215,15 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
           INDEX_ACTIVITY_TYPE_NAME_DEFAULT));
     }
 
+    jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName,
+        jiraUrlBase, indexSettings);
+    preparePreprocessors(indexSettings, jiraIssueIndexStructureBuilder);
+
+    jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
+
     logger
         .info(
-            "Creating JIRA River for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type for issues '{}'.",
+            "Created JIRA River for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type for issues '{}'.",
             jiraUrlBase, jiraUser, jiraJqlTimezone, indexName, typeName);
     if (activityLogIndexName != null) {
       logger.info(
@@ -224,9 +231,41 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
           activityLogIndexName, activityLogTypeName);
     }
 
-    jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName,
-        jiraUrlBase, indexSettings);
-    jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
+  }
+
+  @SuppressWarnings("unchecked")
+  private void preparePreprocessors(Map<String, Object> indexSettings,
+      IJIRAIssueIndexStructureBuilder indexStructureBuilder) {
+    if (indexSettings != null) {
+      List<Map<String, Object>> preproclist = (List<Map<String, Object>>) indexSettings.get("preprocessors");
+      if (preproclist != null && preproclist.size() > 0) {
+        for (Map<String, Object> ppc : preproclist) {
+          String className = XContentMapValues.nodeStringValue(ppc.get("class"), null);
+          if (Utils.isEmpty(className)) {
+            throw new SettingsException("'class' element not defined for item in 'preprocessors' array");
+          }
+          String name = XContentMapValues.nodeStringValue(ppc.get("name"), null);
+          if (Utils.isEmpty(name)) {
+            throw new SettingsException("'name' element not defined for item in 'preprocessors' array");
+          }
+          Map<String, Object> settings = (Map<String, Object>) ppc.get("settings");
+          try {
+            IssueDataPreprocessor preproc = (IssueDataPreprocessor) Class.forName(className).newInstance();
+            preproc.init(name, client, indexStructureBuilder, settings);
+            indexStructureBuilder.addIssueDataPreprocessor(preproc);
+          } catch (InstantiationException e) {
+            throw new SettingsException("Preprocessor class " + className + " creation exception " + e.getMessage(), e);
+          } catch (IllegalAccessException e) {
+            throw new SettingsException("Preprocessor class " + className + " creation exception " + e.getMessage(), e);
+          } catch (ClassNotFoundException e) {
+            throw new SettingsException("Preprocessor class " + className + " not found", e);
+          } catch (ClassCastException e) {
+            throw new SettingsException("Preprocessor class " + className + " must implement interface "
+                + IssueDataPreprocessor.class.getName());
+          }
+        }
+      }
+    }
   }
 
   /**

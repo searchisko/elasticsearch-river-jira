@@ -24,10 +24,13 @@ import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentGenerator;
+import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor;
 import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 /**
  * Unit test for {@link JIRA5RestIssueIndexStructureBuilder}.
@@ -43,7 +46,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
         "type_name", "http://issues-stg.jboss.org", loadTestSettings("/index_structure_configuration_test_ok.json"));
     Assert.assertEquals("river_name", tested.riverName);
     Assert.assertEquals("index_name", tested.indexName);
-    Assert.assertEquals("type_name", tested.typeName);
+    Assert.assertEquals("type_name", tested.issueTypeName);
     Assert.assertEquals("river_name", tested.indexFieldForRiverName);
     Assert.assertEquals("link", tested.indexFieldForJiraURL);
     Assert.assertEquals("http://issues-stg.jboss.org/browse/", tested.jiraIssueShowUrlBase);
@@ -147,7 +150,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
   private void assertDefaultConfigurationLoaded(JIRA5RestIssueIndexStructureBuilder tested) {
     Assert.assertEquals("river_name", tested.riverName);
     Assert.assertEquals("index_name", tested.indexName);
-    Assert.assertEquals("type_name", tested.typeName);
+    Assert.assertEquals("type_name", tested.issueTypeName);
     Assert.assertEquals("source", tested.indexFieldForRiverName);
     Assert.assertEquals("project_key", tested.indexFieldForProjectKey);
     Assert.assertEquals("issue_key", tested.indexFieldForIssueKey);
@@ -186,6 +189,79 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Map<String, String> field = fieldsConfig.get(indexFieldName);
     Assert.assertEquals(jiraFieldName, field.get(JIRA5RestIssueIndexStructureBuilder.CONFIG_FIELDS_JIRAFIELD));
     Assert.assertEquals(filter, field.get(JIRA5RestIssueIndexStructureBuilder.CONFIG_FIELDS_VALUEFILTER));
+  }
+
+  @Test
+  public void addIssueDataPreprocessor() {
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
+        "http://issues-stg.jboss.org/", null);
+
+    // case - not NPE
+    tested.addIssueDataPreprocessor(null);
+
+    // case - preprocessors adding
+    tested.addIssueDataPreprocessor(mock(IssueDataPreprocessor.class));
+    Assert.assertEquals(1, tested.issueDataPreprocessors.size());
+
+    tested.addIssueDataPreprocessor(mock(IssueDataPreprocessor.class));
+    tested.addIssueDataPreprocessor(mock(IssueDataPreprocessor.class));
+    tested.addIssueDataPreprocessor(mock(IssueDataPreprocessor.class));
+    Assert.assertEquals(4, tested.issueDataPreprocessors.size());
+
+  }
+
+  @Test
+  public void preprocessIssueData() {
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
+        "http://issues-stg.jboss.org/", null);
+
+    Map<String, Object> issue = null;
+    // case - no NPE and change when no preprocessors defined and issue data are null
+    Assert.assertNull(tested.preprocessIssueData("ORG", issue));
+
+    // case - no NPE and change when no preprocessors defined and issue data are notnull
+    {
+      issue = new HashMap<String, Object>();
+      issue.put(JIRA5RestIssueIndexStructureBuilder.JF_KEY, "ORG-1545");
+
+      Map<String, Object> ret = tested.preprocessIssueData("ORG", issue);
+      Assert.assertEquals(issue, ret);
+      Assert.assertEquals(1, ret.size());
+      Assert.assertEquals("ORG-1545", ret.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY));
+    }
+
+    // case - all preprocessors called
+    {
+      IssueDataPreprocessor idp1 = mock(IssueDataPreprocessor.class);
+      IssueDataPreprocessor idp2 = mock(IssueDataPreprocessor.class);
+      when(idp1.preprocessData("ORG", issue)).thenAnswer(new Answer<Map<String, Object>>() {
+        @SuppressWarnings("unchecked")
+        @Override
+        public Map<String, Object> answer(InvocationOnMock invocation) throws Throwable {
+          Map<String, Object> ret = (Map<String, Object>) invocation.getArguments()[1];
+          ret.put("idp1", "called");
+          return ret;
+        }
+      });
+      when(idp2.preprocessData("ORG", issue)).thenAnswer(new Answer<Map<String, Object>>() {
+        @SuppressWarnings("unchecked")
+        @Override
+        public Map<String, Object> answer(InvocationOnMock invocation) throws Throwable {
+          Map<String, Object> ret = (Map<String, Object>) invocation.getArguments()[1];
+          ret.put("idp2", "called");
+          return ret;
+        }
+      });
+
+      tested.addIssueDataPreprocessor(idp1);
+      tested.addIssueDataPreprocessor(idp2);
+      Map<String, Object> ret = tested.preprocessIssueData("ORG", issue);
+      Assert.assertEquals(issue, ret);
+      Assert.assertEquals(3, ret.size());
+      Assert.assertEquals("ORG-1545", ret.get(JIRA5RestIssueIndexStructureBuilder.JF_KEY));
+      Assert.assertEquals("called", ret.get("idp1"));
+      Assert.assertEquals("called", ret.get("idp2"));
+    }
   }
 
   @Test
@@ -376,6 +452,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     TestUtils.assertStringFromClasspathFile("/asserts/prepareCommentIndexedDocument_ORG-1501_1.json", res);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void indexIssue() throws Exception {
     JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
@@ -419,6 +496,24 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
       tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
       tested.indexIssue(esBulk, "ORG-15013", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-15013"));
       Assert.assertEquals(1, esBulk.request().numberOfActions());
+    }
+
+    // case - preprocessor called
+    {
+      BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+      tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
+      IssueDataPreprocessor idp1 = mock(IssueDataPreprocessor.class);
+      when(idp1.preprocessData(Mockito.anyString(), Mockito.anyMap())).thenAnswer(new Answer<Map<String, Object>>() {
+        @Override
+        public Map<String, Object> answer(InvocationOnMock invocation) throws Throwable {
+          return (Map<String, Object>) invocation.getArguments()[1];
+        }
+      });
+      tested.addIssueDataPreprocessor(idp1);
+
+      tested.indexIssue(esBulk, "ORG-15013", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-15013"));
+      Assert.assertEquals(1, esBulk.request().numberOfActions());
+      verify(idp1, times(1)).preprocessData(Mockito.anyString(), Mockito.anyMap());
     }
 
   }

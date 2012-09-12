@@ -3,7 +3,7 @@ JIRA River Plugin for ElasticSearch
 
 The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/software/jira) issues and issue comments into [ElasticSearch](http://www.elasticsearch.org). It's implemented as ElasticSearch [river](http://www.elasticsearch.org/guide/reference/river/) [plugin](http://www.elasticsearch.org/guide/reference/modules/plugins.html) and uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) to obtain issus from JIRA instance.
 
-**First version of this plugin released. All basic functionality is here and working in 1.0.0 release, new features will be added, see ToDo list later.**
+**First version of this plugin released. All basic functionality is here and working in 1.0.0 release. New features will be added, see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues).**
 
 In order to install the plugin into ElasticSearch, simply run: `bin/plugin -install jbossorg/elasticsearch-river-jira/1.0.0`.
 
@@ -203,15 +203,10 @@ JIRA River uses following structure to store comment informations in search inde
     | comment_updater | updateAuthor          | Object with fields `username`, `email_address`, `display_name`               | index/comment_fields    |
     ----------------------------------------------------------------------------------------------------------------------------------------------------
 
-Code used to create indexed document structure is inside `org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder` class.
+You can also implement and configure some preprocessors, which allows you to change/extend issue informations loaded from JIRA and store these changes/extensions to the search index.
+This allows you for example value normalizations, or creation of some index fields with values agregated from more issue fields.
 
-TODO List
----------
-* Implement some mechanism to allow mapping of some issue fields (Project Key, Reporter, Assignee, Status, Type, ...) to common set of fields (title, link, project, authors, dates of activity) and values (normalized set of Issue types, Statuses, authors and projects mapping) shared with other document types and/or other issue trackers to integrate them into search frontent GUI.
-* Implement some mechanism which allows to initiate full reindex of all issues (calleable over REST)
-* Implement some mechanism which allows to initiate full reindex of all issues for defined JIRA project (calleable over REST)
-* Implement REST endpoint where you can monitor status of JIRA river (which projects are indexed by river, which projects are indexed just now, last time of indexing run for projects etc.)
-* Implement REST endpoint which can be used to delete issue from index to support incremental deletes by notifications from JIRA side
+Look at javadoc for [org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/java/org/jboss/elasticsearch/river/jira/preproc/IssueDataPreprocessor.java) interface to see how to write and configure preprocessors.
 
 License
 -------

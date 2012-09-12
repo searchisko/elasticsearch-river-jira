@@ -18,24 +18,20 @@
         "preprocessors" : [
             { 
                 "name"     : "Status Normalizer",
-                "class"    : "org.jboss.elasticsearch.river.jira.preproc.StatusNormalizer",
+                "class"    : "org.jboss.elasticsearch.river.jira.testtools.IssueDataPreprocessorMock",
                 "settings" : {
-                    "some_setting_1" : "value1",
-                    "some_setting_2" : "value2"
+                    "some_setting_1_1" : "value1",
+                    "some_setting_1_2" : "value2"
                 } 
             },
             { 
                 "name"     : "Issue type Normalizer",
-                "class"    : "org.jboss.elasticsearch.river.jira.preproc.IssueTypeNormalizer",
+                "class"    : "org.jboss.elasticsearch.river.jira.testtools.IssueDataPreprocessorMock",
                 "settings" : {
-                    "some_setting_1" : "value1",
-                    "some_setting_2" : "value2"
+                    "some_setting_2_1" : "value1",
+                    "some_setting_2_2" : "value2"
                 } 
             }
         ]
-    },
-    "activity_log": {
-        "index" : "jira_river_activity",
-        "type"  : "jira_river_indexupdate"
     }
 }

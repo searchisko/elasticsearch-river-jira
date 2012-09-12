@@ -30,7 +30,9 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
+import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor;
 import org.jboss.elasticsearch.river.jira.testtools.ESRealClientTestBase;
+import org.jboss.elasticsearch.river.jira.testtools.IssueDataPreprocessorMock;
 import org.jboss.elasticsearch.river.jira.testtools.MockThread;
 import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
 import org.junit.Test;
@@ -104,10 +106,26 @@ public class JiraRiverTest extends ESRealClientTestBase {
     Assert.assertEquals(tested.indexName,
         ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).indexName);
     Assert.assertEquals(tested.typeName,
-        ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).typeName);
+        ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).issueTypeName);
     Assert.assertEquals(tested.riverName().getName(),
         ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).riverName);
 
+  }
+
+  @Test
+  public void constructor_postprocessors() throws Exception {
+
+    JiraRiver tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", null,
+        Utils.loadJSONFromJarPackagedFile("/river_configuration_test_preprocessors.json"), false);
+
+    List<IssueDataPreprocessor> preprocs = ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).issueDataPreprocessors;
+    Assert.assertEquals(2, preprocs.size());
+    Assert.assertEquals("Status Normalizer", preprocs.get(0).getName());
+    Assert.assertEquals("value1", ((IssueDataPreprocessorMock) preprocs.get(0)).settings.get("some_setting_1_1"));
+    Assert.assertEquals("value2", ((IssueDataPreprocessorMock) preprocs.get(0)).settings.get("some_setting_1_2"));
+    Assert.assertEquals("Issue type Normalizer", preprocs.get(1).getName());
+    Assert.assertEquals("value1", ((IssueDataPreprocessorMock) preprocs.get(1)).settings.get("some_setting_2_1"));
+    Assert.assertEquals("value2", ((IssueDataPreprocessorMock) preprocs.get(1)).settings.get("some_setting_2_2"));
   }
 
   @Test
