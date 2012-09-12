@@ -445,7 +445,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   protected XContentBuilder storeDatetimeValueBuildDocument(String projectKey, String propertyName, Date datetime)
       throws IOException {
     return jsonBuilder().startObject().field("projectKey", projectKey).field("propertyName", propertyName)
-        .field(STORE_FIELD_VALUE, Utils.formatISODateTime(datetime)).endObject();
+        .field(STORE_FIELD_VALUE, DateTimeUtils.formatISODateTime(datetime)).endObject();
   }
 
   @Override
@@ -462,7 +462,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     if (lastSeqGetResponse.exists()) {
       Object timestamp = lastSeqGetResponse.sourceAsMap().get(STORE_FIELD_VALUE);
       if (timestamp != null) {
-        lastDate = Utils.parseISODateTime(timestamp.toString());
+        lastDate = DateTimeUtils.parseISODateTime(timestamp.toString());
       }
     } else {
       if (logger.isDebugEnabled())

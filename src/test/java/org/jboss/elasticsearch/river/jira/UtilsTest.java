@@ -198,48 +198,48 @@ public class UtilsTest {
 
   @Test
   public void formatISODateTime() {
-    Assert.assertNull(Utils.formatISODateTime(null));
+    Assert.assertNull(DateTimeUtils.formatISODateTime(null));
     // Assert.assertEquals("2012-08-14T08:00:00.000-0400",
     // Utils.formatISODateTime(Utils.parseISODateTime("2012-08-14T08:00:00.000-0400")));
   }
 
   @Test
   public void parseDateWithMinutePrecise() {
-    Assert.assertNull(Utils.parseISODateWithMinutePrecise(null));
-    Assert.assertNull(Utils.parseISODateWithMinutePrecise(""));
-    Assert.assertNull(Utils.parseISODateWithMinutePrecise("   "));
+    Assert.assertNull(DateTimeUtils.parseISODateTimeWithMinutePrecise(null));
+    Assert.assertNull(DateTimeUtils.parseISODateTimeWithMinutePrecise(""));
+    Assert.assertNull(DateTimeUtils.parseISODateTimeWithMinutePrecise("   "));
     try {
-      Assert.assertNull(Utils.parseISODateWithMinutePrecise("nonsense date"));
+      Assert.assertNull(DateTimeUtils.parseISODateTimeWithMinutePrecise("nonsense date"));
       Assert.fail("IllegalArgumentException must be thrown");
     } catch (IllegalArgumentException e) {
       // OK
     }
 
-    Date expected = Utils.parseISODateTime("2012-08-14T08:00:00.000-0400");
+    Date expected = DateTimeUtils.parseISODateTime("2012-08-14T08:00:00.000-0400");
 
-    Assert.assertEquals(expected, Utils.parseISODateWithMinutePrecise("2012-08-14T08:00:00.000-0400"));
-    Assert.assertEquals(expected, Utils.parseISODateWithMinutePrecise("2012-08-14T08:00:00.001-0400"));
-    Assert.assertEquals(expected, Utils.parseISODateWithMinutePrecise("2012-08-14T08:00:10.000-0400"));
-    Assert.assertEquals(expected, Utils.parseISODateWithMinutePrecise("2012-08-14T08:00:10.545-0400"));
-    Assert.assertEquals(expected, Utils.parseISODateWithMinutePrecise("2012-08-14T08:00:59.999-0400"));
+    Assert.assertEquals(expected, DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-08-14T08:00:00.000-0400"));
+    Assert.assertEquals(expected, DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-08-14T08:00:00.001-0400"));
+    Assert.assertEquals(expected, DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-08-14T08:00:10.000-0400"));
+    Assert.assertEquals(expected, DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-08-14T08:00:10.545-0400"));
+    Assert.assertEquals(expected, DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-08-14T08:00:59.999-0400"));
   }
 
   @Test
   public void roundDateToMinutePrecise() {
-    Assert.assertNull(Utils.roundDateToMinutePrecise(null));
+    Assert.assertNull(DateTimeUtils.roundDateTimeToMinutePrecise(null));
 
-    Date expected = Utils.parseISODateTime("2012-08-14T08:00:00.000-0400");
+    Date expected = DateTimeUtils.parseISODateTime("2012-08-14T08:00:00.000-0400");
 
     Assert.assertEquals(expected,
-        Utils.roundDateToMinutePrecise(Utils.parseISODateTime("2012-08-14T08:00:00.000-0400")));
+        DateTimeUtils.roundDateTimeToMinutePrecise(DateTimeUtils.parseISODateTime("2012-08-14T08:00:00.000-0400")));
     Assert.assertEquals(expected,
-        Utils.roundDateToMinutePrecise(Utils.parseISODateTime("2012-08-14T08:00:00.001-0400")));
+        DateTimeUtils.roundDateTimeToMinutePrecise(DateTimeUtils.parseISODateTime("2012-08-14T08:00:00.001-0400")));
     Assert.assertEquals(expected,
-        Utils.roundDateToMinutePrecise(Utils.parseISODateTime("2012-08-14T08:00:10.000-0400")));
+        DateTimeUtils.roundDateTimeToMinutePrecise(DateTimeUtils.parseISODateTime("2012-08-14T08:00:10.000-0400")));
     Assert.assertEquals(expected,
-        Utils.roundDateToMinutePrecise(Utils.parseISODateTime("2012-08-14T08:00:10.545-0400")));
+        DateTimeUtils.roundDateTimeToMinutePrecise(DateTimeUtils.parseISODateTime("2012-08-14T08:00:10.545-0400")));
     Assert.assertEquals(expected,
-        Utils.roundDateToMinutePrecise(Utils.parseISODateTime("2012-08-14T08:00:59.999-0400")));
+        DateTimeUtils.roundDateTimeToMinutePrecise(DateTimeUtils.parseISODateTime("2012-08-14T08:00:59.999-0400")));
 
   }
 

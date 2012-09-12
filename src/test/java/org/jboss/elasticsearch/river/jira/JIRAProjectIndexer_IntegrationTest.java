@@ -70,9 +70,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Date dateStartRun1 = new Date();
       JIRAProjectIndexer tested = new JIRAProjectIndexer(PROJECT_KEY, false, jClientMock, jiraRiverMock,
           structureBuilder);
-      Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
+      Date lastIssueUpdatedDate = DateTimeUtils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
-      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, Utils.roundDateToMinutePrecise(lastIssueUpdatedDate), null))
+      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate), null))
           .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
 
       tested.run();
@@ -82,7 +82,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(false, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate2 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:27:25.000-0400");
+      Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate2, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514");
@@ -96,7 +96,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Mockito.reset(jClientMock);
       tested = new JIRAProjectIndexer(PROJECT_KEY, false, jClientMock, jiraRiverMock, structureBuilder);
       when(
-          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, Utils.roundDateToMinutePrecise(lastIssueUpdatedDate2), null))
+          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate2), null))
           .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501-updated"));
 
       tested.run();
@@ -106,7 +106,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(false, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate3 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:28:21.000-0400");
+      Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate3, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514");
@@ -138,9 +138,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Date dateStartRun1 = new Date();
       JIRAProjectIndexer tested = new JIRAProjectIndexer(PROJECT_KEY, false, jClientMock, jiraRiverMock,
           structureBuilder);
-      Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
+      Date lastIssueUpdatedDate = DateTimeUtils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
-      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, Utils.roundDateToMinutePrecise(lastIssueUpdatedDate), null))
+      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate), null))
           .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
 
       tested.run();
@@ -150,7 +150,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(false, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate2 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:27:25.000-0400");
+      Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate2, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514");
@@ -166,7 +166,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Mockito.reset(jClientMock);
       tested = new JIRAProjectIndexer(PROJECT_KEY, false, jClientMock, jiraRiverMock, structureBuilder);
       when(
-          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, Utils.roundDateToMinutePrecise(lastIssueUpdatedDate2), null))
+          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate2), null))
           .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501-updated"));
 
       tested.run();
@@ -176,7 +176,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(false, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate3 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:28:21.000-0400");
+      Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate3, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514");
@@ -215,7 +215,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Date dateStartRun1 = new Date();
       JIRAProjectIndexer tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock,
           structureBuilder);
-      Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
+      Date lastIssueUpdatedDate = DateTimeUtils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
       when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
           prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
@@ -227,7 +227,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(true, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate2 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:27:25.000-0400");
+      Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate2, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514", "AAA-1", "AAA-2");
@@ -249,7 +249,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(true, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate3 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:28:21.000-0400");
+      Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate3, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "AAA-1", "AAA-2");
@@ -280,7 +280,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Date dateStartRun1 = new Date();
       JIRAProjectIndexer tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock,
           structureBuilder);
-      Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
+      Date lastIssueUpdatedDate = DateTimeUtils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
       when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
           prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
@@ -292,7 +292,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(true, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate2 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:27:25.000-0400");
+      Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate2, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514", "AAA-1", "AAA-2");
@@ -318,7 +318,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(true, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate3 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:28:21.000-0400");
+      Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate3, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "AAA-1", "AAA-2");
@@ -356,7 +356,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Date dateStartRun1 = new Date();
       JIRAProjectIndexer tested = new JIRAProjectIndexer(PROJECT_KEY, true, jClientMock, jiraRiverMock,
           structureBuilder);
-      Date lastIssueUpdatedDate = Utils.parseISODateTime("2012-09-06T02:26:53.000-0400");
+      Date lastIssueUpdatedDate = DateTimeUtils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
       when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, null, null)).thenReturn(
           prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
@@ -368,7 +368,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(true, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate2 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:27:25.000-0400");
+      Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate2, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "ORG-1514", "AAA-1", "AAA-2");
@@ -394,7 +394,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Assert.assertEquals(true, tested.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
-      Date lastIssueUpdatedDate3 = Utils.parseISODateWithMinutePrecise("2012-09-06T03:28:21.000-0400");
+      Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
       Assert.assertEquals(lastIssueUpdatedDate3, tested.readLastIssueUpdatedDate(PROJECT_KEY));
 
       assertDocumentsInIndex(client, CFG_TYPE_ISSUE, "ORG-1501", "ORG-1513", "AAA-1", "AAA-2");

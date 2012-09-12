@@ -20,9 +20,9 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
+import org.jboss.elasticsearch.river.jira.DateTimeUtils;
 import org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder;
 import org.jboss.elasticsearch.river.jira.JiraRiver;
-import org.jboss.elasticsearch.river.jira.Utils;
 
 /**
  * Class for ElasticSearch integration tests against some running ES cluster. This is not Unit test but helper for tests
@@ -50,7 +50,7 @@ public abstract class ElasticSearchIntegrationTest {
 
       String project = "ORG";
       // Date date = new Date();
-      Date date = Utils.parseISODateTime("2012-08-30T16:25:51");
+      Date date = DateTimeUtils.parseISODateTime("2012-08-30T16:25:51");
 
       SearchRequestBuilder srb = jr.prepareESScrollSearchRequestBuilder(structureBuilder
           .getIssuesSearchIndexName(project));

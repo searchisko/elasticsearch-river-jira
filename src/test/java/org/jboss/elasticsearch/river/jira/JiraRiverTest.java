@@ -244,18 +244,18 @@ public class JiraRiverTest extends ESRealClientTestBase {
       JiraRiver tested = prepareJiraRiverInstanceForTest(null);
       tested.client = client;
 
-      tested.storeDatetimeValue("ORG1", "testProperty_1_1", Utils.parseISODateTime("2012-09-03T18:12:45"), null);
-      tested.storeDatetimeValue("ORG1", "testProperty_1_2", Utils.parseISODateTime("2012-09-03T05:12:40"), null);
-      tested.storeDatetimeValue("ORG2", "testProperty_1_1", Utils.parseISODateTime("2012-09-02T08:12:30"), null);
-      tested.storeDatetimeValue("ORG2", "testProperty_1_2", Utils.parseISODateTime("2012-09-02T05:02:20"), null);
+      tested.storeDatetimeValue("ORG1", "testProperty_1_1", DateTimeUtils.parseISODateTime("2012-09-03T18:12:45"), null);
+      tested.storeDatetimeValue("ORG1", "testProperty_1_2", DateTimeUtils.parseISODateTime("2012-09-03T05:12:40"), null);
+      tested.storeDatetimeValue("ORG2", "testProperty_1_1", DateTimeUtils.parseISODateTime("2012-09-02T08:12:30"), null);
+      tested.storeDatetimeValue("ORG2", "testProperty_1_2", DateTimeUtils.parseISODateTime("2012-09-02T05:02:20"), null);
 
-      Assert.assertEquals(Utils.parseISODateTime("2012-09-03T18:12:45"),
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-03T18:12:45"),
           tested.readDatetimeValue("ORG1", "testProperty_1_1"));
-      Assert.assertEquals(Utils.parseISODateTime("2012-09-03T05:12:40"),
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-03T05:12:40"),
           tested.readDatetimeValue("ORG1", "testProperty_1_2"));
-      Assert.assertEquals(Utils.parseISODateTime("2012-09-02T08:12:30"),
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-02T08:12:30"),
           tested.readDatetimeValue("ORG2", "testProperty_1_1"));
-      Assert.assertEquals(Utils.parseISODateTime("2012-09-02T05:02:20"),
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-02T05:02:20"),
           tested.readDatetimeValue("ORG2", "testProperty_1_2"));
 
     } finally {
@@ -334,12 +334,12 @@ public class JiraRiverTest extends ESRealClientTestBase {
     TestUtils.assertStringFromClasspathFile(
         "/asserts/prepareUpdateActivityLogDocument_1.json",
         tested.prepareUpdateActivityLogDocument("ORG", true, true, 10, 1,
-            Utils.parseISODateTime("2012-09-10T12:55:58Z"), 1250, null).string());
+            DateTimeUtils.parseISODateTime("2012-09-10T12:55:58Z"), 1250, null).string());
 
     TestUtils.assertStringFromClasspathFile(
         "/asserts/prepareUpdateActivityLogDocument_2.json",
         tested.prepareUpdateActivityLogDocument("ORG", false, false, 5, 0,
-            Utils.parseISODateTime("2012-09-10T12:56:50Z"), 125, "Error message").string());
+            DateTimeUtils.parseISODateTime("2012-09-10T12:56:50Z"), 125, "Error message").string());
 
   }
 

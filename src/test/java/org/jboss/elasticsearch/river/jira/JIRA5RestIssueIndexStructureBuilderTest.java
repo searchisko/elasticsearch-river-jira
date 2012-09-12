@@ -350,7 +350,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     {
       tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
       SearchRequestBuilder srb = new SearchRequestBuilder(null);
-      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", Utils.parseISODateTime("2012-09-06T12:22:19Z"));
+      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
       Assert.assertArrayEquals(new String[] { "issue_type" }, srb.request().types());
       TestUtils.assertStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json",
           srb.toString());
@@ -360,7 +360,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     {
       tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
       SearchRequestBuilder srb = new SearchRequestBuilder(null);
-      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", Utils.parseISODateTime("2012-09-06T12:22:19Z"));
+      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
       Assert.assertArrayEquals(new String[] { "issue_type" }, srb.request().types());
       TestUtils.assertStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json",
           srb.toString());
@@ -370,7 +370,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     {
       tested.commentIndexingMode = IssueCommentIndexingMode.CHILD;
       SearchRequestBuilder srb = new SearchRequestBuilder(null);
-      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", Utils.parseISODateTime("2012-09-06T12:22:19Z"));
+      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
       Assert.assertArrayEquals(new String[] { "issue_type", "comment_type" }, srb.request().types());
       TestUtils.assertStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json",
           srb.toString());
@@ -380,7 +380,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     {
       tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
       SearchRequestBuilder srb = new SearchRequestBuilder(null);
-      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", Utils.parseISODateTime("2012-09-06T12:22:19Z"));
+      tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG", DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
       Assert.assertArrayEquals(new String[] { "issue_type", "comment_type" }, srb.request().types());
       TestUtils.assertStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json",
           srb.toString());

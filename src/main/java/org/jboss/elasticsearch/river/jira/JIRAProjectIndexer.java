@@ -123,7 +123,7 @@ public class JIRAProjectIndexer implements Runnable {
     updatedCount = 0;
     Date updatedAfter = null;
     if (!fullUpdate) {
-      updatedAfter = Utils.roundDateToMinutePrecise(readLastIssueUpdatedDate(projectKey));
+      updatedAfter = DateTimeUtils.roundDateTimeToMinutePrecise(readLastIssueUpdatedDate(projectKey));
     }
     Date updatedAfterStarting = updatedAfter;
     if (updatedAfter == null)
@@ -156,7 +156,7 @@ public class JIRAProjectIndexer implements Runnable {
             throw new IllegalArgumentException("Issue 'key' field not found in JIRA response for project " + projectKey
                 + " within issue data: " + issue);
           }
-          lastIssueUpdatedDate = Utils.roundDateToMinutePrecise(jiraIssueIndexStructureBuilder
+          lastIssueUpdatedDate = DateTimeUtils.roundDateTimeToMinutePrecise(jiraIssueIndexStructureBuilder
               .extractIssueUpdated(issue));
           logger.debug("Go to update index for issue {} with updated {}", issueKey, lastIssueUpdatedDate);
           if (lastIssueUpdatedDate == null) {
@@ -197,7 +197,7 @@ public class JIRAProjectIndexer implements Runnable {
       // no any new issue during this update cycle, go to increment lastIssueUpdatedDate in store by one minute not to
       // index last issue again and again in next cycle - this is here due JQL minute precise on timestamp search
       storeLastIssueUpdatedDate(null, projectKey,
-          Utils.roundDateToMinutePrecise(new Date(lastIssueUpdatedDate.getTime() + 64 * 1000)));
+          DateTimeUtils.roundDateTimeToMinutePrecise(new Date(lastIssueUpdatedDate.getTime() + 64 * 1000)));
     }
   }
 
