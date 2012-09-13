@@ -1,0 +1,89 @@
+{
+    "type" : "jira",
+    "jira" : {
+        "urlBase"               : "https://issues.jboss.org",
+        "jqlTimeZone"           : "America/New York",
+        "timeout"               : "10s",
+        "maxIssuesPerRequest"   : 50,
+        "indexUpdatePeriod"     : "5m",
+        "indexFullUpdatePeriod" : "2h",
+        "maxIndexingThreads"    : 2
+    },
+    "index" : {
+        "index" : "jbossorg_jira",
+        "type"              : "jira_issue",
+        "field_river_name"  : "source",
+        "field_project_key" : "project_key",
+        "field_issue_key"   : "issue_key",
+        "field_jira_url"    : "document_url",
+        "fields" : {
+            "project_name"      : {"jira_field" : "fields.project.name"},
+            "issue_type"        : {"jira_field" : "fields.issuetype.name"},
+            "dcp_issue_type"   : {"jira_field"  : "dcp_issue_type"},
+            "summary"           : {"jira_field" : "fields.summary"},
+            "status"            : {"jira_field" : "fields.status.name"},
+            "dcp_issue_status" : {"jira_field"  : "dcp_issue_status"},
+            "created"           : {"jira_field" : "fields.created"},
+            "updated"           : {"jira_field" : "fields.updated"},
+            "resolutiondate"    : {"jira_field" : "fields.resolutiondate"},
+            "description"       : {"jira_field" : "fields.description"},
+            "labels"            : {"jira_field" : "fields.labels"},
+            "reporter"          : {"jira_field" : "fields.reporter", "value_filter" : "user"},
+            "assignee"          : {"jira_field" : "fields.assignee", "value_filter" : "user"},
+            "fix_versions"      : {"jira_field" : "fields.fixVersions", "value_filter" : "name"},
+            "components"        : {"jira_field" : "fields.components", "value_filter" : "name"}
+        },
+        "value_filters" : {
+            "user" : {
+                "name"         : "username",
+                "emailAddress" : "email_address",
+                "displayName"  : "display_name" 
+            },
+            "name" : { "name" : "name" }
+        },
+        "comment_mode"   : "embedded",
+        "comment_type"   : "jira_issue_comment", 
+        "field_comments" : "comments",
+        "comment_fields" : {
+            "comment_id"      : {"jira_field" : "id"},
+            "comment_body"    : {"jira_field" : "body"},
+            "comment_author"  : {"jira_field" : "author", "value_filter" : "user"},
+            "comment_updater" : {"jira_field" : "updateAuthor", "value_filter" : "user"},
+            "comment_created" : {"jira_field" : "created"},
+            "comment_updated" : {"jira_field" : "updated"}
+        },
+        "preprocessors" : [
+            { 
+                "name"     : "Issue Type Normalizer",
+                "class"    : "org.jboss.elasticsearch.river.jira.preproc.SimpleValueMapMapper",
+                "settings" : {
+                    "source_field"  : "fields.issuetype.name",
+                    "target_field"  : "dcp_issue_type",
+                    "value_default" : "Other",
+                    "value_mapping" : {
+                       "Feature Request" : "Enhancement",
+                       "Enhancement"     : "Enhancement",
+                       "Bug"             : "Bug"                     
+                     }
+                }
+            },
+            { 
+                "name"     : "Status Normalizer",
+                "class"    : "org.jboss.elasticsearch.river.jira.preproc.SimpleValueMapMapper",
+                "settings" : {
+                    "source_field"  : "fields.status.name",
+                    "target_field"  : "dcp_issue_status",
+                    "value_default" : "In Progress",
+                    "value_mapping" : {
+                       "Open"      : "Open",
+                       "Resolved"  : "Closed",
+                       "Closed"    : "Closed"                     
+                     }
+                } 
+            }
+        ]
+    },
+    "activity_log": {
+        "index" : "jbossorg_jira_river_index"
+    }
+}

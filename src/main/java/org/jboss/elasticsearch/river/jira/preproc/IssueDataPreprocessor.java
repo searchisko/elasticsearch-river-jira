@@ -53,13 +53,10 @@ public interface IssueDataPreprocessor {
    * 
    * @param name name of preprocessor
    * @param client ElasticSearch client which can be used in this preprocessor to access data in ES cluster.
-   * @param indexStructureBuilder indexed document structure builder used to format data into search index after
-   *          preprocessed
    * @param settings structure obtained from river configuration
    * @throws SettingsException use this exception in case on bad configuration for your implementation
    */
-  void init(String name, Client client, IJIRAIssueIndexStructureBuilder indexStructureBuilder,
-      Map<String, Object> settings) throws SettingsException;
+  void init(String name, Client client, Map<String, Object> settings) throws SettingsException;
 
   /**
    * Get name of this preprocessor.
@@ -69,12 +66,11 @@ public interface IssueDataPreprocessor {
   String getName();
 
   /**
-   * Preprocess issue data.
+   * Preprocess data.
    * 
-   * @param projectKey key of project preprocessed issue is for
-   * @param issueData issue data to be preprocessed
-   * @return preprocessed issue data
+   * @param data to be preprocessed - may be changed during call!
+   * @return preprocessed data - typically same object ad <code>data</code> parameter, but with changed structure.
    */
-  Map<String, Object> preprocessData(String projectKey, Map<String, Object> issueData);
+  Map<String, Object> preprocessData(Map<String, Object> data);
 
 }

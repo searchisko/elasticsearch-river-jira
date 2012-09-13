@@ -46,13 +46,25 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   private static final ESLogger logger = Loggers.getLogger(JIRA5RestIssueIndexStructureBuilder.class);
 
   /**
-   * JIRA REST response field constants
+   * JIRA REST response field constant - issue key
    */
   public static final String JF_KEY = "key";
-  protected static final String JF_ID = "id";
-  protected static final String JF_UPDATED = "fields.updated";
-  protected static final String JF_COMMENT = "fields.comment";
-  protected static final String JF_COMMENTS = JF_COMMENT + ".comments";
+  /**
+   * JIRA REST response field constant - issue or comment id
+   */
+  public static final String JF_ID = "id";
+  /**
+   * JIRA REST response field constant - updated date field
+   */
+  public static final String JF_UPDATED = "fields.updated";
+  /**
+   * JIRA REST response field constant - field where structure of comments is stored
+   */
+  public static final String JF_COMMENT = "fields.comment";
+  /**
+   * JIRA REST response field constant - field where list of comments is stored
+   */
+  public static final String JF_COMMENTS = JF_COMMENT + ".comments";
 
   /**
    * Name of River to be stored in document to mark indexing source
@@ -351,8 +363,8 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 
   @Override
   public Date extractIssueUpdated(Map<String, Object> issue) {
-    return DateTimeUtils.parseISODateTime(XContentMapValues.nodeStringValue(XContentMapValues.extractValue(JF_UPDATED, issue),
-        null));
+    return DateTimeUtils.parseISODateTime(XContentMapValues.nodeStringValue(
+        XContentMapValues.extractValue(JF_UPDATED, issue), null));
   }
 
   public String extractCommentId(Map<String, Object> comment) {
@@ -395,7 +407,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected Map<String, Object> preprocessIssueData(String jiraProjectKey, Map<String, Object> issue) {
     if (issueDataPreprocessors != null) {
       for (IssueDataPreprocessor prepr : issueDataPreprocessors) {
-        issue = prepr.preprocessData(jiraProjectKey, issue);
+        issue = prepr.preprocessData(issue);
       }
     }
     return issue;

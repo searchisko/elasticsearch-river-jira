@@ -1,0 +1,10 @@
+{
+    "source_field"   : "source",
+     "target_field"  : "target",
+     "value_default" : "default",
+     "value_mapping" : {
+         "orig1" : "new1",
+         "orig2" : "new2",
+         "orig3" : "new3"                     
+     }
+}

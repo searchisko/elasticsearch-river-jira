@@ -251,7 +251,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
           Map<String, Object> settings = (Map<String, Object>) ppc.get("settings");
           try {
             IssueDataPreprocessor preproc = (IssueDataPreprocessor) Class.forName(className).newInstance();
-            preproc.init(name, client, indexStructureBuilder, settings);
+            preproc.init(name, client, settings);
             indexStructureBuilder.addIssueDataPreprocessor(preproc);
           } catch (InstantiationException e) {
             throw new SettingsException("Preprocessor class " + className + " creation exception " + e.getMessage(), e);

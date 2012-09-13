@@ -11,7 +11,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Unit test for {@link Utils}.
+ * Unit test for {@link DateTimeUtils}.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */

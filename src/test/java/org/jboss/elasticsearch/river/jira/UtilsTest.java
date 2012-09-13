@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -240,7 +241,68 @@ public class UtilsTest {
         DateTimeUtils.roundDateTimeToMinutePrecise(DateTimeUtils.parseISODateTime("2012-08-14T08:00:10.545-0400")));
     Assert.assertEquals(expected,
         DateTimeUtils.roundDateTimeToMinutePrecise(DateTimeUtils.parseISODateTime("2012-08-14T08:00:59.999-0400")));
+  }
 
+  @Test
+  public void putValueIntoMapOfMaps() {
+
+    // case - not NPE on empty data map
+    Utils.putValueIntoMapOfMaps(null, "field", null);
+    Map<String, Object> map = new HashMap<String, Object>();
+
+    // case - exception on invalid field definition
+    try {
+      Utils.putValueIntoMapOfMaps(map, null, null);
+      Assert.fail("IllegalArgumentException must be thrown");
+    } catch (IllegalArgumentException e) {
+      // OK
+    }
+    try {
+      Utils.putValueIntoMapOfMaps(map, "  ", null);
+      Assert.fail("IllegalArgumentException must be thrown");
+    } catch (IllegalArgumentException e) {
+      // OK
+    }
+
+    // case - simplefield - insert null can produce null even if it was set previously
+    Utils.putValueIntoMapOfMaps(map, "field", null);
+    Assert.assertNull(map.get("field"));
+    map.put("field", "value");
+    Utils.putValueIntoMapOfMaps(map, "field", null);
+    Assert.assertNull(map.get("field"));
+
+    // case - simplefield - insert and replace value
+    map.clear();
+    Utils.putValueIntoMapOfMaps(map, "field", "value");
+    Assert.assertEquals("value", map.get("field"));
+    Utils.putValueIntoMapOfMaps(map, "field", "value2");
+    Assert.assertEquals("value2", map.get("field"));
+
+    // case- dot notation
+    map.clear();
+    Utils.putValueIntoMapOfMaps(map, "field.level1.level11", "value");
+    Assert.assertEquals("value", XContentMapValues.extractValue("field.level1.level11", map));
+
+    Utils.putValueIntoMapOfMaps(map, "field.level1.level12", "value2");
+    Assert.assertEquals("value2", XContentMapValues.extractValue("field.level1.level12", map));
+
+    // case - dot notation structure error leads to exception
+    try {
+      map.clear();
+      map.put("field", "dsd");
+      Utils.putValueIntoMapOfMaps(map, "field.level1.level11", "value");
+      Assert.fail("IllegalArgumentException must be thrown");
+    } catch (IllegalArgumentException e) {
+      // OK
+    }
+    try {
+      map.clear();
+      map.put("field", new ArrayList<Object>());
+      Utils.putValueIntoMapOfMaps(map, "field.level1.level11", "value");
+      Assert.fail("IllegalArgumentException must be thrown");
+    } catch (IllegalArgumentException e) {
+      // OK
+    }
   }
 
 }

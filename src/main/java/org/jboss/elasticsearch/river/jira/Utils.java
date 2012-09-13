@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -196,6 +197,49 @@ public class Utils {
     } finally {
       if (parser != null)
         parser.close();
+    }
+  }
+
+  /**
+   * Put value into Map of Maps structure. Dot notation supported for deeper level of nesting.
+   * 
+   * @param map Map to put value into
+   * @param field to put value into. Dot notation can be used.
+   * @param value to be added into Map
+   * @throws IllegalArgumentException if value can't be added due something wrong in data structure
+   */
+  @SuppressWarnings("unchecked")
+  public static void putValueIntoMapOfMaps(Map<String, Object> map, String field, Object value)
+      throws IllegalArgumentException {
+    if (map == null)
+      return;
+    if (isEmpty(field)) {
+      throw new IllegalArgumentException("field argument must be defined");
+    }
+    if (field.contains(".")) {
+      String[] tokens = field.split("\\.");
+      int tokensCount = tokens.length;
+      Map<String, Object> levelData = map;
+      for (String tok : tokens) {
+        if (tokensCount == 1) {
+          levelData.put(tok, value);
+        } else {
+          Object o = levelData.get(tok);
+          if (o == null) {
+            Map<String, Object> lv = new LinkedHashMap<String, Object>();
+            levelData.put(tok, lv);
+            levelData = lv;
+          } else if (o instanceof Map) {
+            levelData = (Map<String, Object>) o;
+          } else {
+            throw new IllegalArgumentException("Cant put value for field '" + field
+                + "' because some element in the path is not Map");
+          }
+        }
+        tokensCount--;
+      }
+    } else {
+      map.put(field, value);
     }
   }
 

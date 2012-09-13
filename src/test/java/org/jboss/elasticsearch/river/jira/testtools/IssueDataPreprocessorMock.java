@@ -7,9 +7,7 @@ package org.jboss.elasticsearch.river.jira.testtools;
 
 import java.util.Map;
 
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.SettingsException;
-import org.jboss.elasticsearch.river.jira.IJIRAIssueIndexStructureBuilder;
 import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessorBase;
 
 /**
@@ -22,14 +20,12 @@ public class IssueDataPreprocessorMock extends IssueDataPreprocessorBase {
   public Map<String, Object> settings = null;
 
   @Override
-  public void init(String name, Client client, IJIRAIssueIndexStructureBuilder indexStructureBuilder,
-      Map<String, Object> settings) throws SettingsException {
-    super.init(name, client, indexStructureBuilder, settings);
+  public void init(Map<String, Object> settings) throws SettingsException {
     this.settings = settings;
   }
 
   @Override
-  public Map<String, Object> preprocessData(String projectKey, Map<String, Object> issueData) {
+  public Map<String, Object> preprocessData(Map<String, Object> issueData) {
     return issueData;
   }
 
