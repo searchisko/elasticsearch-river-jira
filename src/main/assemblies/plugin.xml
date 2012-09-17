@@ -15,6 +15,7 @@
                 <include>commons-httpclient:commons-httpclient</include>
                 <include>commons-logging:commons-logging</include>
                 <include>commons-codec:commons-codec</include>
+                <include>org.jboss.elasticsearch:structured-content-tools</include>
             </includes>
             <excludes>
                 <exclude>org.elasticsearch:elasticsearch</exclude>
