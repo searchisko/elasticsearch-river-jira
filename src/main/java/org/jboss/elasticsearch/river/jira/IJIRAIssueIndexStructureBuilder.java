@@ -11,7 +11,7 @@ import java.util.Map;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.search.SearchHit;
-import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor;
+import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
 
 /**
  * Interface for component responsible to transform issue data obtained from JIRA instance call to the document stored
@@ -27,7 +27,7 @@ public interface IJIRAIssueIndexStructureBuilder {
    * 
    * @param preprocessor to ass
    */
-  void addIssueDataPreprocessor(IssueDataPreprocessor preprocessor);
+  void addIssueDataPreprocessor(StructuredContentPreprocessor preprocessor);
 
   /**
    * Get name of search index where issues are stored for given jira project

@@ -8,14 +8,14 @@ package org.jboss.elasticsearch.river.jira.testtools;
 import java.util.Map;
 
 import org.elasticsearch.common.settings.SettingsException;
-import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessorBase;
+import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorBase;
 
 /**
  * Implementation of IssueDataPreprocessorBase for configuration loading tests.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class IssueDataPreprocessorMock extends IssueDataPreprocessorBase {
+public class IssueDataPreprocessorMock extends StructuredContentPreprocessorBase {
 
   public Map<String, Object> settings = null;
 

@@ -10,19 +10,19 @@
         "maxIndexingThreads"    : 2
     },
     "index" : {
-        "index" : "jbossorg_jira",
+        "index"             : "jbossorg_jira",
         "type"              : "jira_issue",
-        "field_river_name"  : "source",
+        "field_river_name"  : "dcp_content_provider",
         "field_project_key" : "project_key",
-        "field_issue_key"   : "issue_key",
-        "field_jira_url"    : "document_url",
+        "field_issue_key"   : "dcp_content_id",
+        "field_jira_url"    : "dcp_url_view",
         "fields" : {
             "project_name"      : {"jira_field" : "fields.project.name"},
             "issue_type"        : {"jira_field" : "fields.issuetype.name"},
-            "dcp_issue_type"   : {"jira_field"  : "dcp_issue_type"},
-            "summary"           : {"jira_field" : "fields.summary"},
+            "dcp_issue_type"    : {"jira_field" : "dcp_issue_type"},
+            "dcp_title"         : {"jira_field" : "fields.summary"},
             "status"            : {"jira_field" : "fields.status.name"},
-            "dcp_issue_status" : {"jira_field"  : "dcp_issue_status"},
+            "dcp_issue_status"  : {"jira_field" : "dcp_issue_status"},
             "created"           : {"jira_field" : "fields.created"},
             "updated"           : {"jira_field" : "fields.updated"},
             "resolutiondate"    : {"jira_field" : "fields.resolutiondate"},
@@ -55,7 +55,7 @@
         "preprocessors" : [
             { 
                 "name"     : "Issue Type Normalizer",
-                "class"    : "org.jboss.elasticsearch.river.jira.preproc.SimpleValueMapMapper",
+                "class"    : "org.jboss.elasticsearch.tools.content.SimpleValueMapMapperPreprocessor",
                 "settings" : {
                     "source_field"  : "fields.issuetype.name",
                     "target_field"  : "dcp_issue_type",
@@ -69,7 +69,7 @@
             },
             { 
                 "name"     : "Status Normalizer",
-                "class"    : "org.jboss.elasticsearch.river.jira.preproc.SimpleValueMapMapper",
+                "class"    : "org.jboss.elasticsearch.tools.content.SimpleValueMapMapperPreprocessor",
                 "settings" : {
                     "source_field"  : "fields.status.name",
                     "target_field"  : "dcp_issue_status",

@@ -28,7 +28,7 @@ import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
-import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor;
+import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
 
 /**
  * JIRA 5 REST API implementation of component responsible to transform issue data obtained from JIRA instance call to
@@ -161,7 +161,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
    */
   protected Map<String, Map<String, String>> commentFieldsConfig;
 
-  protected List<IssueDataPreprocessor> issueDataPreprocessors = null;
+  protected List<StructuredContentPreprocessor> issueDataPreprocessors = null;
 
   /**
    * Constructor for unit tests. Nothing is filled inside.
@@ -329,12 +329,12 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   }
 
   @Override
-  public void addIssueDataPreprocessor(IssueDataPreprocessor preprocessor) {
+  public void addIssueDataPreprocessor(StructuredContentPreprocessor preprocessor) {
     if (preprocessor == null)
       return;
 
     if (issueDataPreprocessors == null)
-      issueDataPreprocessors = new ArrayList<IssueDataPreprocessor>();
+      issueDataPreprocessors = new ArrayList<StructuredContentPreprocessor>();
 
     issueDataPreprocessors.add(preprocessor);
 
@@ -406,7 +406,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
    */
   protected Map<String, Object> preprocessIssueData(String jiraProjectKey, Map<String, Object> issue) {
     if (issueDataPreprocessors != null) {
-      for (IssueDataPreprocessor prepr : issueDataPreprocessors) {
+      for (StructuredContentPreprocessor prepr : issueDataPreprocessors) {
         issue = prepr.preprocessData(issue);
       }
     }

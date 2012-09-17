@@ -30,7 +30,7 @@ import org.elasticsearch.river.AbstractRiverComponent;
 import org.elasticsearch.river.River;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
-import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor;
+import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactory;
 
 /**
  * JIRA River implementation class.
@@ -240,28 +240,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       List<Map<String, Object>> preproclist = (List<Map<String, Object>>) indexSettings.get("preprocessors");
       if (preproclist != null && preproclist.size() > 0) {
         for (Map<String, Object> ppc : preproclist) {
-          String className = XContentMapValues.nodeStringValue(ppc.get("class"), null);
-          if (Utils.isEmpty(className)) {
-            throw new SettingsException("'class' element not defined for item in 'preprocessors' array");
-          }
-          String name = XContentMapValues.nodeStringValue(ppc.get("name"), null);
-          if (Utils.isEmpty(name)) {
-            throw new SettingsException("'name' element not defined for item in 'preprocessors' array");
-          }
-          Map<String, Object> settings = (Map<String, Object>) ppc.get("settings");
           try {
-            IssueDataPreprocessor preproc = (IssueDataPreprocessor) Class.forName(className).newInstance();
-            preproc.init(name, client, settings);
-            indexStructureBuilder.addIssueDataPreprocessor(preproc);
-          } catch (InstantiationException e) {
-            throw new SettingsException("Preprocessor class " + className + " creation exception " + e.getMessage(), e);
-          } catch (IllegalAccessException e) {
-            throw new SettingsException("Preprocessor class " + className + " creation exception " + e.getMessage(), e);
-          } catch (ClassNotFoundException e) {
-            throw new SettingsException("Preprocessor class " + className + " not found", e);
-          } catch (ClassCastException e) {
-            throw new SettingsException("Preprocessor class " + className + " must implement interface "
-                + IssueDataPreprocessor.class.getName());
+            indexStructureBuilder.addIssueDataPreprocessor(StructuredContentPreprocessorFactory.createPreprocessor(ppc,
+                client));
+          } catch (IllegalArgumentException e) {
+            throw new SettingsException(e.getMessage(), e);
           }
         }
       }

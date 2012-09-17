@@ -30,11 +30,11 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
-import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor;
 import org.jboss.elasticsearch.river.jira.testtools.ESRealClientTestBase;
 import org.jboss.elasticsearch.river.jira.testtools.IssueDataPreprocessorMock;
 import org.jboss.elasticsearch.river.jira.testtools.MockThread;
 import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
+import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -118,7 +118,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
     JiraRiver tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", null,
         Utils.loadJSONFromJarPackagedFile("/river_configuration_test_preprocessors.json"), false);
 
-    List<IssueDataPreprocessor> preprocs = ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).issueDataPreprocessors;
+    List<StructuredContentPreprocessor> preprocs = ((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).issueDataPreprocessors;
     Assert.assertEquals(2, preprocs.size());
     Assert.assertEquals("Status Normalizer", preprocs.get(0).getName());
     Assert.assertEquals("value1", ((IssueDataPreprocessorMock) preprocs.get(0)).settings.get("some_setting_1_1"));
@@ -244,10 +244,14 @@ public class JiraRiverTest extends ESRealClientTestBase {
       JiraRiver tested = prepareJiraRiverInstanceForTest(null);
       tested.client = client;
 
-      tested.storeDatetimeValue("ORG1", "testProperty_1_1", DateTimeUtils.parseISODateTime("2012-09-03T18:12:45"), null);
-      tested.storeDatetimeValue("ORG1", "testProperty_1_2", DateTimeUtils.parseISODateTime("2012-09-03T05:12:40"), null);
-      tested.storeDatetimeValue("ORG2", "testProperty_1_1", DateTimeUtils.parseISODateTime("2012-09-02T08:12:30"), null);
-      tested.storeDatetimeValue("ORG2", "testProperty_1_2", DateTimeUtils.parseISODateTime("2012-09-02T05:02:20"), null);
+      tested
+          .storeDatetimeValue("ORG1", "testProperty_1_1", DateTimeUtils.parseISODateTime("2012-09-03T18:12:45"), null);
+      tested
+          .storeDatetimeValue("ORG1", "testProperty_1_2", DateTimeUtils.parseISODateTime("2012-09-03T05:12:40"), null);
+      tested
+          .storeDatetimeValue("ORG2", "testProperty_1_1", DateTimeUtils.parseISODateTime("2012-09-02T08:12:30"), null);
+      tested
+          .storeDatetimeValue("ORG2", "testProperty_1_2", DateTimeUtils.parseISODateTime("2012-09-02T05:02:20"), null);
 
       Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-03T18:12:45"),
           tested.readDatetimeValue("ORG1", "testProperty_1_1"));

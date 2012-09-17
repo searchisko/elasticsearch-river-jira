@@ -24,8 +24,8 @@ import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentGenerator;
-import org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor;
 import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
+import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -200,12 +200,12 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     tested.addIssueDataPreprocessor(null);
 
     // case - preprocessors adding
-    tested.addIssueDataPreprocessor(mock(IssueDataPreprocessor.class));
+    tested.addIssueDataPreprocessor(mock(StructuredContentPreprocessor.class));
     Assert.assertEquals(1, tested.issueDataPreprocessors.size());
 
-    tested.addIssueDataPreprocessor(mock(IssueDataPreprocessor.class));
-    tested.addIssueDataPreprocessor(mock(IssueDataPreprocessor.class));
-    tested.addIssueDataPreprocessor(mock(IssueDataPreprocessor.class));
+    tested.addIssueDataPreprocessor(mock(StructuredContentPreprocessor.class));
+    tested.addIssueDataPreprocessor(mock(StructuredContentPreprocessor.class));
+    tested.addIssueDataPreprocessor(mock(StructuredContentPreprocessor.class));
     Assert.assertEquals(4, tested.issueDataPreprocessors.size());
 
   }
@@ -232,8 +232,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
     // case - all preprocessors called
     {
-      IssueDataPreprocessor idp1 = mock(IssueDataPreprocessor.class);
-      IssueDataPreprocessor idp2 = mock(IssueDataPreprocessor.class);
+      StructuredContentPreprocessor idp1 = mock(StructuredContentPreprocessor.class);
+      StructuredContentPreprocessor idp2 = mock(StructuredContentPreprocessor.class);
       when(idp1.preprocessData(issue)).thenAnswer(new Answer<Map<String, Object>>() {
         @SuppressWarnings("unchecked")
         @Override
@@ -506,7 +506,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     {
       BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
       tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
-      IssueDataPreprocessor idp1 = mock(IssueDataPreprocessor.class);
+      StructuredContentPreprocessor idp1 = mock(StructuredContentPreprocessor.class);
       when(idp1.preprocessData(Mockito.anyMap())).thenAnswer(new Answer<Map<String, Object>>() {
         @Override
         public Map<String, Object> answer(InvocationOnMock invocation) throws Throwable {

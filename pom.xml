@@ -23,14 +23,9 @@
         <url>http://github.com/jbossorg/elasticsearch-river-jira</url>
     </scm>
 
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>
-
     <properties>
         <elasticsearch.version>0.19.0</elasticsearch.version>
+        <structured-content-tools.version>1.0.0</structured-content-tools.version>
     </properties>
 
     <repositories>
@@ -46,6 +41,12 @@
           <artifactId>elasticsearch</artifactId>
           <version>${elasticsearch.version}</version>
           <scope>compile</scope>
+        </dependency>
+        
+        <dependency>
+          <groupId>org.jboss.elasticsearch</groupId>
+          <artifactId>structured-content-tools</artifactId>
+          <version>${structured-content-tools.version}</version>
         </dependency>
         
         <dependency>

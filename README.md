@@ -206,7 +206,9 @@ JIRA River uses following structure to store comment informations in search inde
 You can also implement and configure some preprocessors, which allows you to change/extend issue informations loaded from JIRA and store these changes/extensions to the search index.
 This allows you for example value normalizations, or creation of some index fields with values agregated from more issue fields.
 
-Look at javadoc for [org.jboss.elasticsearch.river.jira.preproc.IssueDataPreprocessor](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/java/org/jboss/elasticsearch/river/jira/preproc/IssueDataPreprocessor.java) interface to see how to write and configure preprocessors.
+Framework called [structured-content-tools](https://github.com/jbossorg/structured-content-tools) is used to implement these preprocessors. Preprocessor must implement `org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor` interface. Example how to configure preprocessors is visible [here](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/examples/river_configuration_example.json).
+Some generic configurable preprocessors implementation are available in the [framework](https://github.com/jbossorg/structured-content-tools/tree/master/src/main/java/org/jboss/elasticsearch/tools/content).
+
 
 License
 -------
