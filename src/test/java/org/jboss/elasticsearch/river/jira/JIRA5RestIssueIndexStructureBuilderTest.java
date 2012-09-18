@@ -47,6 +47,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
     Assert.assertEquals("river_name", tested.riverName);
     Assert.assertEquals("index_name", tested.indexName);
     Assert.assertEquals("type_name", tested.issueTypeName);
+    Assert.assertEquals("document_id", tested.jiraFieldForIssueDocumentId);
     Assert.assertEquals("river_name", tested.indexFieldForRiverName);
     Assert.assertEquals("link", tested.indexFieldForJiraURL);
     Assert.assertEquals("http://issues-stg.jboss.org/browse/", tested.jiraIssueShowUrlBase);
@@ -454,6 +455,33 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
     String res = tested.prepareCommentIndexedDocument("ORG", "ORG-1501", comments.get(0)).string();
     TestUtils.assertStringFromClasspathFile("/asserts/prepareCommentIndexedDocument_ORG-1501_1.json", res);
+  }
+
+  @Test
+  public void prepareIssueDocumentId() {
+    JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
+        "issue_type", "http://issues-stg.jboss.org/", null);
+    tested.jiraFieldForIssueDocumentId = null;
+
+    Map<String, Object> issue = new HashMap<String, Object>();
+    issue.put("key", "ORG-15");
+    issue.put("key2", "ORG-16");
+    Utils.putValueIntoMapOfMaps(issue, "key3.value", "ORG-17");
+
+    // case - default key used if jiraFieldForIssueDocumentId is not configured
+    Assert.assertEquals("ORG-15", tested.prepareIssueDocumentId(issue));
+
+    // case - default key used if jiraFieldForIssueDocumentId is configured but value is not provided
+    tested.jiraFieldForIssueDocumentId = "key_unknown";
+    Assert.assertEquals("ORG-15", tested.prepareIssueDocumentId(issue));
+
+    // case - simple notation on jiraFieldForIssueDocumentId
+    tested.jiraFieldForIssueDocumentId = "key2";
+    Assert.assertEquals("ORG-16", tested.prepareIssueDocumentId(issue));
+
+    // case - dot notation on jiraFieldForIssueDocumentId
+    tested.jiraFieldForIssueDocumentId = "key3.value";
+    Assert.assertEquals("ORG-17", tested.prepareIssueDocumentId(issue));
   }
 
   @SuppressWarnings("unchecked")

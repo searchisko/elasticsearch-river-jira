@@ -85,6 +85,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected static final String CONFIG_FIELDS_JIRAFIELD = "jira_field";
   protected static final String CONFIG_FIELDS_VALUEFILTER = "value_filter";
   protected static final String CONFIG_FILTERS = "value_filters";
+  protected static final String CONFIG_JIRAFIELD_ISSUEDOCUMENTID = "jira_field_issue_document_id";
   protected static final String CONFIG_FIELDRIVERNAME = "field_river_name";
   protected static final String CONFIG_FIELDPROJECTKEY = "field_project_key";
   protected static final String CONFIG_FIELDISSUEKEY = "field_issue_key";
@@ -93,6 +94,12 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   protected static final String CONFIG_FIELDCOMMENTS = "field_comments";
   protected static final String CONFIG_COMMENTTYPE = "comment_type";
   protected static final String CONFIG_COMMENTFILEDS = "comment_fields";
+
+  /**
+   * Field in jira data to get indexed document id from for issue. If empty or do not provide value then issue key is
+   * used as document id.
+   */
+  protected String jiraFieldForIssueDocumentId = null;
 
   /**
    * Fields configuration structure. Key is name of field in search index. Value is map of configurations for given
@@ -161,6 +168,9 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
    */
   protected Map<String, Map<String, String>> commentFieldsConfig;
 
+  /**
+   * List of data preprocessors used inside {@link #indexIssue(BulkRequestBuilder, String, Map)}.
+   */
   protected List<StructuredContentPreprocessor> issueDataPreprocessors = null;
 
   /**
@@ -189,8 +199,9 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     this.issueTypeName = issueTypeName;
 
     constructJIRAIssueShowUrlBase(jiraUrlBase);
-
     if (settings != null) {
+      jiraFieldForIssueDocumentId = Utils.trimToNull(XContentMapValues.nodeStringValue(
+          settings.get(CONFIG_JIRAFIELD_ISSUEDOCUMENTID), null));
       indexFieldForRiverName = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDRIVERNAME), null);
       indexFieldForProjectKey = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDPROJECTKEY), null);
       indexFieldForIssueKey = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDISSUEKEY), null);
@@ -203,27 +214,10 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
       indexFieldForComments = XContentMapValues.nodeStringValue(settings.get(CONFIG_FIELDCOMMENTS), null);
       commentTypeName = XContentMapValues.nodeStringValue(settings.get(CONFIG_COMMENTTYPE), null);
       commentFieldsConfig = (Map<String, Map<String, String>>) settings.get(CONFIG_COMMENTFILEDS);
-
     }
-
     loadDefaultsIfNecessary();
-
     validateConfiguration();
-
     prepareJiraCallFieldSet();
-  }
-
-  /**
-   * Construct value for {@link #jiraIssueShowUrlBase}.
-   * 
-   * @param jiraUrlBase base URL of jira instance
-   */
-  protected void constructJIRAIssueShowUrlBase(String jiraUrlBase) {
-    jiraIssueShowUrlBase = jiraUrlBase;
-    if (!jiraIssueShowUrlBase.endsWith("/")) {
-      jiraIssueShowUrlBase += "/";
-    }
-    jiraIssueShowUrlBase += "browse/";
   }
 
   private void loadDefaultsIfNecessary() {
@@ -247,24 +241,6 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     commentFieldsConfig = loadDefaultMapIfNecessary(commentFieldsConfig, CONFIG_COMMENTFILEDS, settingsDefault);
   }
 
-  private String loadDefaultStringIfNecessary(String valueToCheck, String valueConfigKey,
-      Map<String, Object> settingsDefault) {
-    if (Utils.isEmpty(valueToCheck)) {
-      return XContentMapValues.nodeStringValue(settingsDefault.get(valueConfigKey), null);
-    } else {
-      return valueToCheck.trim();
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  private Map<String, Map<String, String>> loadDefaultMapIfNecessary(Map<String, Map<String, String>> valueToCheck,
-      String valueConfigKey, Map<String, Object> settingsDefault) {
-    if (valueToCheck == null || valueToCheck.isEmpty()) {
-      valueToCheck = (Map<String, Map<String, String>>) settingsDefault.get(valueConfigKey);
-    }
-    return valueToCheck;
-  }
-
   private void validateConfiguration() {
 
     validateConfigurationObject(filtersConfig, "index/value_filters");
@@ -281,35 +257,6 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
     validateConfigurationFieldsStructure(fieldsConfig, "index/fields");
     validateConfigurationFieldsStructure(commentFieldsConfig, "index/comment_fields");
 
-  }
-
-  private void validateConfigurationFieldsStructure(Map<String, Map<String, String>> value, String configFieldName) {
-    for (String idxFieldName : value.keySet()) {
-      if (Utils.isEmpty(idxFieldName)) {
-        throw new SettingsException("Empty key found in '" + configFieldName + "' map.");
-      }
-      Map<String, String> fc = value.get(idxFieldName);
-      if (Utils.isEmpty(fc.get(CONFIG_FIELDS_JIRAFIELD))) {
-        throw new SettingsException("'jira_field' is not defined in '" + configFieldName + "/" + idxFieldName + "'");
-      }
-      String fil = fc.get(CONFIG_FIELDS_VALUEFILTER);
-      if (fil != null && !filtersConfig.containsKey(fil)) {
-        throw new SettingsException("Filter definition not found for filter name '" + fil + "' defined in '"
-            + configFieldName + "/" + idxFieldName + "/value_filter'");
-      }
-    }
-  }
-
-  private void validateConfigurationString(String value, String configFieldName) throws SettingsException {
-    if (Utils.isEmpty(value)) {
-      throw new SettingsException("No default '" + configFieldName + "' configuration found!");
-    }
-  }
-
-  private void validateConfigurationObject(Object value, String configFieldName) throws SettingsException {
-    if (value == null) {
-      throw new SettingsException("No default '" + configFieldName + "' configuration found!");
-    }
   }
 
   protected void prepareJiraCallFieldSet() {
@@ -340,12 +287,6 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 
   }
 
-  @SuppressWarnings("unchecked")
-  private Map<String, Object> loadDefaultSettingsMapFromFile() throws SettingsException {
-    Map<String, Object> json = Utils.loadJSONFromJarPackagedFile("/templates/river_configuration_default.json");
-    return (Map<String, Object>) json.get("index");
-  }
-
   @Override
   public String getIssuesSearchIndexName(String jiraProjectKey) {
     return indexName;
@@ -354,6 +295,42 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
   @Override
   public String getRequiredJIRACallIssueFields() {
     return Utils.createCsvString(jiraCallFieldSet);
+  }
+
+  @Override
+  public void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception {
+
+    issue = preprocessIssueData(jiraProjectKey, issue);
+    esBulk.add(indexRequest(indexName).type(issueTypeName).id(prepareIssueDocumentId(issue))
+        .source(prepareIssueIndexedDocument(jiraProjectKey, issue)));
+
+    if (commentIndexingMode.isExtraDocumentIndexed()) {
+      List<Map<String, Object>> comments = extractIssueComments(issue);
+      if (comments != null && !comments.isEmpty()) {
+        String issueKey = extractIssueKey(issue);
+        for (Map<String, Object> comment : comments) {
+          String commentId = extractCommentId(comment);
+          IndexRequest irq = indexRequest(indexName).type(commentTypeName).id(commentId)
+              .source(prepareCommentIndexedDocument(jiraProjectKey, issueKey, comment));
+          if (commentIndexingMode == IssueCommentIndexingMode.CHILD) {
+            irq.parent(issueKey);
+          }
+          esBulk.add(irq);
+        }
+      }
+    }
+
+  }
+
+  protected String prepareIssueDocumentId(Map<String, Object> issue) {
+    String documentId = null;
+    if (jiraFieldForIssueDocumentId != null) {
+      documentId = Utils.trimToNull(XContentMapValues.nodeStringValue(
+          XContentMapValues.extractValue(jiraFieldForIssueDocumentId, issue), null));
+    }
+    if (documentId == null)
+      documentId = extractIssueKey(issue);
+    return documentId;
   }
 
   @Override
@@ -369,32 +346,6 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 
   public String extractCommentId(Map<String, Object> comment) {
     return XContentMapValues.nodeStringValue(comment.get(JF_ID), null);
-  }
-
-  @Override
-  public void indexIssue(BulkRequestBuilder esBulk, String jiraProjectKey, Map<String, Object> issue) throws Exception {
-
-    issue = preprocessIssueData(jiraProjectKey, issue);
-
-    String issueKey = extractIssueKey(issue);
-    esBulk.add(indexRequest(indexName).type(issueTypeName).id(issueKey)
-        .source(prepareIssueIndexedDocument(jiraProjectKey, issue)));
-
-    if (commentIndexingMode.isExtraDocumentIndexed()) {
-      List<Map<String, Object>> comments = extractIssueComments(issue);
-      if (comments != null && !comments.isEmpty()) {
-        for (Map<String, Object> comment : comments) {
-          String commentId = extractCommentId(comment);
-          IndexRequest irq = indexRequest(indexName).type(commentTypeName).id(commentId)
-              .source(prepareCommentIndexedDocument(jiraProjectKey, issueKey, comment));
-          if (commentIndexingMode == IssueCommentIndexingMode.CHILD) {
-            irq.parent(issueKey);
-          }
-          esBulk.add(irq);
-        }
-      }
-    }
-
   }
 
   /**
@@ -642,4 +593,71 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
       return null;
     }
   }
+
+  /**
+   * Construct value for {@link #jiraIssueShowUrlBase}.
+   * 
+   * @param jiraUrlBase base URL of jira instance
+   */
+  protected void constructJIRAIssueShowUrlBase(String jiraUrlBase) {
+    jiraIssueShowUrlBase = jiraUrlBase;
+    if (!jiraIssueShowUrlBase.endsWith("/")) {
+      jiraIssueShowUrlBase += "/";
+    }
+    jiraIssueShowUrlBase += "browse/";
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> loadDefaultSettingsMapFromFile() throws SettingsException {
+    Map<String, Object> json = Utils.loadJSONFromJarPackagedFile("/templates/river_configuration_default.json");
+    return (Map<String, Object>) json.get("index");
+  }
+
+  private String loadDefaultStringIfNecessary(String valueToCheck, String valueConfigKey,
+      Map<String, Object> settingsDefault) {
+    if (Utils.isEmpty(valueToCheck)) {
+      return XContentMapValues.nodeStringValue(settingsDefault.get(valueConfigKey), null);
+    } else {
+      return valueToCheck.trim();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Map<String, String>> loadDefaultMapIfNecessary(Map<String, Map<String, String>> valueToCheck,
+      String valueConfigKey, Map<String, Object> settingsDefault) {
+    if (valueToCheck == null || valueToCheck.isEmpty()) {
+      valueToCheck = (Map<String, Map<String, String>>) settingsDefault.get(valueConfigKey);
+    }
+    return valueToCheck;
+  }
+
+  private void validateConfigurationFieldsStructure(Map<String, Map<String, String>> value, String configFieldName) {
+    for (String idxFieldName : value.keySet()) {
+      if (Utils.isEmpty(idxFieldName)) {
+        throw new SettingsException("Empty key found in '" + configFieldName + "' map.");
+      }
+      Map<String, String> fc = value.get(idxFieldName);
+      if (Utils.isEmpty(fc.get(CONFIG_FIELDS_JIRAFIELD))) {
+        throw new SettingsException("'jira_field' is not defined in '" + configFieldName + "/" + idxFieldName + "'");
+      }
+      String fil = fc.get(CONFIG_FIELDS_VALUEFILTER);
+      if (fil != null && !filtersConfig.containsKey(fil)) {
+        throw new SettingsException("Filter definition not found for filter name '" + fil + "' defined in '"
+            + configFieldName + "/" + idxFieldName + "/value_filter'");
+      }
+    }
+  }
+
+  private void validateConfigurationString(String value, String configFieldName) throws SettingsException {
+    if (Utils.isEmpty(value)) {
+      throw new SettingsException("No default '" + configFieldName + "' configuration found!");
+    }
+  }
+
+  private void validateConfigurationObject(Object value, String configFieldName) throws SettingsException {
+    if (value == null) {
+      throw new SettingsException("No default '" + configFieldName + "' configuration found!");
+    }
+  }
+
 }

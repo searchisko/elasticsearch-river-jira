@@ -72,8 +72,10 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
           structureBuilder);
       Date lastIssueUpdatedDate = DateTimeUtils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
-      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate), null))
-          .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
+      when(
+          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0,
+              DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate), null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
 
       tested.run();
 
@@ -96,8 +98,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Mockito.reset(jClientMock);
       tested = new JIRAProjectIndexer(PROJECT_KEY, false, jClientMock, jiraRiverMock, structureBuilder);
       when(
-          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate2), null))
-          .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501-updated"));
+          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0,
+              DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate2), null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1501-updated"));
 
       tested.run();
 
@@ -140,8 +143,10 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
           structureBuilder);
       Date lastIssueUpdatedDate = DateTimeUtils.parseISODateTime("2012-09-06T02:26:53.000-0400");
       tested.storeLastIssueUpdatedDate(null, PROJECT_KEY, lastIssueUpdatedDate);
-      when(jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate), null))
-          .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
+      when(
+          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0,
+              DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate), null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1501", "ORG-1513", "ORG-1514"));
 
       tested.run();
 
@@ -166,8 +171,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
       Mockito.reset(jClientMock);
       tested = new JIRAProjectIndexer(PROJECT_KEY, false, jClientMock, jiraRiverMock, structureBuilder);
       when(
-          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0, DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate2), null))
-          .thenReturn(prepareChangedIssuesJIRACallResults("ORG-1501-updated"));
+          jClientMock.getJIRAChangedIssues(PROJECT_KEY, 0,
+              DateTimeUtils.roundDateTimeToMinutePrecise(lastIssueUpdatedDate2), null)).thenReturn(
+          prepareChangedIssuesJIRACallResults("ORG-1501-updated"));
 
       tested.run();
 
