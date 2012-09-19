@@ -24,10 +24,10 @@
             "dcp_updated"           : {"jira_field" : "dcp_updated"},
             "dcp_content_provider"  : {"jira_field" : "dcp_content_provider"},
             "dcp_content_type"      : {"jira_field" : "dcp_content_type"},
+            "dcp_activity_dates"    : {"jira_field" : "dcp_activity_dates"},
             "project_name"          : {"jira_field" : "fields.project.name"},
             "issue_type"            : {"jira_field" : "fields.issuetype.name"},
             "dcp_issue_type"        : {"jira_field" : "dcp_issue_type"},
-            "title"                 : {"jira_field" : "fields.summary"},
             "dcp_title"             : {"jira_field" : "dcp_title"},
             "status"                : {"jira_field" : "fields.status.name"},
             "dcp_issue_status"      : {"jira_field" : "dcp_issue_status"},
@@ -43,7 +43,6 @@
         },
         "value_filters" : {
             "user" : {
-                "name"         : "username",
                 "emailAddress" : "email_address",
                 "displayName"  : "display_name" 
             },
@@ -75,6 +74,13 @@
                 "name"     : "DCP Updated filler",
                 "class"    : "org.jboss.elasticsearch.tools.content.AddCurrentTimestampPreprocessor",
                 "settings" : { "field" : "dcp_updated" }
+            },{ 
+                "name"     : "DCP activity dates collector",
+                "class"    : "org.jboss.elasticsearch.tools.content.ValuesCollectingPreprocessor",
+                "settings" : {
+                    "target_field"  : "dcp_activity_dates",
+                    "source_fields" : ["fields.created","fields.updated","fields.resolutiondate", "fields.comment.comments.created", "fields.comment.comments.updated"]
+                } 
             },{
                 "name"     : "Issue Type Normalizer",
                 "class"    : "org.jboss.elasticsearch.tools.content.SimpleValueMapMapperPreprocessor",
