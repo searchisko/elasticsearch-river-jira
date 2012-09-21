@@ -1,7 +1,6 @@
 {
   "query" : {
-    "match_all" : {
-    }
+    "match_all" : { }
   },
   "filter" : {
     "bool" : {
