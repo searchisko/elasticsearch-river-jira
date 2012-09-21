@@ -3,17 +3,19 @@ JIRA River Plugin for ElasticSearch
 
 The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/software/jira) issues and issue comments into [ElasticSearch](http://www.elasticsearch.org). It's implemented as ElasticSearch [river](http://www.elasticsearch.org/guide/reference/river/) [plugin](http://www.elasticsearch.org/guide/reference/modules/plugins.html) and uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) to obtain issus from JIRA instance.
 
-**First version of this plugin released. All basic functionality is here and working in 1.0.0 release. New features will be added, see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues).**
+In order to install the plugin into ElasticSearch, simply run: `bin/plugin -install jbossorg/elasticsearch-river-jira/1.1.0`.
 
-In order to install the plugin into ElasticSearch, simply run: `bin/plugin -install jbossorg/elasticsearch-river-jira/1.0.0`.
+    --------------------------------------------------------------------
+    | JIRA River | ElasticSearch    | JIRA | JIRA REST API | Changelog |
+    --------------------------------------------------------------------
+    | master     | 0.19.9           | 5+   | 2             |           |
+    --------------------------------------------------------------------
+    | 1.1.0      | 0.19.9           | 5+   | 2             | [Changelog](https://github.com/jbossorg/elasticsearch-river-jira/issues?milestone=1&page=1&state=closed) |
+    --------------------------------------------------------------------
+    | 1.0.0      | 0.19             | 5+   | 2             |           |
+    --------------------------------------------------------------------
 
-    ----------------------------------------------------------------------------
-    | JIRA Plugin    | ElasticSearch    | JIRA version | JIRA REST API version |
-    ----------------------------------------------------------------------------
-    | master         | 0.19 -> master   | 5+           | 2                     |
-    ----------------------------------------------------------------------------
-    | 1.0.0          | 0.19             | 5+           | 2                     |
-    ----------------------------------------------------------------------------
+For planned milestones/enhancements and known bugs see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues) please.
 
 The JIRA river indexes JIRA issues and comments, and makes them searchable by ElasticSearch. JIRA is pooled periodically to detect changed issues (search operation with JQL query over `updatedDate` field) to update search index in incremental update mode. 
 Periodical full update may be configured too to completely refresh search index and remove issues deleted in JIRA from it (deletes are not catched by incremental updates).
@@ -207,9 +209,8 @@ JIRA River uses following structure to store comment informations in search inde
 You can also implement and configure some preprocessors, which allows you to change/extend issue informations loaded from JIRA and store these changes/extensions to the search index.
 This allows you for example value normalizations, or creation of some index fields with values agregated from more issue fields.
 
-Framework called [structured-content-tools](https://github.com/jbossorg/structured-content-tools) is used to implement these preprocessors. Preprocessor must implement `org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor` interface. Example how to configure preprocessors is visible [here](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/examples/river_configuration_example.json).
-Some generic configurable preprocessors implementation are available in the [framework](https://github.com/jbossorg/structured-content-tools/tree/master/src/main/java/org/jboss/elasticsearch/tools/content).
-
+Framework called [structured-content-tools](https://github.com/jbossorg/structured-content-tools) is used to implement these preprocessors. Example how to configure preprocessors is visible [here](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/examples/river_configuration_example.json).
+Some generic configurable preprocessors implementation are available in the [structured-content-tools framework](https://github.com/jbossorg/structured-content-tools).
 
 License
 -------
