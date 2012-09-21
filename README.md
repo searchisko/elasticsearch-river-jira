@@ -5,15 +5,15 @@ The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/sof
 
 In order to install the plugin into ElasticSearch, simply run: `bin/plugin -install jbossorg/elasticsearch-river-jira/1.1.0`.
 
-    --------------------------------------------------------
-    | JIRA River | ElasticSearch    | JIRA | JIRA REST API |
-    --------------------------------------------------------
-    | master     | 0.19.9           | 5+   | 2             |
-    --------------------------------------------------------
-    | 1.1.0      | 0.19.9           | 5+   | 2             |
-    --------------------------------------------------------
-    | 1.0.0      | 0.19             | 5+   | 2             |
-    --------------------------------------------------------
+    -----------------------------------------------------------------------
+    | JIRA River | ElasticSearch    | JIRA | JIRA REST API | Release date |
+    -----------------------------------------------------------------------
+    | master     | 0.19.9           | 5+   | 2             |              |
+    -----------------------------------------------------------------------
+    | 1.1.0      | 0.19.9           | 5+   | 2             | 21.9.2012    |
+    -----------------------------------------------------------------------
+    | 1.0.0      | 0.19             | 5+   | 2             | 11.9.2012    |
+    -----------------------------------------------------------------------
 
 For cahngelogs, planned milestones/enhancements and known bugs see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues) please.
 
