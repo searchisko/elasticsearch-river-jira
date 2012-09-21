@@ -5,17 +5,17 @@ The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/sof
 
 In order to install the plugin into ElasticSearch, simply run: `bin/plugin -install jbossorg/elasticsearch-river-jira/1.1.0`.
 
-    --------------------------------------------------------------------
-    | JIRA River | ElasticSearch    | JIRA | JIRA REST API | Changelog |
-    --------------------------------------------------------------------
-    | master     | 0.19.9           | 5+   | 2             |           |
-    --------------------------------------------------------------------
-    | 1.1.0      | 0.19.9           | 5+   | 2             | [Changelog](https://github.com/jbossorg/elasticsearch-river-jira/issues?milestone=1&page=1&state=closed) |
-    --------------------------------------------------------------------
-    | 1.0.0      | 0.19             | 5+   | 2             |           |
-    --------------------------------------------------------------------
+    --------------------------------------------------------
+    | JIRA River | ElasticSearch    | JIRA | JIRA REST API |
+    --------------------------------------------------------
+    | master     | 0.19.9           | 5+   | 2             |
+    --------------------------------------------------------
+    | 1.1.0      | 0.19.9           | 5+   | 2             |
+    --------------------------------------------------------
+    | 1.0.0      | 0.19             | 5+   | 2             |
+    --------------------------------------------------------
 
-For planned milestones/enhancements and known bugs see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues) please.
+For cahngelogs, planned milestones/enhancements and known bugs see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues) please.
 
 The JIRA river indexes JIRA issues and comments, and makes them searchable by ElasticSearch. JIRA is pooled periodically to detect changed issues (search operation with JQL query over `updatedDate` field) to update search index in incremental update mode. 
 Periodical full update may be configured too to completely refresh search index and remove issues deleted in JIRA from it (deletes are not catched by incremental updates).
