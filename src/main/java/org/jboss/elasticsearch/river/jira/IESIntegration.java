@@ -64,6 +64,7 @@ public interface IESIntegration {
    * @throws IOException
    * 
    * @see {@link #readDatetimeValue(String, String)}
+   * @see #deleteDatetimeValue(String, String)
    */
   void storeDatetimeValue(String projectKey, String propertyName, Date datetime, BulkRequestBuilder esBulk)
       throws Exception;
@@ -75,9 +76,21 @@ public interface IESIntegration {
    * @param propertyName name of property for this value identification
    * @return datetime or null if do not exists
    * @throws IOException
-   * @see {@link #storeDatetimeValue(String, String, Date, BulkRequestBuilder)}
+   * @see #storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see #deleteDatetimeValue(String, String)
    */
   Date readDatetimeValue(String projectKey, String propertyName) throws Exception;
+
+  /**
+   * Delete datetime value for jira project from document in ElasticSearch river configuration persistent area.
+   * 
+   * @param projectKey jira project key to delete value for
+   * @param propertyName name of property for value identification
+   * @return true if document was found and deleted, false if not found
+   * @see #readDatetimeValue(String, String)
+   * @see #storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   */
+  boolean deleteDatetimeValue(String projectKey, String propertyName);
 
   /**
    * Prepare ElasticSearch bulk request to be used for index update by more issues.

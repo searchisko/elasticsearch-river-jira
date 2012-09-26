@@ -16,11 +16,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
-import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -189,60 +187,15 @@ public class JiraRiverTest extends ESRealClientTestBase {
   }
 
   @Test
-  public void parseTimeValue() {
-    Map<String, Object> jiraSettings = new HashMap<String, Object>();
-
-    // test defaults
-    Assert.assertEquals(0, JiraRiver.parseTimeValue(jiraSettings, "nonexist", 1250, null));
-    Assert.assertEquals(12, JiraRiver.parseTimeValue(null, "nonexist", 12, TimeUnit.MILLISECONDS));
-    Assert.assertEquals(1250, JiraRiver.parseTimeValue(jiraSettings, "nonexist", 1250, TimeUnit.MILLISECONDS));
-
-    // test correct values parsing
-    jiraSettings.put("mstest", "250");
-    jiraSettings.put("mstest2", "255ms");
-    jiraSettings.put("secondtest", "250s");
-    jiraSettings.put("minutetest", "50m");
-    jiraSettings.put("hourtest", "2h");
-    jiraSettings.put("daytest", "2d");
-    jiraSettings.put("weektest", "2w");
-    jiraSettings.put("zerotest", "0");
-    jiraSettings.put("negativetest", "-1");
-    Assert.assertEquals(250, JiraRiver.parseTimeValue(jiraSettings, "mstest", 1250, TimeUnit.MILLISECONDS));
-    Assert.assertEquals(255, JiraRiver.parseTimeValue(jiraSettings, "mstest2", 1250, TimeUnit.MILLISECONDS));
-    Assert.assertEquals(250 * 1000, JiraRiver.parseTimeValue(jiraSettings, "secondtest", 1250, TimeUnit.MILLISECONDS));
-    Assert.assertEquals(50 * 60 * 1000,
-        JiraRiver.parseTimeValue(jiraSettings, "minutetest", 1250, TimeUnit.MILLISECONDS));
-    Assert.assertEquals(2 * 24 * 60 * 60 * 1000,
-        JiraRiver.parseTimeValue(jiraSettings, "daytest", 1250, TimeUnit.MILLISECONDS));
-    Assert.assertEquals(2 * 7 * 24 * 60 * 60 * 1000,
-        JiraRiver.parseTimeValue(jiraSettings, "weektest", 1250, TimeUnit.MILLISECONDS));
-    Assert.assertEquals(0, JiraRiver.parseTimeValue(jiraSettings, "zerotest", 1250, TimeUnit.MILLISECONDS));
-    Assert.assertEquals(-1, JiraRiver.parseTimeValue(jiraSettings, "negativetest", 1250, TimeUnit.MILLISECONDS));
-
-    // test error handling
-    jiraSettings.put("errortest", "w");
-    jiraSettings.put("errortest2", "ahojs");
-    try {
-      JiraRiver.parseTimeValue(jiraSettings, "errortest", 1250, TimeUnit.MILLISECONDS);
-      Assert.fail("ElasticSearchParseException must be thrown");
-    } catch (ElasticSearchParseException e) {
-      // ok
-    }
-    try {
-      JiraRiver.parseTimeValue(jiraSettings, "errortest2", 1250, TimeUnit.MILLISECONDS);
-      Assert.fail("ElasticSearchParseException must be thrown");
-    } catch (ElasticSearchParseException e) {
-      // ok
-    }
-  }
-
-  @Test
-  public void readAndStoreDatetimeValue() throws Exception {
+  public void readAndStoreAndDeleteDatetimeValue() throws Exception {
     try {
       Client client = prepareESClientForUnitTest();
 
       JiraRiver tested = prepareJiraRiverInstanceForTest(null);
       tested.client = client;
+
+      client.admin().indices().prepareCreate("_river").execute().actionGet();
+      Assert.assertFalse(tested.deleteDatetimeValue("ORG1", "testProperty_1_1"));
 
       tested
           .storeDatetimeValue("ORG1", "testProperty_1_1", DateTimeUtils.parseISODateTime("2012-09-03T18:12:45"), null);
@@ -257,6 +210,22 @@ public class JiraRiverTest extends ESRealClientTestBase {
           tested.readDatetimeValue("ORG1", "testProperty_1_1"));
       Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-03T05:12:40"),
           tested.readDatetimeValue("ORG1", "testProperty_1_2"));
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-02T08:12:30"),
+          tested.readDatetimeValue("ORG2", "testProperty_1_1"));
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-02T05:02:20"),
+          tested.readDatetimeValue("ORG2", "testProperty_1_2"));
+
+      Assert.assertTrue(tested.deleteDatetimeValue("ORG1", "testProperty_1_1"));
+      Assert.assertNull(tested.readDatetimeValue("ORG1", "testProperty_1_1"));
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-03T05:12:40"),
+          tested.readDatetimeValue("ORG1", "testProperty_1_2"));
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-02T08:12:30"),
+          tested.readDatetimeValue("ORG2", "testProperty_1_1"));
+      Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-02T05:02:20"),
+          tested.readDatetimeValue("ORG2", "testProperty_1_2"));
+
+      Assert.assertTrue(tested.deleteDatetimeValue("ORG1", "testProperty_1_2"));
+      Assert.assertNull(tested.readDatetimeValue("ORG1", "testProperty_1_2"));
       Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-02T08:12:30"),
           tested.readDatetimeValue("ORG2", "testProperty_1_1"));
       Assert.assertEquals(DateTimeUtils.parseISODateTime("2012-09-02T05:02:20"),
@@ -355,7 +324,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
     MockThread mockThread = new MockThread();
     tested.coordinatorThread = mockThread;
     tested.coordinatorInstance = mock(IJIRAProjectIndexerCoordinator.class);
-    Assert.assertFalse(tested.isClosed());
+    tested.closed = false;
     Assert.assertNotNull(tested.coordinatorThread);
     Assert.assertNotNull(tested.coordinatorInstance);
 
@@ -369,7 +338,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
     tested = prepareJiraRiverInstanceForTest(null);
     tested.coordinatorThread = null;
     tested.coordinatorInstance = null;
-    Assert.assertFalse(tested.isClosed());
+    tested.closed = false;
     Assert.assertNull(tested.coordinatorThread);
     Assert.assertNull(tested.coordinatorInstance);
 

@@ -212,6 +212,20 @@ This allows you for example value normalizations, or creation of some index fiel
 Framework called [structured-content-tools](https://github.com/jbossorg/structured-content-tools) is used to implement these preprocessors. Example how to configure preprocessors is visible [here](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/examples/river_configuration_example.json).
 Some generic configurable preprocessors implementation are available in the [structured-content-tools framework](https://github.com/jbossorg/structured-content-tools).
 
+Management REST API
+-------------------
+JIRA river supports next REST operations for management purposes. Note `my_jira_river` in examples is name of jira river you can call operation for.
+
+Force full index update for all jira projects:
+
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/fullupdate
+
+Force full index update for jira project with key `projectKey`:
+
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/fullupdate/projectKey
+
+
+
 License
 -------
 

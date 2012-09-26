@@ -6,15 +6,16 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
@@ -38,6 +39,11 @@ import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactor
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration {
+
+  /**
+   * Map of running river instances. Used for management operations dispatching. See {@link #getRunningInstance(String)}
+   */
+  protected static Map<String, JiraRiver> riverInstances = new HashMap<String, JiraRiver>();
 
   /**
    * How often is project list refreshed from JIRA instance [ms].
@@ -116,7 +122,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   /**
    * Flag set to true if this river is stopped from ElasticSearch server.
    */
-  protected volatile boolean closed = false;
+  protected volatile boolean closed = true;
 
   /**
    * List of indexing excluded JIRA project keys loaded from river configuration
@@ -163,7 +169,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       if (Utils.isEmpty(jiraUrlBase)) {
         throw new SettingsException("jira/urlBase element of configuration structure not found or empty");
       }
-      Integer timeout = new Long(parseTimeValue(jiraSettings, "timeout", 5, TimeUnit.SECONDS)).intValue();
+      Integer timeout = new Long(Utils.parseTimeValue(jiraSettings, "timeout", 5, TimeUnit.SECONDS)).intValue();
       jiraUser = XContentMapValues.nodeStringValue(jiraSettings.get("username"), "Anonymous access");
       jiraClient = new JIRA5RestClient(jiraUrlBase, XContentMapValues.nodeStringValue(jiraSettings.get("username"),
           null), XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
@@ -174,8 +180,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         jiraClient.setJQLDateFormatTimezone(tz);
       }
       maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
-      indexUpdatePeriod = parseTimeValue(jiraSettings, "indexUpdatePeriod", 5, TimeUnit.MINUTES);
-      indexFullUpdatePeriod = parseTimeValue(jiraSettings, "indexFullUpdatePeriod", 12, TimeUnit.HOURS);
+      indexUpdatePeriod = Utils.parseTimeValue(jiraSettings, "indexUpdatePeriod", 5, TimeUnit.MINUTES);
+      indexFullUpdatePeriod = Utils.parseTimeValue(jiraSettings, "indexFullUpdatePeriod", 12, TimeUnit.HOURS);
       if (jiraSettings.containsKey("projectKeysIndexed")) {
         allIndexedProjectsKeys = Utils.parseCsvString(XContentMapValues.nodeStringValue(
             jiraSettings.get("projectKeysIndexed"), null));
@@ -252,7 +258,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   /**
-   * Constructor for unit tests, nothing is initialized in river.
+   * Constructor for unit tests, nothing is initialized/configured in river.
    * 
    * @param riverName
    * @param settings
@@ -261,49 +267,17 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     super(riverName, settings);
   }
 
-  /**
-   * Parse time value from river settings/config map. Value must be number, which is normaly in milliseconds, but you
-   * can postfix it by one of next letters to set units
-   * <ul>
-   * <li><code>s</code> - seconds
-   * <li><code>m</code> - minutes
-   * <li><code>h</code> - hours
-   * <li><code>d</code> - days
-   * <li><code>w</code> - weeks
-   * </ul>
-   * 
-   * @param jiraSettings map to get value from
-   * @param key of config value in map
-   * @param defaultDuration default duration used if no value in config
-   * @param defaultTimeUnit time unit for default duration - if null no default is used, so return 0 as default in this
-   *          case
-   * @return time value in millis
-   */
-  protected static long parseTimeValue(Map<String, Object> jiraSettings, String key, long defaultDuration,
-      TimeUnit defaultTimeUnit) {
-    long ret = 0;
-    if (jiraSettings == null || !jiraSettings.containsKey(key)) {
-      if (defaultTimeUnit != null) {
-        ret = new TimeValue(defaultDuration, defaultTimeUnit).millis();
-      }
-    } else {
-      try {
-        ret = TimeValue.parseTimeValue(XContentMapValues.nodeStringValue(jiraSettings.get(key), null),
-            new TimeValue(defaultDuration, defaultTimeUnit)).millis();
-      } catch (ElasticSearchParseException e) {
-        throw new ElasticSearchParseException(e.getMessage() + " for setting: " + key);
-      }
-    }
-    return ret;
-  }
-
   @Override
   public void start() {
     logger.info("starting JIRA River");
+    closed = false;
     coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, jiraIssueIndexStructureBuilder,
         indexUpdatePeriod, maxIndexingThreads, indexFullUpdatePeriod);
     coordinatorThread = acquireIndexingThread("jira_river_coordinator", coordinatorInstance);
     coordinatorThread.start();
+    synchronized (riverInstances) {
+      riverInstances.put(riverName().getName(), this);
+    }
   }
 
   @Override
@@ -316,11 +290,59 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     // free instances created in #start()
     coordinatorThread = null;
     coordinatorInstance = null;
+    synchronized (riverInstances) {
+      riverInstances.remove(riverName().getName());
+    }
   }
 
   @Override
   public boolean isClosed() {
     return closed;
+  }
+
+  /**
+   * Force full index update for some project(s) in this jira river.
+   * 
+   * @param jiraProjectKey optional key of project to reindex, if null or empty then all projects are forced to full
+   *          reindex
+   * @return CSV list of projects forced to reindex. <code>null</code> if project passed over
+   *         <code>jiraProjectKey</code> parameter was not found in this indexer
+   * @throws Exception
+   */
+  public String forceFullReindex(String jiraProjectKey) throws Exception {
+    if (coordinatorInstance == null)
+      return null;
+    List<String> pkeys = getAllIndexedProjectsKeys();
+    if (Utils.isEmpty(jiraProjectKey)) {
+      if (pkeys != null) {
+        for (String k : pkeys) {
+          coordinatorInstance.forceFullReindex(k);
+        }
+        return Utils.createCsvString(pkeys);
+      } else {
+        return "";
+      }
+
+    } else {
+      if (pkeys != null && pkeys.contains(jiraProjectKey)) {
+        coordinatorInstance.forceFullReindex(jiraProjectKey);
+        return jiraProjectKey;
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * Get running instance of jira river for given name.
+   * 
+   * @param riverName to get instance for
+   * @return river instance or null if not found
+   */
+  public static JiraRiver getRunningInstance(String riverName) {
+    if (riverName == null)
+      return null;
+    return riverInstances.get(riverName);
   }
 
   @Override
@@ -396,10 +418,10 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
           "Going to write {} property with datetime value {} for project {} using {} update. Document name is {}.",
           propertyName, datetime, projectKey, (esBulk != null ? "bulk" : "direct"), documentName);
     if (esBulk != null) {
-      esBulk.add(indexRequest("_river").type(riverName.name()).id(documentName)
+      esBulk.add(indexRequest(getRiverIndexName()).type(riverName.name()).id(documentName)
           .source(storeDatetimeValueBuildDocument(projectKey, propertyName, datetime)));
     } else {
-      client.prepareIndex("_river", riverName.name(), documentName)
+      client.prepareIndex(getRiverIndexName(), riverName.name(), documentName)
           .setSource(storeDatetimeValueBuildDocument(projectKey, propertyName, datetime)).execute().actionGet();
     }
   }
@@ -440,8 +462,9 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       logger.debug("Going to read datetime value from {} property for project {}. Document name is {}.", propertyName,
           projectKey, documentName);
 
-    refreshSearchIndex("_river");
-    GetResponse lastSeqGetResponse = client.prepareGet("_river", riverName.name(), documentName).execute().actionGet();
+    refreshSearchIndex(getRiverIndexName());
+    GetResponse lastSeqGetResponse = client.prepareGet(getRiverIndexName(), riverName.name(), documentName).execute()
+        .actionGet();
     if (lastSeqGetResponse.exists()) {
       Object timestamp = lastSeqGetResponse.sourceAsMap().get(STORE_FIELD_VALUE);
       if (timestamp != null) {
@@ -452,6 +475,36 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         logger.debug("{} document doesn't exist in JIRA river persistent store", documentName);
     }
     return lastDate;
+  }
+
+  @Override
+  public boolean deleteDatetimeValue(String projectKey, String propertyName) {
+    String documentName = prepareValueStoreDocumentName(projectKey, propertyName);
+
+    if (logger.isDebugEnabled())
+      logger.debug("Going to delete datetime value from {} property for project {}. Document name is {}.",
+          propertyName, projectKey, documentName);
+
+    refreshSearchIndex(getRiverIndexName());
+
+    DeleteResponse lastSeqGetResponse = client.prepareDelete(getRiverIndexName(), riverName.name(), documentName)
+        .execute().actionGet();
+    if (lastSeqGetResponse.notFound()) {
+      if (logger.isDebugEnabled()) {
+        logger.debug("{} document doesn't exist in JIRA river persistent store", documentName);
+      }
+      return false;
+    } else {
+      return true;
+    }
+
+  }
+
+  /**
+   * @return
+   */
+  private String getRiverIndexName() {
+    return "_river";
   }
 
   /**

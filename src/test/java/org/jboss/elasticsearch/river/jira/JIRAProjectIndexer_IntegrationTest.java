@@ -549,6 +549,8 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
     tested.client = client;
     IJIRAClient jClientMock = mock(IJIRAClient.class);
     tested.jiraClient = jClientMock;
+    // simulate started river
+    tested.closed = false;
     return tested;
   }
 

@@ -72,43 +72,155 @@ public class JIRAProjectIndexerCoordinatorTest {
     JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 1000, 2, -1);
     tested.setIndexFullUpdatePeriod(0);
 
-    // case - full update disabled
+    // case - full update disabled, no force
     {
       reset(esIntegrationMock);
       when(
           esIntegrationMock.readDatetimeValue("ORG",
               JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE)).thenReturn(null);
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE)).thenReturn(null);
       Assert.assertFalse(tested.projectIndexFullUpdateNecessary("ORG"));
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
     }
 
     tested.setIndexFullUpdatePeriod(indexFullUpdatePeriod);
-    // case - full update necessary - no date of last full update stored
+    // case - full update necessary - no date of last full update stored, no force
     {
       reset(esIntegrationMock);
       when(
           esIntegrationMock.readDatetimeValue("ORG",
               JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE)).thenReturn(null);
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE)).thenReturn(null);
       Assert.assertTrue(tested.projectIndexFullUpdateNecessary("ORG"));
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE);
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
     }
 
-    // case - full update necessary - date of last full update stored and is older than index full update period
+    // case - full update necessary - date of last full update stored and is older than index full update period, no
+    // force
     {
       reset(esIntegrationMock);
       when(
           esIntegrationMock.readDatetimeValue("ORG",
               JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE)).thenReturn(
           new Date(System.currentTimeMillis() - indexFullUpdatePeriod - 100));
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE)).thenReturn(null);
       Assert.assertTrue(tested.projectIndexFullUpdateNecessary("ORG"));
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE);
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
     }
 
-    // case - no full update necessary - date of last full update stored and is newer than index full update period
+    // case - no full update necessary - date of last full update stored and is newer than index full update period, no
+    // force
     {
       reset(esIntegrationMock);
       when(
           esIntegrationMock.readDatetimeValue("ORG",
               JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE)).thenReturn(
           new Date(System.currentTimeMillis() - indexFullUpdatePeriod + 1000));
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE)).thenReturn(null);
+
       Assert.assertFalse(tested.projectIndexFullUpdateNecessary("ORG"));
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE);
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
+    }
+  }
+
+  @Test
+  public void projectIndexFullUpdateNecessary_forced() throws Exception {
+    int indexFullUpdatePeriod = 60 * 1000;
+
+    IESIntegration esIntegrationMock = mock(IESIntegration.class);
+    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 1000, 2, -1);
+    tested.setIndexFullUpdatePeriod(0);
+
+    // case - full update disabled, but forced
+    {
+      reset(esIntegrationMock);
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE)).thenReturn(null);
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE)).thenReturn(new Date());
+      Assert.assertTrue(tested.projectIndexFullUpdateNecessary("ORG"));
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
+    }
+
+    tested.setIndexFullUpdatePeriod(indexFullUpdatePeriod);
+    // case - full update necessary - no date of last full update stored, but forced
+    {
+      reset(esIntegrationMock);
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE)).thenReturn(null);
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE)).thenReturn(new Date());
+      Assert.assertTrue(tested.projectIndexFullUpdateNecessary("ORG"));
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
+    }
+
+    // case - full update necessary - date of last full update stored and is older than index full update period, but
+    // forced
+    {
+      reset(esIntegrationMock);
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE)).thenReturn(
+          new Date(System.currentTimeMillis() - indexFullUpdatePeriod - 100));
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE)).thenReturn(new Date());
+      Assert.assertTrue(tested.projectIndexFullUpdateNecessary("ORG"));
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
+    }
+
+    // case - no full update necessary - date of last full update stored and is newer than index full update period, but
+    // forced
+    {
+      reset(esIntegrationMock);
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE)).thenReturn(
+          new Date(System.currentTimeMillis() - indexFullUpdatePeriod + 1000));
+      when(
+          esIntegrationMock.readDatetimeValue("ORG",
+              JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE)).thenReturn(new Date());
+
+      Assert.assertTrue(tested.projectIndexFullUpdateNecessary("ORG"));
+      verify(esIntegrationMock).readDatetimeValue("ORG",
+          JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
     }
   }
 
@@ -641,6 +753,9 @@ public class JIRAProjectIndexerCoordinatorTest {
       verify(esIntegrationMock).storeDatetimeValue(Mockito.eq("AAA"),
           Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE),
           (Date) Mockito.any(), (BulkRequestBuilder) Mockito.isNull());
+      verify(esIntegrationMock).deleteDatetimeValue(Mockito.eq("AAA"),
+          Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE));
+      Mockito.verifyNoMoreInteractions(esIntegrationMock);
     }
   }
 

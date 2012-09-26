@@ -18,4 +18,12 @@ public interface IJIRAProjectIndexerCoordinator extends Runnable {
    */
   public abstract void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate);
 
+  /**
+   * Force full reindex for given jira project.
+   * 
+   * @param projectKey to force reindex for
+   * @throws Exception
+   */
+  void forceFullReindex(String projectKey) throws Exception;
+
 }

@@ -14,8 +14,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.common.settings.SettingsException;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -53,6 +56,42 @@ public class Utils {
    */
   public static boolean isEmpty(String src) {
     return (src == null || src.length() == 0 || src.trim().length() == 0);
+  }
+
+  /**
+   * Parse time value from river settings/config map. Value must be number, which is normaly in milliseconds, but you
+   * can postfix it by one of next letters to set units
+   * <ul>
+   * <li><code>s</code> - seconds
+   * <li><code>m</code> - minutes
+   * <li><code>h</code> - hours
+   * <li><code>d</code> - days
+   * <li><code>w</code> - weeks
+   * </ul>
+   * 
+   * @param jiraSettings map to get value from
+   * @param key of config value in map
+   * @param defaultDuration default duration used if no value in config
+   * @param defaultTimeUnit time unit for default duration - if null no default is used, so return 0 as default in this
+   *          case
+   * @return time value in millis
+   */
+  protected static long parseTimeValue(Map<String, Object> jiraSettings, String key, long defaultDuration,
+      TimeUnit defaultTimeUnit) {
+    long ret = 0;
+    if (jiraSettings == null || !jiraSettings.containsKey(key)) {
+      if (defaultTimeUnit != null) {
+        ret = new TimeValue(defaultDuration, defaultTimeUnit).millis();
+      }
+    } else {
+      try {
+        ret = TimeValue.parseTimeValue(XContentMapValues.nodeStringValue(jiraSettings.get(key), null),
+            new TimeValue(defaultDuration, defaultTimeUnit)).millis();
+      } catch (ElasticSearchParseException e) {
+        throw new ElasticSearchParseException(e.getMessage() + " for setting: " + key);
+      }
+    }
+    return ret;
   }
 
   /**

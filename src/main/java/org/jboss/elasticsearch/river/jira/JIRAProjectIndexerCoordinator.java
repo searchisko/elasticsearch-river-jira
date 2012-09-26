@@ -45,6 +45,15 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    */
   protected static final String STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE = "lastIndexFullUpdateDate";
 
+  /**
+   * Property value where "full index force date" is stored for JIRA project
+   * 
+   * @see IESIntegration#storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see IESIntegration#readDatetimeValue(String, String)
+   * @see #projectIndexFullUpdateNecessary(String)
+   */
+  protected static final String STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE = "forceIndexFullUpdateDate";
+
   protected static final int COORDINATOR_THREAD_WAITS_QUICK = 2 * 1000;
   protected static final int COORDINATOR_THREAD_WAITS_SLOW = 30 * 1000;
   protected int coordinatorThreadWaits = COORDINATOR_THREAD_WAITS_QUICK;
@@ -257,6 +266,8 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    * @throws IOException
    */
   protected boolean projectIndexFullUpdateNecessary(String projectKey) throws Exception {
+    if (esIntegrationComponent.readDatetimeValue(projectKey, STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE) != null)
+      return true;
     if (indexFullUpdatePeriod < 1) {
       return false;
     }
@@ -266,6 +277,12 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
       logger.debug("Project {} last full update date is {}. We perform next full indexing after {}ms.", projectKey,
           lastIndexing, indexFullUpdatePeriod);
     return lastIndexing == null || lastIndexing.getTime() < ((System.currentTimeMillis() - indexFullUpdatePeriod));
+  }
+
+  @Override
+  public void forceFullReindex(String projectKey) throws Exception {
+    esIntegrationComponent.storeDatetimeValue(projectKey, STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE, new Date(),
+        null);
   }
 
   @Override
@@ -279,6 +296,11 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
             new Date(), null);
       } catch (Exception e) {
         logger.error("Can't store {} value due: {}", STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE, e.getMessage());
+      }
+      try {
+        esIntegrationComponent.deleteDatetimeValue(jiraProjectKey, STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE);
+      } catch (Exception e) {
+        logger.error("Can't store {} value due: {}", STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE, e.getMessage());
       }
     }
   }

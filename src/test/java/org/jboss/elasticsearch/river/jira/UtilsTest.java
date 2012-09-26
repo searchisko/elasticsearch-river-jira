@@ -12,7 +12,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
+import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.junit.Assert;
 import org.junit.Test;
@@ -60,6 +62,53 @@ public class UtilsTest {
     Assert.assertEquals("UUUU", r.get(1));
     Assert.assertEquals("PEM", r.get(2));
     Assert.assertEquals("SU07", r.get(3));
+  }
+
+  @Test
+  public void parseTimeValue() {
+    Map<String, Object> jiraSettings = new HashMap<String, Object>();
+
+    // test defaults
+    Assert.assertEquals(0, Utils.parseTimeValue(jiraSettings, "nonexist", 1250, null));
+    Assert.assertEquals(12, Utils.parseTimeValue(null, "nonexist", 12, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(1250, Utils.parseTimeValue(jiraSettings, "nonexist", 1250, TimeUnit.MILLISECONDS));
+
+    // test correct values parsing
+    jiraSettings.put("mstest", "250");
+    jiraSettings.put("mstest2", "255ms");
+    jiraSettings.put("secondtest", "250s");
+    jiraSettings.put("minutetest", "50m");
+    jiraSettings.put("hourtest", "2h");
+    jiraSettings.put("daytest", "2d");
+    jiraSettings.put("weektest", "2w");
+    jiraSettings.put("zerotest", "0");
+    jiraSettings.put("negativetest", "-1");
+    Assert.assertEquals(250, Utils.parseTimeValue(jiraSettings, "mstest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(255, Utils.parseTimeValue(jiraSettings, "mstest2", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(250 * 1000, Utils.parseTimeValue(jiraSettings, "secondtest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(50 * 60 * 1000, Utils.parseTimeValue(jiraSettings, "minutetest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(2 * 24 * 60 * 60 * 1000,
+        Utils.parseTimeValue(jiraSettings, "daytest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(2 * 7 * 24 * 60 * 60 * 1000,
+        Utils.parseTimeValue(jiraSettings, "weektest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(0, Utils.parseTimeValue(jiraSettings, "zerotest", 1250, TimeUnit.MILLISECONDS));
+    Assert.assertEquals(-1, Utils.parseTimeValue(jiraSettings, "negativetest", 1250, TimeUnit.MILLISECONDS));
+
+    // test error handling
+    jiraSettings.put("errortest", "w");
+    jiraSettings.put("errortest2", "ahojs");
+    try {
+      Utils.parseTimeValue(jiraSettings, "errortest", 1250, TimeUnit.MILLISECONDS);
+      Assert.fail("ElasticSearchParseException must be thrown");
+    } catch (ElasticSearchParseException e) {
+      // ok
+    }
+    try {
+      Utils.parseTimeValue(jiraSettings, "errortest2", 1250, TimeUnit.MILLISECONDS);
+      Assert.fail("ElasticSearchParseException must be thrown");
+    } catch (ElasticSearchParseException e) {
+      // ok
+    }
   }
 
   @Test
