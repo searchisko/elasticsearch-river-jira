@@ -49,34 +49,23 @@ public class JIRAProjectIndexer implements Runnable {
   protected final String projectKey;
 
   /**
-   * <code>true</code> if full update indexing is necessary, <code>false</code> on incremental update.
-   */
-  protected boolean fullUpdate = false;
-
-  /**
    * Time when indexing started.
    */
   protected long startTime = 0;
 
   /**
-   * Number of issues updated during this indexing.
+   * Info about current indexing.
    */
-  protected int updatedCount = 0;
+  protected ProjectIndexingInfo indexingInfo;
 
   /**
-   * Number of issues deleted during this indexing.
-   */
-  protected int deleteCount = 0;
-
-  /**
-   * Number of issue comments deleted during this indexing.
-   */
-  protected int deleteCommentsCount = 0;
-
-  /**
+   * Create and configure indexer.
+   * 
    * @param projectKey JIRA project key for project to be indexed by this indexer.
+   * @param fullUpdate true to request full index update
    * @param jiraClient configured JIRA client to be used to obtain informations from JIRA.
    * @param esIntegrationComponent to be used to call River component and ElasticSearch functions
+   * @param jiraIssueIndexStructureBuilder to be used during indexing
    */
   public JIRAProjectIndexer(String projectKey, boolean fullUpdate, IJIRAClient jiraClient,
       IESIntegration esIntegrationComponent, IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder) {
@@ -84,32 +73,35 @@ public class JIRAProjectIndexer implements Runnable {
       throw new IllegalArgumentException("projectKey must be defined");
     this.jiraClient = jiraClient;
     this.projectKey = projectKey;
-    this.fullUpdate = fullUpdate;
     this.esIntegrationComponent = esIntegrationComponent;
     this.jiraIssueIndexStructureBuilder = jiraIssueIndexStructureBuilder;
+    indexingInfo = new ProjectIndexingInfo(projectKey, fullUpdate);
   }
 
   @Override
   public void run() {
     startTime = System.currentTimeMillis();
+    indexingInfo.startDate = new Date(startTime);
     try {
       processUpdate();
       processDelete(new Date(startTime));
-      long timeElapsed = (System.currentTimeMillis() - startTime);
-      esIntegrationComponent.reportIndexingFinished(projectKey, true, fullUpdate, updatedCount, deleteCount, new Date(
-          startTime), timeElapsed, null);
+      indexingInfo.timeElapsed = (System.currentTimeMillis() - startTime);
+      indexingInfo.finishedOK = true;
+      esIntegrationComponent.reportIndexingFinished(indexingInfo);
       logger.info("Finished {} update for JIRA project {}. {} updated and {} deleted issues. Time elapsed {}s.",
-          fullUpdate ? "full" : "incremental", projectKey, updatedCount, deleteCount, (timeElapsed / 1000));
+          indexingInfo.fullUpdate ? "full" : "incremental", projectKey, indexingInfo.issuesUpdated,
+          indexingInfo.issuesDeleted, (indexingInfo.timeElapsed / 1000));
     } catch (Throwable e) {
-      long timeElapsed = (System.currentTimeMillis() - startTime);
-      esIntegrationComponent.reportIndexingFinished(projectKey, false, fullUpdate, updatedCount, deleteCount, new Date(
-          startTime), timeElapsed, e.getMessage());
+      indexingInfo.timeElapsed = (System.currentTimeMillis() - startTime);
+      indexingInfo.errorMessage = e.getMessage();
+      indexingInfo.finishedOK = false;
+      esIntegrationComponent.reportIndexingFinished(indexingInfo);
       Throwable cause = e;
       // do not log stacktrace for some operational exceptions to keep log file much clear
       if (cause instanceof IOException)
         cause = null;
-      logger.error("Failed {} update for JIRA project {} due: {}", cause, fullUpdate ? "full" : "incremental",
-          projectKey, e.getMessage());
+      logger.error("Failed {} update for JIRA project {} due: {}", cause, indexingInfo.fullUpdate ? "full"
+          : "incremental", projectKey, e.getMessage());
     }
   }
 
@@ -120,19 +112,20 @@ public class JIRAProjectIndexer implements Runnable {
    * @throws Exception
    */
   protected void processUpdate() throws Exception {
-    updatedCount = 0;
+    indexingInfo.issuesUpdated = 0;
     Date updatedAfter = null;
-    if (!fullUpdate) {
+    if (!indexingInfo.fullUpdate) {
       updatedAfter = DateTimeUtils.roundDateTimeToMinutePrecise(readLastIssueUpdatedDate(projectKey));
     }
     Date updatedAfterStarting = updatedAfter;
     if (updatedAfter == null)
-      fullUpdate = true;
+      indexingInfo.fullUpdate = true;
     Date lastIssueUpdatedDate = null;
 
     int startAt = 0;
 
-    logger.info("Go to perform {} update for JIRA project {}", fullUpdate ? "full" : "incremental", projectKey);
+    logger.info("Go to perform {} update for JIRA project {}", indexingInfo.fullUpdate ? "full" : "incremental",
+        projectKey);
 
     boolean cont = true;
     while (cont) {
@@ -167,7 +160,7 @@ public class JIRAProjectIndexer implements Runnable {
           }
 
           jiraIssueIndexStructureBuilder.indexIssue(esBulk, projectKey, issue);
-          updatedCount++;
+          indexingInfo.issuesUpdated++;
           if (isClosed())
             break;
         }
@@ -192,7 +185,7 @@ public class JIRAProjectIndexer implements Runnable {
       }
     }
 
-    if (updatedCount > 0 && lastIssueUpdatedDate != null && updatedAfterStarting != null
+    if (indexingInfo.issuesUpdated > 0 && lastIssueUpdatedDate != null && updatedAfterStarting != null
         && updatedAfterStarting.equals(lastIssueUpdatedDate)) {
       // no any new issue during this update cycle, go to increment lastIssueUpdatedDate in store by one minute not to
       // index last issue again and again in next cycle - this is here due JQL minute precise on timestamp search
@@ -213,10 +206,10 @@ public class JIRAProjectIndexer implements Runnable {
     if (boundDate == null)
       throw new IllegalArgumentException("boundDate must be set");
 
-    deleteCount = 0;
-    deleteCommentsCount = 0;
+    indexingInfo.issuesDeleted = 0;
+    indexingInfo.commentsDeleted = 0;
 
-    if (!fullUpdate)
+    if (!indexingInfo.fullUpdate)
       return;
 
     logger.debug("Go to process JIRA deletes for project {} for issues not updated in index after {}", projectKey,
@@ -238,9 +231,9 @@ public class JIRAProjectIndexer implements Runnable {
         for (SearchHit hit : scrollResp.getHits()) {
           logger.debug("Go to delete indexed issue for document id {}", hit.getId());
           if (jiraIssueIndexStructureBuilder.deleteIssueDocument(esBulk, hit)) {
-            deleteCount++;
+            indexingInfo.issuesDeleted++;
           } else {
-            deleteCommentsCount++;
+            indexingInfo.commentsDeleted++;
           }
         }
         scrollResp = esIntegrationComponent.executeESScrollSearchNextRequest(scrollResp);
@@ -286,6 +279,15 @@ public class JIRAProjectIndexer implements Runnable {
       throws Exception {
     esIntegrationComponent.storeDatetimeValue(jiraProjectKey, STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE,
         lastIssueUpdatedDate, esBulk);
+  }
+
+  /**
+   * Get current indexing info.
+   * 
+   * @return indexing info instance.
+   */
+  public ProjectIndexingInfo getIndexingInfo() {
+    return indexingInfo;
   }
 
 }

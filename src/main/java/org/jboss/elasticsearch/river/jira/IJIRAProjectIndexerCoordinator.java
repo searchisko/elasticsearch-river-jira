@@ -1,5 +1,7 @@
 package org.jboss.elasticsearch.river.jira;
 
+import java.util.List;
+
 /**
  * Interface for JIRA project indexer coordinator component.
  * 
@@ -25,5 +27,12 @@ public interface IJIRAProjectIndexerCoordinator extends Runnable {
    * @throws Exception
    */
   void forceFullReindex(String projectKey) throws Exception;
+
+  /**
+   * Get info about current indexings in process.
+   * 
+   * @return list of currently processed indexings.
+   */
+  public abstract List<ProjectIndexingInfo> getCurrentProjectIndexingInfo();
 
 }

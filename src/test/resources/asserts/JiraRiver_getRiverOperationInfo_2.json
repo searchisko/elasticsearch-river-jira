@@ -1,0 +1,55 @@
+{
+  "river_name" : "my_jira_river",
+  "info_date" : "2012-09-27T09:21:26.422Z",
+  "node" : {
+    "id" : "fsdfsdfxzd",
+    "name" : "My Node"
+  },
+  "current_indexing" : [ {
+    "project_key" : "ORG",
+    "update_type" : "FULL",
+    "start_date" : "2012-09-27T09:21:25.422Z",
+    "issues_updated" : 256,
+    "issues_deleted" : 10
+  }, {
+    "project_key" : "AAA",
+    "update_type" : "INCREMENTAL",
+    "start_date" : "2012-09-27T09:21:24.422Z",
+    "issues_updated" : 15,
+    "issues_deleted" : 0
+  } ],
+  "indexed_jira_projects" : [ {
+    "project_key" : "ORG",
+    "last_indexing" : {
+      "update_type" : "FULL",
+      "start_date" : "2012-09-27T09:15:25.422Z",
+      "issues_updated" : 125,
+      "issues_deleted" : 10,
+      "result" : "OK",
+      "time_elapsed" : "1500ms"
+    }
+  }, {
+    "project_key" : "AAA"
+  }, {
+    "project_key" : "JJJ",
+    "last_indexing" : {
+      "update_type" : "INCREMENTAL",
+      "start_date" : "2012-09-27T09:12:25.422Z",
+      "issues_updated" : 12,
+      "issues_deleted" : 0,
+      "result" : "ERROR",
+      "time_elapsed" : "1800ms",
+      "error_message" : "JIRA timeout"
+    }
+  }, {
+    "project_key" : "FFF",
+    "last_indexing" : {
+      "update_type" : "INCREMENTAL",
+      "start_date" : "2012-09-27T08:11:25.422Z",
+      "issues_updated" : 125,
+      "issues_deleted" : 0,
+      "result" : "OK",
+      "time_elapsed" : "1810ms"
+    }
+  } ]
+}

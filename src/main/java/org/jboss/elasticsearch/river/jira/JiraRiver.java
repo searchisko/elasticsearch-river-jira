@@ -21,16 +21,21 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
+import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.river.AbstractRiverComponent;
 import org.elasticsearch.river.River;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.SortOrder;
 import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactory;
 
 /**
@@ -145,6 +150,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * @see #getAllIndexedProjectsKeys()
    */
   protected long allIndexedProjectsKeysNextRefresh = 0;
+
+  /**
+   * Last project indexing info store. Key in map is project key.
+   */
+  protected Map<String, ProjectIndexingInfo> lastProjectIndexingInfo = new HashMap<String, ProjectIndexingInfo>();
 
   /**
    * Public constructor used by ElasticSearch.
@@ -301,7 +311,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   /**
-   * Force full index update for some project(s) in this jira river.
+   * Force full index update for some project(s) in this jira river. Used for REST management operations handling.
    * 
    * @param jiraProjectKey optional key of project to reindex, if null or empty then all projects are forced to full
    *          reindex
@@ -334,7 +344,78 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   /**
-   * Get running instance of jira river for given name.
+   * Get info about current operation of this river. Used for REST management operations handling.
+   * 
+   * @return String with JSON formatted info.
+   * @throws Exception
+   */
+  public String getRiverOperationInfo(DiscoveryNode esNode, Date currentDate) throws Exception {
+
+    XContentBuilder builder = jsonBuilder().prettyPrint();
+    builder.startObject();
+    builder.field("river_name", riverName().getName());
+    builder.field("info_date", currentDate);
+    if (esNode != null) {
+      builder.startObject("node");
+      builder.field("id", esNode.getId());
+      builder.field("name", esNode.getName());
+      builder.endObject();
+    }
+    if (coordinatorInstance != null) {
+      List<ProjectIndexingInfo> currProjectIndexingInfo = coordinatorInstance.getCurrentProjectIndexingInfo();
+      if (currProjectIndexingInfo != null) {
+        builder.startArray("current_indexing");
+        for (ProjectIndexingInfo pi : currProjectIndexingInfo) {
+          pi.buildDocument(builder, true, false);
+        }
+        builder.endArray();
+      }
+    }
+    List<String> pkeys = getAllIndexedProjectsKeys();
+    if (pkeys != null) {
+      builder.startArray("indexed_jira_projects");
+      for (String projectKey : pkeys) {
+        builder.startObject();
+        builder.field("project_key", projectKey);
+        ProjectIndexingInfo lastIndexing = getLastProjectIndexingInfo(projectKey);
+        if (lastIndexing != null) {
+          builder.field("last_indexing");
+          lastIndexing.buildDocument(builder, false, true);
+        }
+        builder.endObject();
+      }
+      builder.endArray();
+    }
+    builder.endObject();
+    return builder.string();
+  }
+
+  /**
+   * @param projectKey to get info for
+   * @return project indexing info or null if not found.
+   */
+  protected ProjectIndexingInfo getLastProjectIndexingInfo(String projectKey) {
+    ProjectIndexingInfo lastIndexing = lastProjectIndexingInfo.get(projectKey);
+    if (lastIndexing == null && activityLogIndexName != null) {
+      try {
+        SearchResponse sr = client.prepareSearch(activityLogIndexName).setTypes(activityLogTypeName)
+            .setFilter(FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_PROJECT_KEY, projectKey))
+            .setQuery(QueryBuilders.matchAllQuery()).addSort(ProjectIndexingInfo.DOCFIELD_START_DATE, SortOrder.DESC)
+            .addField("_source").setSize(1).execute().actionGet();
+        if (sr.hits().getTotalHits() > 0) {
+          SearchHit hit = sr.hits().getAt(0);
+          lastIndexing = ProjectIndexingInfo.readFromDocument(hit.sourceAsMap());
+        }
+      } catch (Exception e) {
+        logger.warn("Error during LastProjectIndexingInfo reading from activity log ES index: {} {}", e.getClass()
+            .getName(), e.getMessage());
+      }
+    }
+    return lastIndexing;
+  }
+
+  /**
+   * Get running instance of jira river for given name. Used for REST management operations handling.
    * 
    * @param riverName to get instance for
    * @return river instance or null if not found
@@ -359,54 +440,33 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   @Override
-  public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate, int issuesUpdated,
-      int issuesDeleted, Date startDate, long timeElapsed, String errorMessage) {
+  public void reportIndexingFinished(ProjectIndexingInfo indexingInfo) {
+    lastProjectIndexingInfo.put(indexingInfo.projectKey, indexingInfo);
     if (coordinatorInstance != null) {
-      coordinatorInstance.reportIndexingFinished(jiraProjectKey, finishedOK, fullUpdate);
-    }
-    if (activityLogIndexName != null) {
       try {
-        client
-            .prepareIndex(activityLogIndexName, activityLogTypeName)
-            .setSource(
-                prepareUpdateActivityLogDocument(jiraProjectKey, finishedOK, fullUpdate, issuesUpdated, issuesDeleted,
-                    startDate, timeElapsed, errorMessage)).execute().actionGet();
+        coordinatorInstance.reportIndexingFinished(indexingInfo.projectKey, indexingInfo.finishedOK,
+            indexingInfo.fullUpdate);
       } catch (Exception e) {
-        logger.error("Error during update result witing to the audit log {}", e.getMessage());
+        logger.warn("Indexing finished reporting to coordinator failed due {}", e.getMessage());
       }
     }
+    writeActivityLogRecord(indexingInfo);
   }
 
   /**
-   * Prepare document to log update activity result.
+   * Write indexing info into activity log if enabled.
    * 
-   * @param projectKey
-   * @param finishedOK
-   * @param fullUpdate
-   * @param issuesUpdated
-   * @param issuesDeleted
-   * @param startDate
-   * @param timeElapsed
-   * @param errorMessage
-   * @return document to store into search index
-   * 
-   * @see #reportIndexingFinished(String, boolean, boolean, int, int, Date, long, String)
-   * @throws IOException
+   * @param indexingInfo to write
    */
-  protected XContentBuilder prepareUpdateActivityLogDocument(String projectKey, boolean finishedOK, boolean fullUpdate,
-      int issuesUpdated, int issuesDeleted, Date startDate, long timeElapsed, String errorMessage) throws IOException {
-    XContentBuilder builder = jsonBuilder().startObject();
-    builder.field("projectKey", projectKey);
-    builder.field("updateType", fullUpdate ? "FULL" : "INCREMENTAL");
-    builder.field("result", finishedOK ? "OK" : "ERROR");
-    builder.field("startDate", startDate).field("timeElapsed", timeElapsed + "ms");
-    builder.field("issuesUpdated", issuesUpdated).field("issuesDeleted", issuesDeleted);
-    if (!finishedOK && !Utils.isEmpty(errorMessage)) {
-      builder.field("errorMessage", errorMessage);
+  protected void writeActivityLogRecord(ProjectIndexingInfo indexingInfo) {
+    if (activityLogIndexName != null) {
+      try {
+        client.prepareIndex(activityLogIndexName, activityLogTypeName)
+            .setSource(indexingInfo.buildDocument(jsonBuilder(), true, true)).execute().actionGet();
+      } catch (Exception e) {
+        logger.error("Error during index update result writing to the audit log {}", e.getMessage());
+      }
     }
-    builder.endObject();
-
-    return builder;
   }
 
   @Override

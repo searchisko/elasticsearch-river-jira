@@ -34,18 +34,9 @@ public interface IESIntegration {
    * Callback method - report that indexing of some JIRA project was finished. Used to coordinate parallel indexing of
    * all projects and gather indexing statistics/audit data.
    * 
-   * @param jiraProjectKey JIRA project key for finished indexing
-   * @param finishedOK set to <code>true</code> if indexing finished OK, <code>false</code> if finished due error
-   * @param fullUpdate set to <code>true</code> if reported indexing was full update, <code>false</code> on incremental
-   *          update
-   * @param issuesUpdated number of issues updated during this indexing run
-   * @param issuesDeleted number of issues deleted during this indexing run
-   * @param startDate date of indexing start
-   * @param timeElapsed time of this indexing run [ms]
-   * @param errorMessage error message if indexing finished with error
+   * @param indexingInfo info about finished indexing
    */
-  void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate, int issuesUpdated,
-      int issuesDeleted, Date startDate, long timeElapsed, String errorMessage);
+  void reportIndexingFinished(ProjectIndexingInfo indexingInfo);
 
   /**
    * Check if EclipseSearch instance is closed, so we must interrupt long running indexing processes.

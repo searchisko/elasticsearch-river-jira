@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.jboss.elasticsearch.river.jira.testtools.MockThread;
@@ -284,7 +285,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     {
       reset(esIntegrationMock);
       tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, indexUpdatePeriod, 2, -1);
-      tested.projectIndexers.put("ORG", new Thread());
+      tested.projectIndexerThreads.put("ORG", new Thread());
       when(
           esIntegrationMock.readDatetimeValue(Mockito.eq(Mockito.anyString()),
               JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(null);
@@ -345,6 +346,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - nothing to start
     {
       tested.startIndexers();
+      Assert.assertTrue(tested.projectIndexerThreads.isEmpty());
       Assert.assertTrue(tested.projectIndexers.isEmpty());
       verify(esIntegrationMock, times(0)).acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class));
     }
@@ -353,10 +355,10 @@ public class JIRAProjectIndexerCoordinatorTest {
     {
       reset(esIntegrationMock);
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
-      tested.projectIndexers.put("JJ", new Thread());
-      tested.projectIndexers.put("II", new Thread());
+      tested.projectIndexerThreads.put("JJ", new Thread());
+      tested.projectIndexerThreads.put("II", new Thread());
       tested.startIndexers();
-      Assert.assertEquals(2, tested.projectIndexers.size());
+      Assert.assertEquals(2, tested.projectIndexerThreads.size());
       Assert.assertEquals(5, tested.projectKeysToIndexQueue.size());
       verify(esIntegrationMock, times(0)).acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class));
       Mockito.verifyNoMoreInteractions(esIntegrationMock);
@@ -365,16 +367,20 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - one indexer slot empty, start new one
     {
       reset(esIntegrationMock);
+      tested.projectIndexerThreads.clear();
+      tested.projectIndexerThreads.put("II", new Thread());
       tested.projectIndexers.clear();
-      tested.projectIndexers.put("II", new Thread());
+      tested.projectIndexers.put("II", new JIRAProjectIndexer("II", true, null, esIntegrationMock, null));
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
       when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"), Mockito.any(Runnable.class)))
           .thenReturn(new MockThread());
       tested.startIndexers();
+      Assert.assertEquals(2, tested.projectIndexerThreads.size());
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("ORG"));
       Assert.assertEquals(2, tested.projectIndexers.size());
       Assert.assertTrue(tested.projectIndexers.containsKey("ORG"));
-      Assert.assertTrue(((MockThread) tested.projectIndexers.get("ORG")).wasStarted);
+      Assert.assertTrue(((MockThread) tested.projectIndexerThreads.get("ORG")).wasStarted);
       Assert.assertEquals(4, tested.projectKeysToIndexQueue.size());
       Assert.assertFalse(tested.projectKeysToIndexQueue.contains("ORG"));
       verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class));
@@ -388,6 +394,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - two slots empty and more project available, start two indexers
     {
       reset(esIntegrationMock);
+      tested.projectIndexerThreads.clear();
       tested.projectIndexers.clear();
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,AAA,BBB,CCC,DDD"));
@@ -396,11 +403,15 @@ public class JIRAProjectIndexerCoordinatorTest {
       when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_AAA"), Mockito.any(Runnable.class)))
           .thenReturn(new MockThread());
       tested.startIndexers();
+      Assert.assertEquals(2, tested.projectIndexerThreads.size());
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("ORG"));
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("AAA"));
+      Assert.assertTrue(((MockThread) tested.projectIndexerThreads.get("ORG")).wasStarted);
+      Assert.assertTrue(((MockThread) tested.projectIndexerThreads.get("AAA")).wasStarted);
       Assert.assertEquals(2, tested.projectIndexers.size());
       Assert.assertTrue(tested.projectIndexers.containsKey("ORG"));
       Assert.assertTrue(tested.projectIndexers.containsKey("AAA"));
-      Assert.assertTrue(((MockThread) tested.projectIndexers.get("ORG")).wasStarted);
-      Assert.assertTrue(((MockThread) tested.projectIndexers.get("AAA")).wasStarted);
+
       Assert.assertEquals(3, tested.projectKeysToIndexQueue.size());
       Assert.assertFalse(tested.projectKeysToIndexQueue.contains("ORG"));
       Assert.assertFalse(tested.projectKeysToIndexQueue.contains("AAA"));
@@ -420,15 +431,18 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - two slots empty but only one project available, start it
     {
       reset(esIntegrationMock);
+      tested.projectIndexerThreads.clear();
       tested.projectIndexers.clear();
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG"));
       when(esIntegrationMock.acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"), Mockito.any(Runnable.class)))
           .thenReturn(new MockThread());
       tested.startIndexers();
+      Assert.assertEquals(1, tested.projectIndexerThreads.size());
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("ORG"));
       Assert.assertEquals(1, tested.projectIndexers.size());
       Assert.assertTrue(tested.projectIndexers.containsKey("ORG"));
-      Assert.assertTrue(((MockThread) tested.projectIndexers.get("ORG")).wasStarted);
+      Assert.assertTrue(((MockThread) tested.projectIndexerThreads.get("ORG")).wasStarted);
       Assert.assertTrue(tested.projectKeysToIndexQueue.isEmpty());
       verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class));
       verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"),
@@ -441,6 +455,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - exception when interrupted from ES server
     {
       reset(esIntegrationMock);
+      tested.projectIndexerThreads.clear();
       tested.projectIndexers.clear();
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG"));
@@ -467,7 +482,7 @@ public class JIRAProjectIndexerCoordinatorTest {
       reset(esIntegrationMock);
       tested.indexFullUpdatePeriod = 1000;
       tested.maxIndexingThreads = 1;
-      tested.projectIndexers.clear();
+      tested.projectIndexerThreads.clear();
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,AAA"));
       when(
@@ -481,8 +496,8 @@ public class JIRAProjectIndexerCoordinatorTest {
           new MockThread());
 
       tested.startIndexers();
-      Assert.assertEquals(1, tested.projectIndexers.size());
-      Assert.assertTrue(tested.projectIndexers.containsKey("ORG"));
+      Assert.assertEquals(1, tested.projectIndexerThreads.size());
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("ORG"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("AAA"));
       Assert.assertEquals(1, tested.projectKeysToIndexQueue.size());
     }
@@ -492,8 +507,8 @@ public class JIRAProjectIndexerCoordinatorTest {
       reset(esIntegrationMock);
       tested.indexFullUpdatePeriod = 1000;
       tested.maxIndexingThreads = 2;
-      tested.projectIndexers.clear();
-      tested.projectIndexers.put("BBB", new Thread());
+      tested.projectIndexerThreads.clear();
+      tested.projectIndexerThreads.put("BBB", new Thread());
 
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG"));
@@ -504,9 +519,9 @@ public class JIRAProjectIndexerCoordinatorTest {
           new MockThread());
 
       tested.startIndexers();
-      Assert.assertEquals(1, tested.projectIndexers.size());
-      Assert.assertTrue(tested.projectIndexers.containsKey("BBB"));
-      Assert.assertFalse(tested.projectIndexers.containsKey("ORG"));
+      Assert.assertEquals(1, tested.projectIndexerThreads.size());
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("BBB"));
+      Assert.assertFalse(tested.projectIndexerThreads.containsKey("ORG"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("ORG"));
       Assert.assertEquals(1, tested.projectKeysToIndexQueue.size());
     }
@@ -516,8 +531,8 @@ public class JIRAProjectIndexerCoordinatorTest {
       reset(esIntegrationMock);
       tested.indexFullUpdatePeriod = 1000;
       tested.maxIndexingThreads = 2;
-      tested.projectIndexers.clear();
-      tested.projectIndexers.put("BBB", new Thread());
+      tested.projectIndexerThreads.clear();
+      tested.projectIndexerThreads.put("BBB", new Thread());
 
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,AAA"));
@@ -531,10 +546,10 @@ public class JIRAProjectIndexerCoordinatorTest {
           new MockThread());
 
       tested.startIndexers();
-      Assert.assertEquals(2, tested.projectIndexers.size());
-      Assert.assertTrue(tested.projectIndexers.containsKey("AAA"));
-      Assert.assertTrue(tested.projectIndexers.containsKey("BBB"));
-      Assert.assertFalse(tested.projectIndexers.containsKey("ORG"));
+      Assert.assertEquals(2, tested.projectIndexerThreads.size());
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("AAA"));
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("BBB"));
+      Assert.assertFalse(tested.projectIndexerThreads.containsKey("ORG"));
       // check first project stayed in queue!
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("ORG"));
       Assert.assertEquals(1, tested.projectKeysToIndexQueue.size());
@@ -546,8 +561,8 @@ public class JIRAProjectIndexerCoordinatorTest {
       reset(esIntegrationMock);
       tested.indexFullUpdatePeriod = 1000;
       tested.maxIndexingThreads = 3;
-      tested.projectIndexers.clear();
-      tested.projectIndexers.put("BBB", new Thread());
+      tested.projectIndexerThreads.clear();
+      tested.projectIndexerThreads.put("BBB", new Thread());
 
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.addAll(Utils.parseCsvString("ORG,ORG2,AAA,ORG3"));
@@ -567,12 +582,12 @@ public class JIRAProjectIndexerCoordinatorTest {
           new MockThread());
 
       tested.startIndexers();
-      Assert.assertEquals(3, tested.projectIndexers.size());
-      Assert.assertTrue(tested.projectIndexers.containsKey("BBB"));
-      Assert.assertTrue(tested.projectIndexers.containsKey("ORG"));
-      Assert.assertTrue(tested.projectIndexers.containsKey("AAA"));
-      Assert.assertFalse(tested.projectIndexers.containsKey("ORG2"));
-      Assert.assertFalse(tested.projectIndexers.containsKey("ORG3"));
+      Assert.assertEquals(3, tested.projectIndexerThreads.size());
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("BBB"));
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("ORG"));
+      Assert.assertTrue(tested.projectIndexerThreads.containsKey("AAA"));
+      Assert.assertFalse(tested.projectIndexerThreads.containsKey("ORG2"));
+      Assert.assertFalse(tested.projectIndexerThreads.containsKey("ORG3"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("ORG2"));
       Assert.assertTrue(tested.projectKeysToIndexQueue.contains("ORG3"));
       Assert.assertEquals(2, tested.projectKeysToIndexQueue.size());
@@ -592,12 +607,12 @@ public class JIRAProjectIndexerCoordinatorTest {
     {
       MockThread mt1 = new MockThread();
       MockThread mt2 = new MockThread();
-      tested.projectIndexers.put("ORG", mt1);
-      tested.projectIndexers.put("AAA", mt2);
+      tested.projectIndexerThreads.put("ORG", mt1);
+      tested.projectIndexerThreads.put("AAA", mt2);
       when(esIntegrationMock.isClosed()).thenReturn(true);
 
       tested.run();
-      Assert.assertTrue(tested.projectIndexers.isEmpty());
+      Assert.assertTrue(tested.projectIndexerThreads.isEmpty());
       Assert.assertTrue(mt1.interruptWasCalled);
       Assert.assertTrue(mt2.interruptWasCalled);
     }
@@ -605,17 +620,17 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - InterruptedException is thrown, so interrupt all indexers
     {
       reset(esIntegrationMock);
-      tested.projectIndexers.clear();
+      tested.projectIndexerThreads.clear();
       tested.projectKeysToIndexQueue.clear();
       MockThread mt1 = new MockThread();
       MockThread mt2 = new MockThread();
-      tested.projectIndexers.put("ORG", mt1);
-      tested.projectIndexers.put("AAA", mt2);
+      tested.projectIndexerThreads.put("ORG", mt1);
+      tested.projectIndexerThreads.put("AAA", mt2);
       when(esIntegrationMock.isClosed()).thenReturn(false);
       when(esIntegrationMock.getAllIndexedProjectsKeys()).thenThrow(new InterruptedException());
 
       tested.run();
-      Assert.assertTrue(tested.projectIndexers.isEmpty());
+      Assert.assertTrue(tested.projectIndexerThreads.isEmpty());
       Assert.assertTrue(mt1.interruptWasCalled);
       Assert.assertTrue(mt2.interruptWasCalled);
     }
@@ -623,12 +638,12 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - closed, so try to interrupt all indexers but not exception if empty
     {
       reset(esIntegrationMock);
-      tested.projectIndexers.clear();
+      tested.projectIndexerThreads.clear();
       tested.projectKeysToIndexQueue.clear();
       when(esIntegrationMock.isClosed()).thenReturn(true);
 
       tested.run();
-      Assert.assertTrue(tested.projectIndexers.isEmpty());
+      Assert.assertTrue(tested.projectIndexerThreads.isEmpty());
     }
   }
 
@@ -643,7 +658,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - projectKeysToIndexQueue is empty so call fillProjectKeysToIndexQueue() and then call startIndexers()
     {
       reset(esIntegrationMock);
-      tested.projectIndexers.clear();
+      tested.projectIndexerThreads.clear();
       tested.projectKeysToIndexQueue.clear();
       when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG"));
       when(
@@ -653,7 +668,7 @@ public class JIRAProjectIndexerCoordinatorTest {
           .thenReturn(new MockThread());
 
       tested.processLoopTask();
-      Assert.assertEquals(1, tested.projectIndexers.size());
+      Assert.assertEquals(1, tested.projectIndexerThreads.size());
       verify(esIntegrationMock, times(1)).getAllIndexedProjectsKeys();
       verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"),
           Mockito.any(Runnable.class));
@@ -664,7 +679,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     // history, but startIndexers is called
     {
       reset(esIntegrationMock);
-      tested.projectIndexers.clear();
+      tested.projectIndexerThreads.clear();
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.add("ORG");
       when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG"));
@@ -672,7 +687,7 @@ public class JIRAProjectIndexerCoordinatorTest {
           .thenReturn(new MockThread());
 
       tested.processLoopTask();
-      Assert.assertEquals(1, tested.projectIndexers.size());
+      Assert.assertEquals(1, tested.projectIndexerThreads.size());
       verify(esIntegrationMock, times(0)).getAllIndexedProjectsKeys();
       verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"),
           Mockito.any(Runnable.class));
@@ -685,7 +700,7 @@ public class JIRAProjectIndexerCoordinatorTest {
       reset(esIntegrationMock);
       tested.lastQueueFillTime = System.currentTimeMillis()
           - JIRAProjectIndexerCoordinator.COORDINATOR_THREAD_WAITS_SLOW - 1;
-      tested.projectIndexers.clear();
+      tested.projectIndexerThreads.clear();
       tested.projectKeysToIndexQueue.clear();
       tested.projectKeysToIndexQueue.add("ORG");
       when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(Utils.parseCsvString("ORG,AAA"));
@@ -695,7 +710,7 @@ public class JIRAProjectIndexerCoordinatorTest {
           .thenReturn(new MockThread());
 
       tested.processLoopTask();
-      Assert.assertEquals(2, tested.projectIndexers.size());
+      Assert.assertEquals(2, tested.projectIndexerThreads.size());
       verify(esIntegrationMock, times(1)).getAllIndexedProjectsKeys();
       verify(esIntegrationMock, times(1)).acquireIndexingThread(Mockito.eq("jira_river_indexer_ORG"),
           Mockito.any(Runnable.class));
@@ -708,7 +723,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     // dont call startIndexers()
     {
       reset(esIntegrationMock);
-      tested.projectIndexers.clear();
+      tested.projectIndexerThreads.clear();
       tested.projectKeysToIndexQueue.clear();
       when(esIntegrationMock.getAllIndexedProjectsKeys()).thenReturn(null);
 
@@ -725,12 +740,16 @@ public class JIRAProjectIndexerCoordinatorTest {
   public void reportIndexingFinished() throws Exception {
     IESIntegration esIntegrationMock = mock(IESIntegration.class);
     JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 10, 2, -1);
-    tested.projectIndexers.put("ORG", new Thread());
-    tested.projectIndexers.put("AAA", new Thread());
+    tested.projectIndexerThreads.put("ORG", new Thread());
+    tested.projectIndexerThreads.put("AAA", new Thread());
+    tested.projectIndexers.put("ORG", new JIRAProjectIndexer("ORG", false, null, esIntegrationMock, null));
+    tested.projectIndexers.put("AAA", new JIRAProjectIndexer("AAA", false, null, esIntegrationMock, null));
 
     // case - incremental indexing with success
     {
       tested.reportIndexingFinished("ORG", true, false);
+      Assert.assertEquals(1, tested.projectIndexerThreads.size());
+      Assert.assertFalse(tested.projectIndexerThreads.containsKey("ORG"));
       Assert.assertEquals(1, tested.projectIndexers.size());
       Assert.assertFalse(tested.projectIndexers.containsKey("ORG"));
       // no full reindex date stored
@@ -740,6 +759,7 @@ public class JIRAProjectIndexerCoordinatorTest {
     // case - full indexing without success
     {
       tested.reportIndexingFinished("AAA", false, true);
+      Assert.assertEquals(0, tested.projectIndexerThreads.size());
       Assert.assertEquals(0, tested.projectIndexers.size());
       // no full reindex date stored
       Mockito.verifyZeroInteractions(esIntegrationMock);
@@ -747,8 +767,10 @@ public class JIRAProjectIndexerCoordinatorTest {
 
     // case - full indexing with success
     {
-      tested.projectIndexers.put("AAA", new Thread());
+      tested.projectIndexerThreads.put("AAA", new Thread());
+      tested.projectIndexers.put("AAA", new JIRAProjectIndexer("AAA", false, null, esIntegrationMock, null));
       tested.reportIndexingFinished("AAA", true, true);
+      Assert.assertEquals(0, tested.projectIndexerThreads.size());
       Assert.assertEquals(0, tested.projectIndexers.size());
       verify(esIntegrationMock).storeDatetimeValue(Mockito.eq("AAA"),
           Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE),
@@ -756,6 +778,29 @@ public class JIRAProjectIndexerCoordinatorTest {
       verify(esIntegrationMock).deleteDatetimeValue(Mockito.eq("AAA"),
           Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE));
       Mockito.verifyNoMoreInteractions(esIntegrationMock);
+    }
+  }
+
+  @Test
+  public void getCurrentProjectIndexingInfo() {
+
+    IESIntegration esIntegrationMock = mock(IESIntegration.class);
+    JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 10, 2, -1);
+
+    {
+      List<ProjectIndexingInfo> l = tested.getCurrentProjectIndexingInfo();
+      Assert.assertNotNull(l);
+      Assert.assertTrue(l.isEmpty());
+    }
+
+    {
+      tested.projectIndexers.put("II", new JIRAProjectIndexer("II", true, null, esIntegrationMock, null));
+      tested.projectIndexers.put("III", new JIRAProjectIndexer("III", false, null, esIntegrationMock, null));
+      List<ProjectIndexingInfo> l = tested.getCurrentProjectIndexingInfo();
+      Assert.assertNotNull(l);
+      Assert.assertEquals(2, l.size());
+      Assert.assertEquals("II", l.get(0).projectKey);
+      Assert.assertEquals("III", l.get(1).projectKey);
     }
   }
 

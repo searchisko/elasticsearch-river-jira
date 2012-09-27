@@ -6,6 +6,7 @@
 package org.jboss.elasticsearch.river.jira;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -88,10 +89,13 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 
   /**
    * Map where currently running JIRA project indexer threads are stored.
-   * 
-   * @see JIRAProjectIndexerCoordinator
    */
-  protected final Map<String, Thread> projectIndexers = new HashMap<String, Thread>();
+  protected final Map<String, Thread> projectIndexerThreads = new HashMap<String, Thread>();
+
+  /**
+   * Map where currently running JIRA project indexers are stored.
+   */
+  protected final Map<String, JIRAProjectIndexer> projectIndexers = new HashMap<String, JIRAProjectIndexer>();
 
   /**
    * Constructor with parameters.
@@ -143,10 +147,11 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
         }
       }
     } finally {
-      synchronized (projectIndexers) {
-        for (Thread pi : projectIndexers.values()) {
+      synchronized (projectIndexerThreads) {
+        for (Thread pi : projectIndexerThreads.values()) {
           pi.interrupt();
         }
+        projectIndexerThreads.clear();
         projectIndexers.clear();
       }
       logger.info("JIRA river projects indexing coordinator task stopped");
@@ -190,8 +195,8 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
         if (esIntegrationComponent.isClosed())
           throw new InterruptedException();
         // do not schedule project for indexing if indexing runs already for it
-        synchronized (projectIndexers) {
-          if (projectIndexers.containsKey(projectKey)) {
+        synchronized (projectIndexerThreads) {
+          if (projectIndexerThreads.containsKey(projectKey)) {
             continue;
           }
         }
@@ -210,7 +215,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    */
   protected void startIndexers() throws InterruptedException, Exception {
     String firstSkippedFullIndex = null;
-    while (projectIndexers.size() < maxIndexingThreads && !projectKeysToIndexQueue.isEmpty()) {
+    while (projectIndexerThreads.size() < maxIndexingThreads && !projectKeysToIndexQueue.isEmpty()) {
       if (esIntegrationComponent.isClosed())
         throw new InterruptedException();
       String projectKey = projectKeysToIndexQueue.poll();
@@ -218,7 +223,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
       boolean fullUpdateNecessary = projectIndexFullUpdateNecessary(projectKey);
 
       // reserve last free thread for incremental updates!!!
-      if (fullUpdateNecessary && maxIndexingThreads > 1 && projectIndexers.size() == (maxIndexingThreads - 1)) {
+      if (fullUpdateNecessary && maxIndexingThreads > 1 && projectIndexerThreads.size() == (maxIndexingThreads - 1)) {
         projectKeysToIndexQueue.add(projectKey);
         // try to find some project for incremental update, if not any found then end
         if (firstSkippedFullIndex == null) {
@@ -230,13 +235,14 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
         continue;
       }
 
-      Thread it = esIntegrationComponent.acquireIndexingThread("jira_river_indexer_" + projectKey,
-          new JIRAProjectIndexer(projectKey, fullUpdateNecessary, jiraClient, esIntegrationComponent,
-              jiraIssueIndexStructureBuilder));
+      JIRAProjectIndexer indexer = new JIRAProjectIndexer(projectKey, fullUpdateNecessary, jiraClient,
+          esIntegrationComponent, jiraIssueIndexStructureBuilder);
+      Thread it = esIntegrationComponent.acquireIndexingThread("jira_river_indexer_" + projectKey, indexer);
       esIntegrationComponent.storeDatetimeValue(projectKey, STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE,
           new Date(), null);
-      synchronized (projectIndexers) {
-        projectIndexers.put(projectKey, it);
+      synchronized (projectIndexerThreads) {
+        projectIndexerThreads.put(projectKey, it);
+        projectIndexers.put(projectKey, indexer);
       }
       it.start();
     }
@@ -287,7 +293,8 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 
   @Override
   public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate) {
-    synchronized (projectIndexers) {
+    synchronized (projectIndexerThreads) {
+      projectIndexerThreads.remove(jiraProjectKey);
       projectIndexers.remove(jiraProjectKey);
     }
     if (finishedOK && fullUpdate) {
@@ -312,6 +319,17 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
    */
   public void setIndexFullUpdatePeriod(int indexFullUpdatePeriod) {
     this.indexFullUpdatePeriod = indexFullUpdatePeriod;
+  }
+
+  @Override
+  public List<ProjectIndexingInfo> getCurrentProjectIndexingInfo() {
+    List<ProjectIndexingInfo> ret = new ArrayList<ProjectIndexingInfo>();
+    synchronized (projectIndexerThreads) {
+      for (JIRAProjectIndexer indexer : projectIndexers.values()) {
+        ret.add(indexer.getIndexingInfo());
+      }
+    }
+    return ret;
   }
 
 }

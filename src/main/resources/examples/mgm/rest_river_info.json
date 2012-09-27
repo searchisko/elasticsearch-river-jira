@@ -1,0 +1,24 @@
+{
+  "river_name" : "my_jira_river",
+  "info_date"  : "2012-09-26T12:00:00.000Z",
+  "node" : {
+      "id"   : "rwoeirjwfjawfkq",
+      "name" : "Mr. wung"
+  },
+  "current_indexing" : [
+      { "project_key" : "ORG", "update_type" : "FULL",        "start_date" : "2012-09-26T11:56:03.000Z", "issues_updated" : 10, "issues_deleted" : 5 },
+      { "project_key" : "AAA", "update_type" : "INCREMENTAL", "start_date" : "2012-09-26T11:56:03.000Z", "issues_updated" : 10, "issues_deleted" : 0 }
+  ],
+  "indexed_jira_projects" : [
+      { 
+        "project_key"   : "ORG", 
+        "last_indexing" : { "update_type" : "FULL", "start_date" : "2012-09-26T11:56:03.000Z", "result" : "OK", "time_elapsed" : "50ms", "issues_updated" : 10, "issues_deleted" : 5 }   
+      },
+      { 
+        "project_key"   : "AAA", 
+        "last_indexing" : { "update_type" : "FULL", "start_date" : "2012-09-26T11:56:03.000Z", "result" : "ERROR", "time_elapsed" : "50ms", "issues_updated" : 10, "issues_deleted" : 5, "error_message" : "Timeout" }   
+      }
+  ]
+      
+  
+}

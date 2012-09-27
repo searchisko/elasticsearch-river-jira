@@ -11,6 +11,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -24,8 +25,10 @@ import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.SettingsException;
+import org.elasticsearch.common.transport.DummyTransportAddress;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 import org.jboss.elasticsearch.river.jira.testtools.ESRealClientTestBase;
@@ -273,13 +276,13 @@ public class JiraRiverTest extends ESRealClientTestBase {
 
     // case - report correctly - no activity log
     {
-      tested.reportIndexingFinished("ORG", true, false, 10, 0, null, 10, null);
+      tested.reportIndexingFinished(new ProjectIndexingInfo("ORG", false, 10, 0, 0, null, true, 10, null));
       verify(coordMock, times(1)).reportIndexingFinished("ORG", true, false);
       Mockito.verifyZeroInteractions(clientMock);
     }
     {
       reset(coordMock);
-      tested.reportIndexingFinished("AAA", false, true, 0, 0, null, 10, null);
+      tested.reportIndexingFinished(new ProjectIndexingInfo("AAA", true, 10, 0, 0, null, false, 10, null));
       verify(coordMock, times(1)).reportIndexingFinished("AAA", false, true);
       Mockito.verifyZeroInteractions(clientMock);
     }
@@ -290,29 +293,13 @@ public class JiraRiverTest extends ESRealClientTestBase {
     {
       IndexRequestBuilder irb = new IndexRequestBuilder(null);
       when(clientMock.prepareIndex("alindex", "altype")).thenReturn(irb);
-      tested.reportIndexingFinished("AAA", false, true, 0, 0, null, 10, null);
+      tested.reportIndexingFinished(new ProjectIndexingInfo("ORG", false, 10, 0, 0, null, true, 10, null));
       Assert.assertNotNull(irb.request().source());
     }
 
     // case - no exception if coordinatorInstance is null
     tested = prepareJiraRiverInstanceForTest(null);
-    tested.reportIndexingFinished("ORG", true, false, 0, 0, null, 10, null);
-
-  }
-
-  @Test
-  public void prepareUpdateActivityLogDocument() throws Exception {
-    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
-
-    TestUtils.assertStringFromClasspathFile(
-        "/asserts/prepareUpdateActivityLogDocument_1.json",
-        tested.prepareUpdateActivityLogDocument("ORG", true, true, 10, 1,
-            DateTimeUtils.parseISODateTime("2012-09-10T12:55:58Z"), 1250, null).string());
-
-    TestUtils.assertStringFromClasspathFile(
-        "/asserts/prepareUpdateActivityLogDocument_2.json",
-        tested.prepareUpdateActivityLogDocument("ORG", false, false, 5, 0,
-            DateTimeUtils.parseISODateTime("2012-09-10T12:56:50Z"), 125, "Error message").string());
+    tested.reportIndexingFinished(new ProjectIndexingInfo("ORG", false, 10, 0, 0, null, true, 10, null));
 
   }
 
@@ -364,6 +351,154 @@ public class JiraRiverTest extends ESRealClientTestBase {
     verify(clientMock).prepareSearch("myIndex");
     Mockito.verifyNoMoreInteractions(clientMock);
 
+  }
+
+  @Test
+  public void getRiverOperationInfo_activityLogDisabled() throws Exception {
+
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+
+    IJIRAProjectIndexerCoordinator coordMock = mock(IJIRAProjectIndexerCoordinator.class);
+    tested.coordinatorInstance = coordMock;
+
+    List<ProjectIndexingInfo> currentIndexings = new ArrayList<ProjectIndexingInfo>();
+    currentIndexings.add(new ProjectIndexingInfo("ORG", true, 256, 10, 0, DateTimeUtils
+        .parseISODateTime("2012-09-27T09:21:25.422Z"), false, 0, null));
+    currentIndexings.add(new ProjectIndexingInfo("AAA", false, 15, 0, 0, DateTimeUtils
+        .parseISODateTime("2012-09-27T09:21:24.422Z"), false, 0, null));
+    when(coordMock.getCurrentProjectIndexingInfo()).thenReturn(currentIndexings);
+
+    tested.allIndexedProjectsKeysNextRefresh = Long.MAX_VALUE;
+    tested.allIndexedProjectsKeys = new ArrayList<String>();
+    tested.allIndexedProjectsKeys.add("ORG");
+    tested.allIndexedProjectsKeys.add("AAA");
+    tested.allIndexedProjectsKeys.add("JJJ");
+    tested.allIndexedProjectsKeys.add("FFF");
+
+    tested.lastProjectIndexingInfo.put("ORG",
+        new ProjectIndexingInfo("ORG", true, 125, 10, 0, DateTimeUtils.parseISODateTime("2012-09-27T09:15:25.422Z"),
+            true, 1500, null));
+    tested.lastProjectIndexingInfo.put("JJJ",
+        new ProjectIndexingInfo("JJJ", false, 12, 0, 0, DateTimeUtils.parseISODateTime("2012-09-27T09:12:25.422Z"),
+            false, 1800, "JIRA timeout"));
+
+    // case - nothing stored in audit log index - no exception!
+    String info = tested.getRiverOperationInfo(new DiscoveryNode("My Node", "fsdfsdfxzd",
+        DummyTransportAddress.INSTANCE, new HashMap<String, String>()), DateTimeUtils
+        .parseISODateTime("2012-09-27T09:21:26.422Z"));
+    TestUtils.assertStringFromClasspathFile("/asserts/JiraRiver_getRiverOperationInfo_1.json", info);
+
+  }
+
+  @Test
+  public void getRiverOperationInfo_activityLogEnabled() throws Exception {
+    try {
+
+      Client client = prepareESClientForUnitTest();
+
+      JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+      tested.client = client;
+      tested.activityLogIndexName = "activity_log_index";
+      tested.activityLogTypeName = "jira_river_indexupdate";
+
+      IJIRAProjectIndexerCoordinator coordMock = mock(IJIRAProjectIndexerCoordinator.class);
+      tested.coordinatorInstance = coordMock;
+
+      List<ProjectIndexingInfo> currentIndexings = new ArrayList<ProjectIndexingInfo>();
+      currentIndexings.add(new ProjectIndexingInfo("ORG", true, 256, 10, 0, DateTimeUtils
+          .parseISODateTime("2012-09-27T09:21:25.422Z"), false, 0, null));
+      currentIndexings.add(new ProjectIndexingInfo("AAA", false, 15, 0, 0, DateTimeUtils
+          .parseISODateTime("2012-09-27T09:21:24.422Z"), false, 0, null));
+      when(coordMock.getCurrentProjectIndexingInfo()).thenReturn(currentIndexings);
+
+      tested.allIndexedProjectsKeysNextRefresh = Long.MAX_VALUE;
+      tested.allIndexedProjectsKeys = new ArrayList<String>();
+      tested.allIndexedProjectsKeys.add("ORG");
+      tested.allIndexedProjectsKeys.add("AAA");
+      tested.allIndexedProjectsKeys.add("JJJ");
+      tested.allIndexedProjectsKeys.add("FFF");
+
+      tested.lastProjectIndexingInfo.put("ORG",
+          new ProjectIndexingInfo("ORG", true, 125, 10, 0, DateTimeUtils.parseISODateTime("2012-09-27T09:15:25.422Z"),
+              true, 1500, null));
+      tested.lastProjectIndexingInfo.put("JJJ",
+          new ProjectIndexingInfo("JJJ", false, 12, 0, 0, DateTimeUtils.parseISODateTime("2012-09-27T09:12:25.422Z"),
+              false, 1800, "JIRA timeout"));
+
+      // case - nothing stored in audit log index - no exception!
+      String info = tested.getRiverOperationInfo(new DiscoveryNode("My Node", "fsdfsdfxzd",
+          DummyTransportAddress.INSTANCE, new HashMap<String, String>()), DateTimeUtils
+          .parseISODateTime("2012-09-27T09:21:26.422Z"));
+      TestUtils.assertStringFromClasspathFile("/asserts/JiraRiver_getRiverOperationInfo_1.json", info);
+
+      // case - last indexed record into ES index for FFF project found
+      client.admin().indices().prepareCreate(tested.activityLogIndexName).execute().actionGet();
+      client.admin().indices().preparePutMapping(tested.activityLogIndexName).setType(tested.activityLogTypeName)
+          .setSource(TestUtils.readStringFromClasspathFile("/examples/jira_river_indexupdate.json")).execute()
+          .actionGet();
+
+      tested.writeActivityLogRecord(new ProjectIndexingInfo("FFF", false, 12, 0, 0, DateTimeUtils
+          .parseISODateTime("2012-09-27T08:10:25.422Z"), true, 181, null));
+      tested.writeActivityLogRecord(new ProjectIndexingInfo("FFF", false, 125, 0, 0, DateTimeUtils
+          .parseISODateTime("2012-09-27T08:11:25.422Z"), true, 1810, null));
+      tested.refreshSearchIndex(tested.activityLogIndexName);
+      info = tested.getRiverOperationInfo(new DiscoveryNode("My Node", "fsdfsdfxzd", DummyTransportAddress.INSTANCE,
+          new HashMap<String, String>()), DateTimeUtils.parseISODateTime("2012-09-27T09:21:26.422Z"));
+      TestUtils.assertStringFromClasspathFile("/asserts/JiraRiver_getRiverOperationInfo_2.json", info);
+      // TODO fill last indexed record into ES index for FFF project
+
+    } finally {
+      finalizeESClientForUnitTest();
+    }
+
+  }
+
+  @Test
+  public void forceFullReindex() throws Exception {
+
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    IJIRAProjectIndexerCoordinator coordinatorMock = mock(IJIRAProjectIndexerCoordinator.class);
+    tested.coordinatorInstance = coordinatorMock;
+
+    // case - all projects but no any exists
+    {
+      tested.allIndexedProjectsKeys = null;
+      Assert.assertEquals("", tested.forceFullReindex(null));
+      Mockito.verifyNoMoreInteractions(coordinatorMock);
+    }
+
+    // case - all projects and some exists
+    {
+      reset(coordinatorMock);
+      tested.allIndexedProjectsKeys = new ArrayList<String>();
+      tested.allIndexedProjectsKeys.add("ORG");
+      tested.allIndexedProjectsKeys.add("AAA");
+      Assert.assertEquals("ORG,AAA", tested.forceFullReindex(null));
+      verify(coordinatorMock).forceFullReindex("ORG");
+      verify(coordinatorMock).forceFullReindex("AAA");
+      Mockito.verifyNoMoreInteractions(coordinatorMock);
+    }
+
+    // case - one project not exists
+    {
+      reset(coordinatorMock);
+      Assert.assertNull(tested.forceFullReindex("BBB"));
+      Mockito.verifyNoMoreInteractions(coordinatorMock);
+
+    }
+
+    // case - one project which exists
+    {
+      reset(coordinatorMock);
+      Assert.assertEquals("ORG", tested.forceFullReindex("ORG"));
+      verify(coordinatorMock).forceFullReindex("ORG");
+      Mockito.verifyNoMoreInteractions(coordinatorMock);
+
+      reset(coordinatorMock);
+      Assert.assertEquals("AAA", tested.forceFullReindex("AAA"));
+      verify(coordinatorMock).forceFullReindex("AAA");
+      Mockito.verifyNoMoreInteractions(coordinatorMock);
+    }
   }
 
   /**

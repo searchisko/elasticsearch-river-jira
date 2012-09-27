@@ -79,9 +79,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(3, tested.updatedCount);
-      Assert.assertEquals(0, tested.deleteCount);
-      Assert.assertEquals(false, tested.fullUpdate);
+      Assert.assertEquals(3, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(0, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(false, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
@@ -104,9 +104,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(1, tested.updatedCount);
-      Assert.assertEquals(0, tested.deleteCount);
-      Assert.assertEquals(false, tested.fullUpdate);
+      Assert.assertEquals(1, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(0, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(false, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
@@ -150,9 +150,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(3, tested.updatedCount);
-      Assert.assertEquals(0, tested.deleteCount);
-      Assert.assertEquals(false, tested.fullUpdate);
+      Assert.assertEquals(3, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(0, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(false, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
@@ -177,9 +177,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(1, tested.updatedCount);
-      Assert.assertEquals(0, tested.deleteCount);
-      Assert.assertEquals(false, tested.fullUpdate);
+      Assert.assertEquals(1, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(0, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(false, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
@@ -228,9 +228,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(3, tested.updatedCount);
-      Assert.assertEquals(0, tested.deleteCount);
-      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertEquals(3, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(0, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(true, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
@@ -250,9 +250,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(2, tested.updatedCount);
-      Assert.assertEquals(1, tested.deleteCount);
-      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertEquals(2, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(1, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(true, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
@@ -293,9 +293,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(3, tested.updatedCount);
-      Assert.assertEquals(0, tested.deleteCount);
-      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertEquals(3, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(0, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(true, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
@@ -318,10 +318,10 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(2, tested.updatedCount);
-      Assert.assertEquals(1, tested.deleteCount);
-      Assert.assertEquals(2, tested.deleteCommentsCount);
-      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertEquals(2, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(1, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(2, tested.indexingInfo.commentsDeleted);
+      Assert.assertEquals(true, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
@@ -369,9 +369,9 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(3, tested.updatedCount);
-      Assert.assertEquals(0, tested.deleteCount);
-      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertEquals(3, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(0, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(true, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate2 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:27:25.000-0400");
@@ -394,10 +394,10 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
       tested.run();
 
-      Assert.assertEquals(2, tested.updatedCount);
-      Assert.assertEquals(1, tested.deleteCount);
-      Assert.assertEquals(2, tested.deleteCommentsCount);
-      Assert.assertEquals(true, tested.fullUpdate);
+      Assert.assertEquals(2, tested.indexingInfo.issuesUpdated);
+      Assert.assertEquals(1, tested.indexingInfo.issuesDeleted);
+      Assert.assertEquals(2, tested.indexingInfo.commentsDeleted);
+      Assert.assertEquals(true, tested.indexingInfo.fullUpdate);
       Assert.assertNotNull(tested.startTime);
 
       Date lastIssueUpdatedDate3 = DateTimeUtils.parseISODateTimeWithMinutePrecise("2012-09-06T03:28:21.000-0400");
