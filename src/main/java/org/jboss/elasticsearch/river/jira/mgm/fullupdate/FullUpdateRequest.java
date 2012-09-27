@@ -3,7 +3,7 @@
  * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  */
-package org.jboss.elasticsearch.river.jira.mgm.fullreindex;
+package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import java.io.IOException;
 
@@ -16,7 +16,7 @@ import org.elasticsearch.common.io.stream.StreamOutput;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class FullReindexRequest extends NodesOperationRequest {
+public class FullUpdateRequest extends NodesOperationRequest {
 
   /**
    * Name of JIRA river to request full reindex on.
@@ -28,7 +28,7 @@ public class FullReindexRequest extends NodesOperationRequest {
    */
   private String projectKey;
 
-  FullReindexRequest() {
+  FullUpdateRequest() {
 
   }
 
@@ -38,7 +38,7 @@ public class FullReindexRequest extends NodesOperationRequest {
    * @param riverName for request
    * @param projectKey for request, optional
    */
-  public FullReindexRequest(String riverName, String projectKey) {
+  public FullUpdateRequest(String riverName, String projectKey) {
     super();
     this.riverName = riverName;
     this.projectKey = projectKey;

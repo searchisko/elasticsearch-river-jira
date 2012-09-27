@@ -1,4 +1,4 @@
-package org.jboss.elasticsearch.river.jira.mgm.fullreindex;
+package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import java.io.IOException;
 
@@ -12,16 +12,19 @@ import org.elasticsearch.common.io.stream.StreamOutput;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class NodeFullReindexResponse extends NodeOperationResponse {
+public class NodeFullUpdateResponse extends NodeOperationResponse {
 
-  boolean riverFound;
+  boolean riverFound = false;
 
   boolean projectFound;
 
   String reindexedProjectNames;
 
-  NodeFullReindexResponse() {
+  NodeFullUpdateResponse() {
+  }
 
+  public NodeFullUpdateResponse(DiscoveryNode node) {
+    super(node);
   }
 
   /**
@@ -32,7 +35,7 @@ public class NodeFullReindexResponse extends NodeOperationResponse {
    * @param projectFound set to true if project reindex was requested and we found this project in given river
    * @param reindexedProjectNames CSV names of jira projects which was forced for full reindex
    */
-  public NodeFullReindexResponse(DiscoveryNode node, boolean riverFound, boolean projectFound,
+  public NodeFullUpdateResponse(DiscoveryNode node, boolean riverFound, boolean projectFound,
       String reindexedProjectNames) {
     super(node);
     this.riverFound = riverFound;
@@ -40,8 +43,8 @@ public class NodeFullReindexResponse extends NodeOperationResponse {
     this.reindexedProjectNames = reindexedProjectNames;
   }
 
-  public static NodeFullReindexResponse readNodeInfo(StreamInput in) throws IOException {
-    NodeFullReindexResponse nodeInfo = new NodeFullReindexResponse();
+  public static NodeFullUpdateResponse readNodeInfo(StreamInput in) throws IOException {
+    NodeFullUpdateResponse nodeInfo = new NodeFullUpdateResponse();
     nodeInfo.readFrom(in);
     return nodeInfo;
   }

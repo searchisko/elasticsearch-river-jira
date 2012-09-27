@@ -3,7 +3,7 @@
  * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  */
-package org.jboss.elasticsearch.river.jira.mgm.fullreindex;
+package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,14 +26,13 @@ import org.jboss.elasticsearch.river.jira.JiraRiver;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class TransportFullReindexAction
-    extends
-    TransportNodesOperationAction<FullReindexRequest, FullReindexResponse, NodeFullReindexRequest, NodeFullReindexResponse> {
+public class TransportFullUpdateAction extends
+    TransportNodesOperationAction<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateRequest, NodeFullUpdateResponse> {
 
-  private static final ESLogger logger = Loggers.getLogger(TransportFullReindexAction.class);
+  private static final ESLogger logger = Loggers.getLogger(TransportFullUpdateAction.class);
 
   @Inject
-  public TransportFullReindexAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
+  public TransportFullUpdateAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
       ClusterService clusterService, TransportService transportService) {
     super(settings, clusterName, threadPool, clusterService, transportService);
 
@@ -41,7 +40,7 @@ public class TransportFullReindexAction
 
   @Override
   protected String transportAction() {
-    return FullReindexAction.NAME;
+    return FullUpdateAction.NAME;
   }
 
   @Override
@@ -50,50 +49,52 @@ public class TransportFullReindexAction
   }
 
   @Override
-  protected FullReindexRequest newRequest() {
-    return new FullReindexRequest();
+  protected FullUpdateRequest newRequest() {
+    return new FullUpdateRequest();
   }
 
   @Override
-  protected FullReindexResponse newResponse(FullReindexRequest request,
+  protected FullUpdateResponse newResponse(FullUpdateRequest request,
       @SuppressWarnings("rawtypes") AtomicReferenceArray responses) {
-    final List<NodeFullReindexResponse> nodesInfos = new ArrayList<NodeFullReindexResponse>();
+    final List<NodeFullUpdateResponse> nodesInfos = new ArrayList<NodeFullUpdateResponse>();
     for (int i = 0; i < responses.length(); i++) {
       Object resp = responses.get(i);
-      if (resp instanceof NodeFullReindexResponse) {
-        nodesInfos.add((NodeFullReindexResponse) resp);
+      if (resp instanceof NodeFullUpdateResponse) {
+        nodesInfos.add((NodeFullUpdateResponse) resp);
       }
     }
-    return new FullReindexResponse(clusterName, nodesInfos.toArray(new NodeFullReindexResponse[nodesInfos.size()]));
+    return new FullUpdateResponse(clusterName, nodesInfos.toArray(new NodeFullUpdateResponse[nodesInfos.size()]));
   }
 
   @Override
-  protected NodeFullReindexRequest newNodeRequest() {
-    return new NodeFullReindexRequest();
+  protected NodeFullUpdateRequest newNodeRequest() {
+    return new NodeFullUpdateRequest();
   }
 
   @Override
-  protected NodeFullReindexRequest newNodeRequest(String nodeId, FullReindexRequest request) {
-    return new NodeFullReindexRequest(nodeId, request);
+  protected NodeFullUpdateRequest newNodeRequest(String nodeId, FullUpdateRequest request) {
+    return new NodeFullUpdateRequest(nodeId, request);
   }
 
   @Override
-  protected NodeFullReindexResponse newNodeResponse() {
-    return new NodeFullReindexResponse();
+  protected NodeFullUpdateResponse newNodeResponse() {
+    return new NodeFullUpdateResponse(clusterService.state().nodes().localNode());
   }
 
   @Override
-  protected NodeFullReindexResponse nodeOperation(NodeFullReindexRequest nodeRequest) throws ElasticSearchException {
-    FullReindexRequest req = nodeRequest.request;
-    logger.debug("Go to schedule full reindex for river '{}' and project {}", req.getRiverName(), req.getProjectKey());
+  protected NodeFullUpdateResponse nodeOperation(NodeFullUpdateRequest nodeRequest) throws ElasticSearchException {
+    FullUpdateRequest req = nodeRequest.request;
+    logger.debug("Go to look for river '{}' on this node", req.getRiverName());
     JiraRiver river = JiraRiver.getRunningInstance(req.getRiverName());
     if (river == null) {
-      return new NodeFullReindexResponse(clusterService.state().nodes().localNode(), false, false, null);
+      return newNodeResponse();
     } else {
-      logger.debug("River found {}", req.getRiverName());
+      logger.debug("River {} found on this node", req.getRiverName());
+      logger
+          .debug("Go to schedule full reindex for river '{}' and project {}", req.getRiverName(), req.getProjectKey());
       try {
         String ret = river.forceFullReindex(req.getProjectKey());
-        return new NodeFullReindexResponse(clusterService.state().nodes().localNode(), true, ret != null, ret);
+        return new NodeFullUpdateResponse(clusterService.state().nodes().localNode(), true, ret != null, ret);
       } catch (Exception e) {
         throw new ElasticSearchException(e.getMessage(), e);
       }

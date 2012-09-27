@@ -3,7 +3,7 @@
  * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  */
-package org.jboss.elasticsearch.river.jira.mgm.fullreindex;
+package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
@@ -13,23 +13,23 @@ import org.elasticsearch.client.Client;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class FullReindexAction extends Action<FullReindexRequest, FullReindexResponse, FullReindexRequestBuilder> {
+public class FullUpdateAction extends Action<FullUpdateRequest, FullUpdateResponse, FullUpdateRequestBuilder> {
 
-  public static final FullReindexAction INSTANCE = new FullReindexAction();
+  public static final FullUpdateAction INSTANCE = new FullUpdateAction();
   public static final String NAME = "jira_river/force_full_update";
 
-  protected FullReindexAction() {
+  protected FullUpdateAction() {
     super(NAME);
   }
 
   @Override
-  public FullReindexRequestBuilder newRequestBuilder(Client client) {
-    return new FullReindexRequestBuilder(client);
+  public FullUpdateRequestBuilder newRequestBuilder(Client client) {
+    return new FullUpdateRequestBuilder(client);
   }
 
   @Override
-  public FullReindexResponse newResponse() {
-    return new FullReindexResponse();
+  public FullUpdateResponse newResponse() {
+    return new FullUpdateResponse();
   }
 
 }

@@ -3,7 +3,7 @@
  * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  */
-package org.jboss.elasticsearch.river.jira.mgm.fullreindex;
+package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.BaseRequestBuilder;
@@ -14,15 +14,15 @@ import org.elasticsearch.client.Client;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class FullReindexRequestBuilder extends BaseRequestBuilder<FullReindexRequest, FullReindexResponse> {
+public class FullUpdateRequestBuilder extends BaseRequestBuilder<FullUpdateRequest, FullUpdateResponse> {
 
-  protected FullReindexRequestBuilder(Client client) {
-    super(client, new FullReindexRequest());
+  protected FullUpdateRequestBuilder(Client client) {
+    super(client, new FullUpdateRequest());
   }
 
   @Override
-  protected void doExecute(ActionListener<FullReindexResponse> listener) {
-    client.execute(FullReindexAction.INSTANCE, request, listener);
+  protected void doExecute(ActionListener<FullUpdateResponse> listener) {
+    client.execute(FullUpdateAction.INSTANCE, request, listener);
   }
 
 }

@@ -3,7 +3,7 @@
  * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  */
-package org.jboss.elasticsearch.river.jira.mgm.fullreindex;
+package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import static org.elasticsearch.rest.RestStatus.OK;
 
@@ -26,14 +26,14 @@ import org.elasticsearch.river.RiverIndexName;
 import org.jboss.elasticsearch.river.jira.Utils;
 
 /**
- * REST action handler for full reindex.
+ * REST action handler for force full update operation.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class RestFullReindexAction extends BaseRestHandler {
+public class RestFullUpdateAction extends BaseRestHandler {
 
   @Inject
-  protected RestFullReindexAction(Settings settings, Client client, RestController controller) {
+  protected RestFullUpdateAction(Settings settings, Client client, RestController controller) {
     super(settings, client);
     String riverIndexName = RiverIndexName.Conf.indexName(settings);
     controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, "/" + riverIndexName
@@ -50,15 +50,15 @@ public class RestFullReindexAction extends BaseRestHandler {
 
     final boolean isProjectKeyRequest = !Utils.isEmpty(projectKey);
 
-    FullReindexRequest req = new FullReindexRequest(riverName, projectKey);
+    FullUpdateRequest req = new FullUpdateRequest(riverName, projectKey);
 
-    client.execute(FullReindexAction.INSTANCE, req, new ActionListener<FullReindexResponse>() {
+    client.execute(FullUpdateAction.INSTANCE, req, new ActionListener<FullUpdateResponse>() {
 
       @Override
-      public void onResponse(FullReindexResponse response) {
+      public void onResponse(FullUpdateResponse response) {
         try {
 
-          NodeFullReindexResponse nodeInfo = response.getSuccessNodeResponse();
+          NodeFullUpdateResponse nodeInfo = response.getSuccessNodeResponse();
           if (nodeInfo == null) {
             channel.sendResponse(new XContentRestResponse(request, RestStatus.NOT_FOUND, buildMessage(request,
                 "No JiraRiver found for name: " + riverName)));

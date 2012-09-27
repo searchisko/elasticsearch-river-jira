@@ -5,9 +5,9 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.plugins.AbstractPlugin;
 import org.elasticsearch.rest.RestModule;
 import org.elasticsearch.river.RiversModule;
-import org.jboss.elasticsearch.river.jira.mgm.fullreindex.FullReindexAction;
-import org.jboss.elasticsearch.river.jira.mgm.fullreindex.RestFullReindexAction;
-import org.jboss.elasticsearch.river.jira.mgm.fullreindex.TransportFullReindexAction;
+import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateAction;
+import org.jboss.elasticsearch.river.jira.mgm.fullupdate.RestFullUpdateAction;
+import org.jboss.elasticsearch.river.jira.mgm.fullupdate.TransportFullUpdateAction;
 
 /**
  * JIRA River ElasticSearch Plugin class.
@@ -35,10 +35,10 @@ public class JiraRiverPlugin extends AbstractPlugin {
   }
 
   public void onModule(RestModule module) {
-    module.addRestAction(RestFullReindexAction.class);
+    module.addRestAction(RestFullUpdateAction.class);
   }
 
   public void onModule(ActionModule module) {
-    module.registerAction(FullReindexAction.INSTANCE, TransportFullReindexAction.class);
+    module.registerAction(FullUpdateAction.INSTANCE, TransportFullUpdateAction.class);
   }
 }

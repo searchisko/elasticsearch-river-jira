@@ -1,4 +1,4 @@
-package org.jboss.elasticsearch.river.jira.mgm.fullreindex;
+package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import java.io.IOException;
 
@@ -11,11 +11,11 @@ import org.elasticsearch.common.io.stream.StreamOutput;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class NodeFullReindexRequest extends NodeOperationRequest {
+public class NodeFullUpdateRequest extends NodeOperationRequest {
 
-  FullReindexRequest request;
+  FullUpdateRequest request;
 
-  NodeFullReindexRequest() {
+  NodeFullUpdateRequest() {
     super();
   }
 
@@ -25,7 +25,7 @@ public class NodeFullReindexRequest extends NodeOperationRequest {
    * @param nodeId this request is for
    * @param request to be send to the node
    */
-  NodeFullReindexRequest(String nodeId, FullReindexRequest request) {
+  NodeFullUpdateRequest(String nodeId, FullUpdateRequest request) {
     super(nodeId);
     this.request = request;
   }
@@ -33,7 +33,7 @@ public class NodeFullReindexRequest extends NodeOperationRequest {
   @Override
   public void readFrom(StreamInput in) throws IOException {
     super.readFrom(in);
-    request = new FullReindexRequest();
+    request = new FullUpdateRequest();
     request.readFrom(in);
   }
 

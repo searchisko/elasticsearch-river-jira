@@ -3,7 +3,7 @@
  * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  */
-package org.jboss.elasticsearch.river.jira.mgm.fullreindex;
+package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import java.io.IOException;
 
@@ -11,10 +11,11 @@ import junit.framework.Assert;
 
 import org.elasticsearch.common.io.stream.BytesStreamInput;
 import org.elasticsearch.common.io.stream.BytesStreamOutput;
+import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateRequest;
 import org.junit.Test;
 
 /**
- * Unit test for {@link FullReindexRequest}.
+ * Unit test for {@link FullUpdateRequest}.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -24,22 +25,22 @@ public class FullReindexRequestTest {
   public void serialization() throws IOException {
 
     {
-      FullReindexRequest testedSrc = new FullReindexRequest();
-      FullReindexRequest testedTarget = performser(testedSrc);
+      FullUpdateRequest testedSrc = new FullUpdateRequest();
+      FullUpdateRequest testedTarget = performser(testedSrc);
       Assert.assertNull(testedTarget.getRiverName());
       Assert.assertNull(testedTarget.getProjectKey());
     }
 
     {
-      FullReindexRequest testedSrc = new FullReindexRequest("myriver", null);
-      FullReindexRequest testedTarget = performser(testedSrc);
+      FullUpdateRequest testedSrc = new FullUpdateRequest("myriver", null);
+      FullUpdateRequest testedTarget = performser(testedSrc);
       Assert.assertEquals("myriver", testedTarget.getRiverName());
       Assert.assertNull(testedTarget.getProjectKey());
     }
 
     {
-      FullReindexRequest testedSrc = new FullReindexRequest("myriver", "ORG");
-      FullReindexRequest testedTarget = performser(testedSrc);
+      FullUpdateRequest testedSrc = new FullUpdateRequest("myriver", "ORG");
+      FullUpdateRequest testedTarget = performser(testedSrc);
       Assert.assertEquals("myriver", testedTarget.getRiverName());
       Assert.assertEquals("ORG", testedTarget.getProjectKey());
     }
@@ -51,10 +52,10 @@ public class FullReindexRequestTest {
    * @return
    * @throws IOException
    */
-  private FullReindexRequest performser(FullReindexRequest testedSrc) throws IOException {
+  private FullUpdateRequest performser(FullUpdateRequest testedSrc) throws IOException {
     BytesStreamOutput out = new BytesStreamOutput();
     testedSrc.writeTo(out);
-    FullReindexRequest testedTarget = new FullReindexRequest();
+    FullUpdateRequest testedTarget = new FullUpdateRequest();
     testedTarget.readFrom(new BytesStreamInput(out.bytes()));
     return testedTarget;
   }

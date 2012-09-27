@@ -2,8 +2,8 @@ package org.jboss.elasticsearch.river.jira;
 
 import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.river.River;
-import org.jboss.elasticsearch.river.jira.mgm.fullreindex.FullReindexAction;
-import org.jboss.elasticsearch.river.jira.mgm.fullreindex.TransportFullReindexAction;
+import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateAction;
+import org.jboss.elasticsearch.river.jira.mgm.fullupdate.TransportFullUpdateAction;
 
 /**
  * JIRA River ElasticSearch Module class.
@@ -19,6 +19,6 @@ public class JiraRiverModule extends ActionModule {
   @Override
   protected void configure() {
     bind(River.class).to(JiraRiver.class).asEagerSingleton();
-    registerAction(FullReindexAction.INSTANCE, TransportFullReindexAction.class);
+    registerAction(FullUpdateAction.INSTANCE, TransportFullUpdateAction.class);
   }
 }
