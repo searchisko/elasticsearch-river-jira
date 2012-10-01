@@ -7,23 +7,17 @@ package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import static org.elasticsearch.rest.RestStatus.OK;
 
-import java.io.IOException;
-
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.rest.XContentRestResponse;
-import org.elasticsearch.rest.XContentThrowableRestResponse;
-import org.elasticsearch.rest.action.support.RestXContentBuilder;
 import org.elasticsearch.river.RiverIndexName;
-import org.jboss.elasticsearch.river.jira.Utils;
+import org.jboss.elasticsearch.river.jira.mgm.JRMgmBaseActionListener;
 
 /**
  * REST action handler for force full index update operation.
@@ -57,60 +51,24 @@ public class RestFullUpdateAction extends BaseRestHandler {
     final String riverName = request.param("riverName");
     final String projectKey = request.param("projectKey");
 
-    final boolean isProjectKeyRequest = !Utils.isEmpty(projectKey);
-
     FullUpdateRequest req = new FullUpdateRequest(riverName, projectKey);
 
-    client.execute(FullUpdateAction.INSTANCE, req, new ActionListener<FullUpdateResponse>() {
+    client.execute(FullUpdateAction.INSTANCE, req,
+        new JRMgmBaseActionListener<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateResponse>(req, request,
+            channel) {
 
-      @Override
-      public void onResponse(FullUpdateResponse response) {
-        try {
-
-          NodeFullUpdateResponse nodeInfo = response.getSuccessNodeResponse();
-          if (nodeInfo == null) {
-            channel.sendResponse(new XContentRestResponse(request, RestStatus.NOT_FOUND, buildMessageDocument(request,
-                "No JiraRiver found for name: " + riverName)));
-          } else {
-            if (isProjectKeyRequest && !nodeInfo.projectFound) {
-              channel.sendResponse(new XContentRestResponse(request, RestStatus.NOT_FOUND, buildMessageDocument(
-                  request, "Project '" + projectKey + "' is not indexed by JiraRiver with name: " + riverName)));
+          @Override
+          protected void handleJiraRiverResponse(NodeFullUpdateResponse nodeInfo) throws Exception {
+            if (actionRequest.isProjectKeyRequest() && !nodeInfo.projectFound) {
+              restChannel.sendResponse(new XContentRestResponse(restRequest, RestStatus.NOT_FOUND, buildMessageDocument(
+                  restRequest, "Project '" + projectKey + "' is not indexed by JiraRiver with name: " + riverName)));
             } else {
-              channel.sendResponse(new XContentRestResponse(request, OK, buildMessageDocument(request,
+              restChannel.sendResponse(new XContentRestResponse(restRequest, OK, buildMessageDocument(restRequest,
                   "Scheduled full reindex for JIRA projects: " + nodeInfo.reindexedProjectNames)));
             }
           }
-        } catch (Exception e) {
-          onFailure(e);
-        }
-      }
 
-      @Override
-      public void onFailure(Throwable e) {
-        try {
-          channel.sendResponse(new XContentThrowableRestResponse(request, e));
-        } catch (IOException e1) {
-          logger.error("Failed to send failure response", e1);
-        }
-      }
-
-      /**
-       * Build response document with only one field called <code>message</code>.
-       * 
-       * @param request to build document for
-       * @param message to be placed in document
-       * @return document with message
-       * @throws IOException
-       */
-      protected XContentBuilder buildMessageDocument(RestRequest request, String message) throws IOException {
-        XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
-        builder.startObject();
-        builder.field("message", message);
-        builder.endObject();
-        return builder;
-      }
-
-    });
+        });
   }
 
 }

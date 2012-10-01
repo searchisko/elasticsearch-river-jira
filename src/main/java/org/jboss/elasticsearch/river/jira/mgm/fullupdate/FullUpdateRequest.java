@@ -9,6 +9,7 @@ import java.io.IOException;
 
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.jboss.elasticsearch.river.jira.Utils;
 import org.jboss.elasticsearch.river.jira.mgm.JRMgmBaseRequest;
 
 /**
@@ -44,6 +45,10 @@ public class FullUpdateRequest extends JRMgmBaseRequest {
 
   public void setProjectKey(String projectKey) {
     this.projectKey = projectKey;
+  }
+
+  public boolean isProjectKeyRequest() {
+    return !Utils.isEmpty(projectKey);
   }
 
   @Override
