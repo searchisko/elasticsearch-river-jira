@@ -9,7 +9,7 @@ import org.elasticsearch.action.Action;
 import org.elasticsearch.client.Client;
 
 /**
- * Full reindex action implementation.
+ * JIRA River Force full index update action implementation.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */

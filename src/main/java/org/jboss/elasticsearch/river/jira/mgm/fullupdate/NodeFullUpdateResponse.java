@@ -2,25 +2,23 @@ package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import java.io.IOException;
 
-import org.elasticsearch.action.support.nodes.NodeOperationResponse;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.jboss.elasticsearch.river.jira.mgm.NodeJRMgmBaseResponse;
 
 /**
  * Full reindex node response.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class NodeFullUpdateResponse extends NodeOperationResponse {
-
-  boolean riverFound = false;
+public class NodeFullUpdateResponse extends NodeJRMgmBaseResponse {
 
   boolean projectFound;
 
   String reindexedProjectNames;
 
-  NodeFullUpdateResponse() {
+  protected NodeFullUpdateResponse() {
   }
 
   public NodeFullUpdateResponse(DiscoveryNode node) {
@@ -37,8 +35,7 @@ public class NodeFullUpdateResponse extends NodeOperationResponse {
    */
   public NodeFullUpdateResponse(DiscoveryNode node, boolean riverFound, boolean projectFound,
       String reindexedProjectNames) {
-    super(node);
-    this.riverFound = riverFound;
+    super(node, riverFound);
     this.projectFound = projectFound;
     this.reindexedProjectNames = reindexedProjectNames;
   }
@@ -52,7 +49,6 @@ public class NodeFullUpdateResponse extends NodeOperationResponse {
   @Override
   public void readFrom(StreamInput in) throws IOException {
     super.readFrom(in);
-    riverFound = in.readBoolean();
     projectFound = in.readBoolean();
     reindexedProjectNames = in.readOptionalString();
   }
@@ -60,7 +56,6 @@ public class NodeFullUpdateResponse extends NodeOperationResponse {
   @Override
   public void writeTo(StreamOutput out) throws IOException {
     super.writeTo(out);
-    out.writeBoolean(riverFound);
     out.writeBoolean(projectFound);
     out.writeOptionalString(reindexedProjectNames);
   }

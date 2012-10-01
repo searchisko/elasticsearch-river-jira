@@ -14,8 +14,6 @@ import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.io.stream.BytesStreamInput;
 import org.elasticsearch.common.io.stream.BytesStreamOutput;
 import org.elasticsearch.common.transport.DummyTransportAddress;
-import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateResponse;
-import org.jboss.elasticsearch.river.jira.mgm.fullupdate.NodeFullUpdateResponse;
 import org.junit.Test;
 
 /**
@@ -76,7 +74,7 @@ public class FullReindexResponseTest {
     NodeFullUpdateResponse r = testedTarget.getSuccessNodeResponse();
     Assert.assertNotNull(r);
     Assert.assertEquals("nd3", r.getNode().getId());
-    Assert.assertTrue(r.riverFound);
+    Assert.assertTrue(r.isRiverFound());
     Assert.assertTrue(r.projectFound);
     Assert.assertEquals("ORG", r.reindexedProjectNames);
   }

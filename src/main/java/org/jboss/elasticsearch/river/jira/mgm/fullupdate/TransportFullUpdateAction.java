@@ -5,21 +5,15 @@
  */
 package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReferenceArray;
-
-import org.elasticsearch.ElasticSearchException;
-import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
+import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.inject.Inject;
-import org.elasticsearch.common.logging.ESLogger;
-import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
 import org.jboss.elasticsearch.river.jira.JiraRiver;
+import org.jboss.elasticsearch.river.jira.mgm.TransportJRMgmBaseAction;
 
 /**
  * Full reindex transport action.
@@ -27,15 +21,12 @@ import org.jboss.elasticsearch.river.jira.JiraRiver;
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class TransportFullUpdateAction extends
-    TransportNodesOperationAction<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateRequest, NodeFullUpdateResponse> {
-
-  private static final ESLogger logger = Loggers.getLogger(TransportFullUpdateAction.class);
+    TransportJRMgmBaseAction<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateRequest, NodeFullUpdateResponse> {
 
   @Inject
   public TransportFullUpdateAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
       ClusterService clusterService, TransportService transportService) {
     super(settings, clusterName, threadPool, clusterService, transportService);
-
   }
 
   @Override
@@ -44,26 +35,16 @@ public class TransportFullUpdateAction extends
   }
 
   @Override
-  protected String executor() {
-    return ThreadPool.Names.MANAGEMENT;
+  protected NodeFullUpdateResponse performOperationOnJiraRiver(JiraRiver river, FullUpdateRequest req,
+      DiscoveryNode node) throws Exception {
+    logger.debug("Go to schedule full reindex for river '{}' and project {}", req.getRiverName(), req.getProjectKey());
+    String ret = river.forceFullReindex(req.getProjectKey());
+    return new NodeFullUpdateResponse(clusterService.state().nodes().localNode(), true, ret != null, ret);
   }
 
   @Override
   protected FullUpdateRequest newRequest() {
     return new FullUpdateRequest();
-  }
-
-  @Override
-  protected FullUpdateResponse newResponse(FullUpdateRequest request,
-      @SuppressWarnings("rawtypes") AtomicReferenceArray responses) {
-    final List<NodeFullUpdateResponse> nodesInfos = new ArrayList<NodeFullUpdateResponse>();
-    for (int i = 0; i < responses.length(); i++) {
-      Object resp = responses.get(i);
-      if (resp instanceof NodeFullUpdateResponse) {
-        nodesInfos.add((NodeFullUpdateResponse) resp);
-      }
-    }
-    return new FullUpdateResponse(clusterName, nodesInfos.toArray(new NodeFullUpdateResponse[nodesInfos.size()]));
   }
 
   @Override
@@ -82,28 +63,13 @@ public class TransportFullUpdateAction extends
   }
 
   @Override
-  protected NodeFullUpdateResponse nodeOperation(NodeFullUpdateRequest nodeRequest) throws ElasticSearchException {
-    FullUpdateRequest req = nodeRequest.request;
-    logger.debug("Go to look for river '{}' on this node", req.getRiverName());
-    JiraRiver river = JiraRiver.getRunningInstance(req.getRiverName());
-    if (river == null) {
-      return newNodeResponse();
-    } else {
-      logger.debug("River {} found on this node", req.getRiverName());
-      logger
-          .debug("Go to schedule full reindex for river '{}' and project {}", req.getRiverName(), req.getProjectKey());
-      try {
-        String ret = river.forceFullReindex(req.getProjectKey());
-        return new NodeFullUpdateResponse(clusterService.state().nodes().localNode(), true, ret != null, ret);
-      } catch (Exception e) {
-        throw new ElasticSearchException(e.getMessage(), e);
-      }
-    }
+  protected NodeFullUpdateResponse[] newNodeResponseArray(int len) {
+    return new NodeFullUpdateResponse[len];
   }
 
   @Override
-  protected boolean accumulateExceptions() {
-    return false;
+  protected FullUpdateResponse newResponse(ClusterName clusterName, NodeFullUpdateResponse[] array) {
+    return new FullUpdateResponse(clusterName, array);
   }
 
 }

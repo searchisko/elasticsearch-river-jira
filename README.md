@@ -216,6 +216,10 @@ Management REST API
 -------------------
 JIRA river supports next REST operations for management purposes. Note `my_jira_river` in examples is name of jira river you can call operation for.
 
+Get [state info](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/examples/mgm/rest_river_info.json) about jira river operation:
+
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/state
+
 Force full index update for all jira projects:
 
 	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/fullupdate
