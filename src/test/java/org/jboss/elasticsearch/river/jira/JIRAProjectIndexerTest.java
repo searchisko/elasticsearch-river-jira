@@ -529,6 +529,7 @@ public class JIRAProjectIndexerTest {
       verify(esIntegrationMock).prepareESScrollSearchRequestBuilder(jiraIndexName);
       verify(esIntegrationMock).executeESSearchRequest(srbmock);
       verify(esIntegrationMock).prepareESBulkRequestBuilder();
+      verify(esIntegrationMock, times(2)).isClosed();
       verify(esIntegrationMock, times(3)).executeESScrollSearchNextRequest(Mockito.any(SearchResponse.class));
       verify(jiraIssueIndexStructureBuilderMock).deleteIssueDocument(brbmock, hit1_1);
       verify(jiraIssueIndexStructureBuilderMock).deleteIssueDocument(brbmock, hit1_2);

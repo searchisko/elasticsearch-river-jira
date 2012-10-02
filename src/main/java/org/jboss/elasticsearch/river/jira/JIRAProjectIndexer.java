@@ -98,7 +98,7 @@ public class JIRAProjectIndexer implements Runnable {
       esIntegrationComponent.reportIndexingFinished(indexingInfo);
       Throwable cause = e;
       // do not log stacktrace for some operational exceptions to keep log file much clear
-      if (cause instanceof IOException)
+      if ((cause instanceof IOException) || (cause instanceof InterruptedException))
         cause = null;
       logger.error("Failed {} update for JIRA project {} due: {}", cause, indexingInfo.fullUpdate ? "full"
           : "incremental", projectKey, e.getMessage());
@@ -130,7 +130,7 @@ public class JIRAProjectIndexer implements Runnable {
     boolean cont = true;
     while (cont) {
       if (isClosed())
-        return;
+        throw new InterruptedException("Interrupted because River is closed");
 
       if (logger.isDebugEnabled())
         logger.debug("Go to ask for updated JIRA issues for project {} with startAt {} updated {}", projectKey,
@@ -162,7 +162,7 @@ public class JIRAProjectIndexer implements Runnable {
           jiraIssueIndexStructureBuilder.indexIssue(esBulk, projectKey, issue);
           indexingInfo.issuesUpdated++;
           if (isClosed())
-            break;
+            throw new InterruptedException("Interrupted because River is closed");
         }
 
         storeLastIssueUpdatedDate(esBulk, projectKey, lastIssueUpdatedDate);
@@ -236,6 +236,8 @@ public class JIRAProjectIndexer implements Runnable {
             indexingInfo.commentsDeleted++;
           }
         }
+        if (isClosed())
+          throw new InterruptedException("Interrupted because River is closed");
         scrollResp = esIntegrationComponent.executeESScrollSearchNextRequest(scrollResp);
       }
       esIntegrationComponent.executeESBulkRequest(esBulk);
