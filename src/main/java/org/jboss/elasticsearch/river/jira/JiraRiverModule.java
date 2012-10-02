@@ -4,6 +4,8 @@ import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.river.River;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateAction;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.TransportFullUpdateAction;
+import org.jboss.elasticsearch.river.jira.mgm.state.JRStateAction;
+import org.jboss.elasticsearch.river.jira.mgm.state.TransportJRStateAction;
 
 /**
  * JIRA River ElasticSearch Module class.
@@ -20,5 +22,6 @@ public class JiraRiverModule extends ActionModule {
   protected void configure() {
     bind(River.class).to(JiraRiver.class).asEagerSingleton();
     registerAction(FullUpdateAction.INSTANCE, TransportFullUpdateAction.class);
+    registerAction(JRStateAction.INSTANCE, TransportJRStateAction.class);
   }
 }

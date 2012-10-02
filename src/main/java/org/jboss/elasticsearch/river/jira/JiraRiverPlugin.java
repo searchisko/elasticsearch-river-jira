@@ -8,6 +8,9 @@ import org.elasticsearch.river.RiversModule;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateAction;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.RestFullUpdateAction;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.TransportFullUpdateAction;
+import org.jboss.elasticsearch.river.jira.mgm.state.JRStateAction;
+import org.jboss.elasticsearch.river.jira.mgm.state.RestJRStateAction;
+import org.jboss.elasticsearch.river.jira.mgm.state.TransportJRStateAction;
 
 /**
  * JIRA River ElasticSearch Plugin class.
@@ -36,9 +39,11 @@ public class JiraRiverPlugin extends AbstractPlugin {
 
   public void onModule(RestModule module) {
     module.addRestAction(RestFullUpdateAction.class);
+    module.addRestAction(RestJRStateAction.class);
   }
 
   public void onModule(ActionModule module) {
     module.registerAction(FullUpdateAction.INSTANCE, TransportFullUpdateAction.class);
+    module.registerAction(JRStateAction.INSTANCE, TransportJRStateAction.class);
   }
 }

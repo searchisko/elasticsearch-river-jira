@@ -40,12 +40,6 @@ public class NodeFullUpdateResponse extends NodeJRMgmBaseResponse {
     this.reindexedProjectNames = reindexedProjectNames;
   }
 
-  public static NodeFullUpdateResponse readNodeInfo(StreamInput in) throws IOException {
-    NodeFullUpdateResponse nodeInfo = new NodeFullUpdateResponse();
-    nodeInfo.readFrom(in);
-    return nodeInfo;
-  }
-
   @Override
   public void readFrom(StreamInput in) throws IOException {
     super.readFrom(in);

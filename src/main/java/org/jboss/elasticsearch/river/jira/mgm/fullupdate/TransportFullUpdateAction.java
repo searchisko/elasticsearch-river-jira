@@ -39,7 +39,7 @@ public class TransportFullUpdateAction extends
       DiscoveryNode node) throws Exception {
     logger.debug("Go to schedule full reindex for river '{}' and project {}", req.getRiverName(), req.getProjectKey());
     String ret = river.forceFullReindex(req.getProjectKey());
-    return new NodeFullUpdateResponse(clusterService.state().nodes().localNode(), true, ret != null, ret);
+    return new NodeFullUpdateResponse(node, true, ret != null, ret);
   }
 
   @Override

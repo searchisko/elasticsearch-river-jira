@@ -218,7 +218,7 @@ JIRA river supports next REST operations for management purposes. Note `my_jira_
 
 Get [state info](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/examples/mgm/rest_river_info.json) about jira river operation:
 
-	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/state
+	curl -XGET localhost:9200/_river/my_jira_river/_mgm/state
 
 Force full index update for all jira projects:
 

@@ -84,13 +84,13 @@ public abstract class JRMgmBaseActionListener<Request extends JRMgmBaseRequest, 
    * Build response document with only one field called <code>message</code>. You can use this in
    * {@link #handleJiraRiverResponse(NodeJRMgmBaseResponse)} implementation if you only need to return simple message.
    * 
-   * @param request to build document for
+   * @param restRequest to build response document for
    * @param message to be placed in document
    * @return document with message
    * @throws IOException
    */
-  protected XContentBuilder buildMessageDocument(RestRequest request, String message) throws IOException {
-    XContentBuilder builder = RestXContentBuilder.restContentBuilder(request);
+  protected XContentBuilder buildMessageDocument(RestRequest restRequest, String message) throws IOException {
+    XContentBuilder builder = RestXContentBuilder.restContentBuilder(restRequest);
     builder.startObject();
     builder.field("message", message);
     builder.endObject();
