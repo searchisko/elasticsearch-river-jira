@@ -1,6 +1,7 @@
 {
   "river_name" : "my_jira_river",
   "info_date" : "2012-09-27T09:21:26.422Z",
+  "running_state" : "stopped",
   "node" : {
     "id" : "fsdfsdfxzd",
     "name" : "My Node"

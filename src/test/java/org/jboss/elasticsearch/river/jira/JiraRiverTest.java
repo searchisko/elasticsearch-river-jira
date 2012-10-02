@@ -130,6 +130,133 @@ public class JiraRiverTest extends ESRealClientTestBase {
   }
 
   @Test
+  public void configure() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    try {
+      tested.closed = false;
+      tested.configure(null);
+      Assert.fail("IllegalStateException must be thrown");
+    } catch (IllegalStateException e) {
+      // OK
+    }
+    // do not test configuration read here, it's tested in constructor tests
+  }
+
+  @Test
+  public void start() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    try {
+      tested.closed = false;
+      tested.start();
+      Assert.fail("IllegalStateException must be thrown");
+    } catch (IllegalStateException e) {
+      // OK
+    }
+    // do not test real start here because it's hardly testable
+  }
+
+  @Test
+  public void close() throws Exception {
+
+    // case - close all correctly
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    MockThread mockThread = new MockThread();
+    tested.coordinatorThread = mockThread;
+    tested.coordinatorInstance = mock(IJIRAProjectIndexerCoordinator.class);
+    tested.closed = false;
+    Assert.assertNotNull(tested.coordinatorThread);
+    Assert.assertNotNull(tested.coordinatorInstance);
+    JiraRiver.riverInstances.put(tested.riverName().getName(), tested);
+    Assert.assertTrue(JiraRiver.riverInstances.containsKey(tested.riverName().getName()));
+
+    tested.close();
+    Assert.assertTrue(tested.isClosed());
+    Assert.assertTrue(mockThread.interruptWasCalled);
+    Assert.assertNull(tested.coordinatorThread);
+    Assert.assertNull(tested.coordinatorInstance);
+    Assert.assertFalse(JiraRiver.riverInstances.containsKey(tested.riverName().getName()));
+
+    // case - no exception when coordinatorThread and coordinatorInstance is null
+    tested = prepareJiraRiverInstanceForTest(null);
+    JiraRiver.riverInstances.put(tested.riverName().getName(), tested);
+    tested.coordinatorThread = null;
+    tested.coordinatorInstance = null;
+    tested.closed = false;
+    Assert.assertNull(tested.coordinatorThread);
+    Assert.assertNull(tested.coordinatorInstance);
+
+    tested.close();
+    Assert.assertTrue(tested.isClosed());
+    Assert.assertNull(tested.coordinatorThread);
+    Assert.assertNull(tested.coordinatorInstance);
+    Assert.assertFalse(JiraRiver.riverInstances.containsKey(tested.riverName().getName()));
+
+  }
+
+  @Test
+  public void stop() throws Exception {
+
+    // case - close all correctly
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    MockThread mockThread = new MockThread();
+    tested.coordinatorThread = mockThread;
+    tested.coordinatorInstance = mock(IJIRAProjectIndexerCoordinator.class);
+    tested.closed = false;
+    Assert.assertNotNull(tested.coordinatorThread);
+    Assert.assertNotNull(tested.coordinatorInstance);
+    JiraRiver.riverInstances.put(tested.riverName().getName(), tested);
+    Assert.assertTrue(JiraRiver.riverInstances.containsKey(tested.riverName().getName()));
+
+    tested.stop(false);
+    Assert.assertTrue(tested.isClosed());
+    Assert.assertTrue(mockThread.interruptWasCalled);
+    Assert.assertNull(tested.coordinatorThread);
+    Assert.assertNull(tested.coordinatorInstance);
+    Assert.assertTrue(JiraRiver.riverInstances.containsKey(tested.riverName().getName()));
+
+    // case - no exception when coordinatorThread and coordinatorInstance is null
+    tested = prepareJiraRiverInstanceForTest(null);
+    JiraRiver.riverInstances.put(tested.riverName().getName(), tested);
+    tested.coordinatorThread = null;
+    tested.coordinatorInstance = null;
+    tested.closed = false;
+    Assert.assertNull(tested.coordinatorThread);
+    Assert.assertNull(tested.coordinatorInstance);
+
+    tested.stop(false);
+    Assert.assertTrue(tested.isClosed());
+    Assert.assertNull(tested.coordinatorThread);
+    Assert.assertNull(tested.coordinatorInstance);
+    Assert.assertTrue(JiraRiver.riverInstances.containsKey(tested.riverName().getName()));
+
+    // TODO unittest test permanen store
+  }
+
+  @Test
+  public void reconfigure() throws Exception {
+
+    // case - exception when not stopped
+    {
+      JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+      try {
+        tested.closed = false;
+        tested.reconfigure();
+        Assert.fail("IllegalStateException must be thrown");
+      } catch (IllegalStateException e) {
+        // OK
+      }
+
+    }
+
+    // TODO unittest
+  }
+
+  @Test
+  public void restart() {
+    // TODO unittest
+  }
+
+  @Test
   public void getAllIndexedProjectsKeys_FromStaticConfig() throws Exception {
     Map<String, Object> jiraSettings = new HashMap<String, Object>();
     jiraSettings.put("projectKeysIndexed", "ORG, UUUU, PEM, SU07");
@@ -187,6 +314,11 @@ public class JiraRiverTest extends ESRealClientTestBase {
     Assert.assertEquals("SU07", r.get(1));
     Assert
         .assertTrue(tested.allIndexedProjectsKeysNextRefresh <= (System.currentTimeMillis() + JiraRiver.JIRA_PROJECTS_REFRESH_TIME));
+  }
+
+  @Test
+  public void storeDatetimeValueBuildDocument() {
+    // TODO unittest with both project key passed and null
   }
 
   @Test
@@ -255,6 +387,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
   @Test
   public void prepareValueStoreDocumentName() {
     Assert.assertEquals("_lastupdatedissue_ORG", JiraRiver.prepareValueStoreDocumentName("ORG", "lastupdatedissue"));
+    Assert.assertEquals("_lastupdatedissue", JiraRiver.prepareValueStoreDocumentName(null, "lastupdatedissue"));
   }
 
   @Test
@@ -300,39 +433,6 @@ public class JiraRiverTest extends ESRealClientTestBase {
     // case - no exception if coordinatorInstance is null
     tested = prepareJiraRiverInstanceForTest(null);
     tested.reportIndexingFinished(new ProjectIndexingInfo("ORG", false, 10, 0, 0, null, true, 10, null));
-
-  }
-
-  @Test
-  public void close() throws Exception {
-
-    // case - close all correctly
-    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
-    MockThread mockThread = new MockThread();
-    tested.coordinatorThread = mockThread;
-    tested.coordinatorInstance = mock(IJIRAProjectIndexerCoordinator.class);
-    tested.closed = false;
-    Assert.assertNotNull(tested.coordinatorThread);
-    Assert.assertNotNull(tested.coordinatorInstance);
-
-    tested.close();
-    Assert.assertTrue(tested.isClosed());
-    Assert.assertTrue(mockThread.interruptWasCalled);
-    Assert.assertNull(tested.coordinatorThread);
-    Assert.assertNull(tested.coordinatorInstance);
-
-    // case - no exception when coordinatorThread and coordinatorInstance is null
-    tested = prepareJiraRiverInstanceForTest(null);
-    tested.coordinatorThread = null;
-    tested.coordinatorInstance = null;
-    tested.closed = false;
-    Assert.assertNull(tested.coordinatorThread);
-    Assert.assertNull(tested.coordinatorInstance);
-
-    tested.close();
-    Assert.assertTrue(tested.isClosed());
-    Assert.assertNull(tested.coordinatorThread);
-    Assert.assertNull(tested.coordinatorInstance);
 
   }
 

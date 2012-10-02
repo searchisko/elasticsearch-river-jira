@@ -45,6 +45,8 @@ import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactor
  */
 public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration {
 
+  private static final String PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY = "_river_stopped_permanently";
+
   /**
    * Map of running river instances. Used for management operations dispatching. See {@link #getRunningInstance(String)}
    */
@@ -164,17 +166,29 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * @param client
    * @throws MalformedURLException
    */
-  @SuppressWarnings({ "unchecked" })
   @Inject
   public JiraRiver(RiverName riverName, RiverSettings settings, Client client) throws MalformedURLException {
     super(riverName, settings);
     this.client = client;
+    configure(settings.settings());
+  }
+
+  /**
+   * Configure jira river.
+   * 
+   * @param settings used for configuration.
+   */
+  @SuppressWarnings({ "unchecked" })
+  protected void configure(Map<String, Object> settings) {
+
+    if (!closed)
+      throw new IllegalStateException("Jira River must be stopped to configure it!");
 
     String jiraUser = null;
     String jiraJqlTimezone = TimeZone.getDefault().getDisplayName();
 
-    if (settings.settings().containsKey("jira")) {
-      Map<String, Object> jiraSettings = (Map<String, Object>) settings.settings().get("jira");
+    if (settings.containsKey("jira")) {
+      Map<String, Object> jiraSettings = (Map<String, Object>) settings.get("jira");
       jiraUrlBase = XContentMapValues.nodeStringValue(jiraSettings.get("urlBase"), null);
       if (Utils.isEmpty(jiraUrlBase)) {
         throw new SettingsException("jira/urlBase element of configuration structure not found or empty");
@@ -209,8 +223,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     }
 
     Map<String, Object> indexSettings = null;
-    if (settings.settings().containsKey("index")) {
-      indexSettings = (Map<String, Object>) settings.settings().get("index");
+    if (settings.containsKey("index")) {
+      indexSettings = (Map<String, Object>) settings.get("index");
       indexName = XContentMapValues.nodeStringValue(indexSettings.get("index"), riverName.name());
       typeName = XContentMapValues.nodeStringValue(indexSettings.get("type"), INDEX_ISSUE_TYPE_NAME_DEFAULT);
     } else {
@@ -219,8 +233,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     }
 
     Map<String, Object> activityLogSettings = null;
-    if (settings.settings().containsKey("activity_log")) {
-      activityLogSettings = (Map<String, Object>) settings.settings().get("activity_log");
+    if (settings.containsKey("activity_log")) {
+      activityLogSettings = (Map<String, Object>) settings.get("activity_log");
       activityLogIndexName = Utils
           .trimToNull(XContentMapValues.nodeStringValue(activityLogSettings.get("index"), null));
       if (activityLogIndexName == null) {
@@ -239,14 +253,13 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 
     logger
         .info(
-            "Created JIRA River for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type for issues '{}'.",
-            jiraUrlBase, jiraUser, jiraJqlTimezone, indexName, typeName);
+            "Configured JIRA River '{}' for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type for issues '{}'.",
+            riverName.getName(), jiraUrlBase, jiraUser, jiraJqlTimezone, indexName, typeName);
     if (activityLogIndexName != null) {
       logger.info(
-          "Activity log for JIRA River is enabled. Search index name '{}', document type for index updates '{}'.",
-          activityLogIndexName, activityLogTypeName);
+          "Activity log for JIRA River '{}' is enabled. Search index name '{}', document type for index updates '{}'.",
+          riverName.getName(), activityLogIndexName, activityLogTypeName);
     }
-
   }
 
   @SuppressWarnings("unchecked")
@@ -278,20 +291,32 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   }
 
   @Override
-  public void start() {
+  public synchronized void start() {
+    if (!closed)
+      throw new IllegalStateException("Can't start already running river");
     logger.info("starting JIRA River");
+    synchronized (riverInstances) {
+      riverInstances.put(riverName().getName(), this);
+    }
+    refreshSearchIndex(getRiverIndexName());
+    try {
+      if (readDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY) != null) {
+        logger.info("do not start JIRA River indexing because stopped permanently");
+        return;
+      }
+    } catch (IOException e) {
+      // TODO what to do now, stsrt or leave stopped?
+    }
+    logger.info("starting JIRA River indexing");
     closed = false;
     coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, jiraIssueIndexStructureBuilder,
         indexUpdatePeriod, maxIndexingThreads, indexFullUpdatePeriod);
     coordinatorThread = acquireIndexingThread("jira_river_coordinator", coordinatorInstance);
     coordinatorThread.start();
-    synchronized (riverInstances) {
-      riverInstances.put(riverName().getName(), this);
-    }
   }
 
   @Override
-  public void close() {
+  public synchronized void close() {
     logger.info("closing JIRA River");
     closed = true;
     if (coordinatorThread != null) {
@@ -303,6 +328,72 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     synchronized (riverInstances) {
       riverInstances.remove(riverName().getName());
     }
+  }
+
+  /**
+   * Stop jira river, but leave instance existing in {@link #riverInstances} so it can be found over management REST
+   * calls and/or reconfigured and started later again. Note that standard ES river {@link #close()} method
+   * implementation removes river instance from {@link #riverInstances}.
+   * 
+   * @param permanent set to true if info about river stopped can be persisted
+   */
+  public synchronized void stop(boolean permanent) {
+    logger.info("stopping JIRA River indexing");
+    closed = true;
+    if (coordinatorThread != null) {
+      coordinatorThread.interrupt();
+    }
+    // free instances created in #start()
+    coordinatorThread = null;
+    coordinatorInstance = null;
+    if (permanent) {
+      try {
+        storeDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY, new Date(), null);
+      } catch (IOException e) {
+        logger.warn("Permanent stopped value storing failed {}", e.getMessage());
+      }
+    }
+  }
+
+  /**
+   * Reconfigure jira river. Must be stopped!
+   */
+  public synchronized void reconfigure() {
+    if (!closed)
+      throw new IllegalStateException("Jira River must be stopped to reconfigure it!");
+
+    logger.info("reconfiguring JIRA River");
+    String riverIndexName = getRiverIndexName();
+    refreshSearchIndex(riverIndexName);
+    GetResponse resp = client.prepareGet(riverIndexName, riverName().name(), "_meta").execute().actionGet();
+    if (resp.exists()) {
+      if (logger.isDebugEnabled()) {
+        logger.debug("Configuration document: {}", resp.getSourceAsString());
+      }
+      Map<String, Object> newset = resp.getSource();
+      configure(newset);
+    } else {
+      throw new IllegalStateException("Configuration document not found to reconfigure jira river "
+          + riverName().name());
+    }
+  }
+
+  /**
+   * Restart jira river. Configuration of river is updated.
+   */
+  public synchronized void restart() {
+    logger.info("restarting JIRA River");
+    boolean cleanPermanent = true;
+    if (!closed) {
+      cleanPermanent = false;
+      stop(false);
+    }
+    reconfigure();
+    if (cleanPermanent) {
+      deleteDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY);
+    }
+    start();
+    logger.info("JIRA River restarted");
   }
 
   @Override
@@ -355,6 +446,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     builder.startObject();
     builder.field("river_name", riverName().getName());
     builder.field("info_date", currentDate);
+    builder.field("running_state", closed ? "stopped" : "running");
     if (esNode != null) {
       builder.startObject("node");
       builder.field("id", esNode.getId());
@@ -509,8 +601,12 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    */
   protected XContentBuilder storeDatetimeValueBuildDocument(String projectKey, String propertyName, Date datetime)
       throws IOException {
-    return jsonBuilder().startObject().field("projectKey", projectKey).field("propertyName", propertyName)
-        .field(STORE_FIELD_VALUE, DateTimeUtils.formatISODateTime(datetime)).endObject();
+    XContentBuilder builder = jsonBuilder().startObject();
+    if (projectKey != null)
+      builder.field("projectKey", projectKey);
+    builder.field("propertyName", propertyName).field(STORE_FIELD_VALUE, DateTimeUtils.formatISODateTime(datetime));
+    builder.endObject();
+    return builder;
   }
 
   @Override
@@ -565,6 +661,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    */
   private String getRiverIndexName() {
     return "_river";
+    // return RiverIndexName.Conf.indexName(settings.globalSettings());
   }
 
   /**
@@ -578,7 +675,10 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * @see #readDatetimeValue(String, String)
    */
   protected static String prepareValueStoreDocumentName(String projectKey, String propertyName) {
-    return "_" + propertyName + "_" + projectKey;
+    if (projectKey != null)
+      return "_" + propertyName + "_" + projectKey;
+    else
+      return "_" + propertyName;
   }
 
   @Override
