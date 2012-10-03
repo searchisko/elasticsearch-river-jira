@@ -45,7 +45,7 @@ import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactor
  */
 public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration {
 
-  private static final String PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY = "_river_stopped_permanently";
+  private static final String PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY = "river_stopped_permanently";
 
   /**
    * Map of running river instances. Used for management operations dispatching. See {@link #getRunningInstance(String)}
@@ -157,6 +157,16 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * Last project indexing info store. Key in map is project key.
    */
   protected Map<String, ProjectIndexingInfo> lastProjectIndexingInfo = new HashMap<String, ProjectIndexingInfo>();
+
+  /**
+   * Date of last restart of this river.
+   */
+  protected Date lastRestartDate;
+
+  /**
+   * Timestamp of permanent stop of this river.
+   */
+  protected Date permanentStopDate;
 
   /**
    * Public constructor used by ElasticSearch.
@@ -300,15 +310,17 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     }
     refreshSearchIndex(getRiverIndexName());
     try {
-      if (readDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY) != null) {
-        logger.info("do not start JIRA River indexing because stopped permanently");
+      if ((permanentStopDate = readDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY)) != null) {
+        logger
+            .info("JIRA River indexing process not started because stopped permanently, you can restart it over management REST API");
         return;
       }
     } catch (IOException e) {
-      // TODO what to do now, stsrt or leave stopped?
+      // OK, we will start river
     }
-    logger.info("starting JIRA River indexing");
+    logger.info("starting JIRA River indexing process");
     closed = false;
+    lastRestartDate = new Date();
     coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, jiraIssueIndexStructureBuilder,
         indexUpdatePeriod, maxIndexingThreads, indexFullUpdatePeriod);
     coordinatorThread = acquireIndexingThread("jira_river_coordinator", coordinatorInstance);
@@ -317,7 +329,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 
   @Override
   public synchronized void close() {
-    logger.info("closing JIRA River");
+    logger.info("closing JIRA River on this node");
     closed = true;
     if (coordinatorThread != null) {
       coordinatorThread.interrupt();
@@ -338,7 +350,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * @param permanent set to true if info about river stopped can be persisted
    */
   public synchronized void stop(boolean permanent) {
-    logger.info("stopping JIRA River indexing");
+    logger.info("stopping JIRA River indexing process");
     closed = true;
     if (coordinatorThread != null) {
       coordinatorThread.interrupt();
@@ -348,7 +360,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     coordinatorInstance = null;
     if (permanent) {
       try {
-        storeDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY, new Date(), null);
+        permanentStopDate = new Date();
+        storeDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY, permanentStopDate, null);
       } catch (IOException e) {
         logger.warn("Permanent stopped value storing failed {}", e.getMessage());
       }
@@ -387,6 +400,14 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     if (!closed) {
       cleanPermanent = false;
       stop(false);
+      // wait a while to allow currently running indexers to finish??
+      try {
+        Thread.sleep(2000);
+      } catch (InterruptedException e) {
+        return;
+      }
+    } else {
+      logger.debug("stopped already");
     }
     reconfigure();
     if (cleanPermanent) {
@@ -446,7 +467,13 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     builder.startObject();
     builder.field("river_name", riverName().getName());
     builder.field("info_date", currentDate);
-    builder.field("running_state", closed ? "stopped" : "running");
+    builder.startObject("indexing");
+    builder.field("state", closed ? "stopped" : "running");
+    if (!closed)
+      builder.field("last_restart", lastRestartDate);
+    else if (permanentStopDate != null)
+      builder.field("stopped_permanently", permanentStopDate);
+    builder.endObject();
     if (esNode != null) {
       builder.startObject("node");
       builder.field("id", esNode.getId());
@@ -490,6 +517,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
     ProjectIndexingInfo lastIndexing = lastProjectIndexingInfo.get(projectKey);
     if (lastIndexing == null && activityLogIndexName != null) {
       try {
+        refreshSearchIndex(activityLogIndexName);
         SearchResponse sr = client.prepareSearch(activityLogIndexName).setTypes(activityLogTypeName)
             .setFilter(FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_PROJECT_KEY, projectKey))
             .setQuery(QueryBuilders.matchAllQuery()).addSort(ProjectIndexingInfo.DOCFIELD_START_DATE, SortOrder.DESC)
@@ -497,6 +525,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         if (sr.hits().getTotalHits() > 0) {
           SearchHit hit = sr.hits().getAt(0);
           lastIndexing = ProjectIndexingInfo.readFromDocument(hit.sourceAsMap());
+        } else {
+          logger.debug("No last indexing info found in activity log for project {}", projectKey);
         }
       } catch (Exception e) {
         logger.warn("Error during LastProjectIndexingInfo reading from activity log ES index: {} {}", e.getClass()

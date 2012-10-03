@@ -228,8 +228,11 @@ public class JiraRiverTest extends ESRealClientTestBase {
     Assert.assertNull(tested.coordinatorThread);
     Assert.assertNull(tested.coordinatorInstance);
     Assert.assertTrue(JiraRiver.riverInstances.containsKey(tested.riverName().getName()));
+  }
 
-    // TODO unittest test permanen store
+  @Test
+  public void stop_permanent() throws Exception {
+    // TODO unittest test permanent store of stop info
   }
 
   @Test
@@ -317,8 +320,15 @@ public class JiraRiverTest extends ESRealClientTestBase {
   }
 
   @Test
-  public void storeDatetimeValueBuildDocument() {
-    // TODO unittest with both project key passed and null
+  public void storeDatetimeValueBuildDocument() throws Exception {
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+
+    String dt = "2012-09-30T12:22:44.156Z";
+    Assert.assertEquals("{\"propertyName\":\"my_property\",\"value\":\"2012-09-30T14:22:44.156+0200\"}", tested
+        .storeDatetimeValueBuildDocument(null, "my_property", DateTimeUtils.parseISODateTime(dt)).string());
+    Assert.assertEquals(
+        "{\"projectKey\":\"AAA\",\"propertyName\":\"my_property\",\"value\":\"2012-09-30T14:22:44.156+0200\"}", tested
+            .storeDatetimeValueBuildDocument("AAA", "my_property", DateTimeUtils.parseISODateTime(dt)).string());
   }
 
   @Test
@@ -545,7 +555,6 @@ public class JiraRiverTest extends ESRealClientTestBase {
       info = tested.getRiverOperationInfo(new DiscoveryNode("My Node", "fsdfsdfxzd", DummyTransportAddress.INSTANCE,
           new HashMap<String, String>()), DateTimeUtils.parseISODateTime("2012-09-27T09:21:26.422Z"));
       TestUtils.assertStringFromClasspathFile("/asserts/JiraRiver_getRiverOperationInfo_2.json", info);
-      // TODO fill last indexed record into ES index for FFF project
 
     } finally {
       finalizeESClientForUnitTest();

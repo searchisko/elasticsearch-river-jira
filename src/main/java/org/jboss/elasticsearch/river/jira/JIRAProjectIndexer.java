@@ -141,6 +141,9 @@ public class JIRAProjectIndexer implements Runnable {
       if (res.getIssuesCount() == 0) {
         cont = false;
       } else {
+        if (isClosed())
+          throw new InterruptedException("Interrupted because River is closed");
+
         Date firstIssueUpdatedDate = null;
         BulkRequestBuilder esBulk = esIntegrationComponent.prepareESBulkRequestBuilder();
         for (Map<String, Object> issue : res.getIssues()) {
@@ -225,6 +228,8 @@ public class JIRAProjectIndexer implements Runnable {
     SearchResponse scrollResp = esIntegrationComponent.executeESSearchRequest(srb);
 
     if (scrollResp.hits().totalHits() > 0) {
+      if (isClosed())
+        throw new InterruptedException("Interrupted because River is closed");
       scrollResp = esIntegrationComponent.executeESScrollSearchNextRequest(scrollResp);
       BulkRequestBuilder esBulk = esIntegrationComponent.prepareESBulkRequestBuilder();
       while (scrollResp.hits().hits().length > 0) {

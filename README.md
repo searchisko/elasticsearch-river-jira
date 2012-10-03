@@ -126,9 +126,9 @@ If you use update activity logging then you can create index and mapping for it 
 	{
 	    "jira_river_indexupdate" : {
 	        "properties" : {
-	            "projectKey" : {"type" : "string", "analyzer" : "keyword"},
-	            "updateType" : {"type" : "string", "analyzer" : "keyword"},
-	            "result"     : {"type" : "string", "analyzer" : "keyword"}
+	            "project_key" : {"type" : "string", "analyzer" : "keyword"},
+	            "update_type" : {"type" : "string", "analyzer" : "keyword"},
+	            "result"      : {"type" : "string", "analyzer" : "keyword"}
 	         }
 	    }
 	}
@@ -214,11 +214,19 @@ Some generic configurable preprocessors implementation are available in the [str
 
 Management REST API
 -------------------
-JIRA river supports next REST operations for management purposes. Note `my_jira_river` in examples is name of jira river you can call operation for.
+JIRA river supports next REST commands for management purposes. Note `my_jira_river` in examples is name of jira river you can call operation for, soi replace it with real name for your calls.
 
 Get [state info](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/examples/mgm/rest_river_info.json) about jira river operation:
 
 	curl -XGET localhost:9200/_river/my_jira_river/_mgm/state
+
+Stop jira river indexing process. Process is stopped permanently, so even after complete elasticsearch cluster restart or river migration to another node. You need to `restart` it over management REST API (see next command):
+
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/stop
+
+Restart JIRA river indexing process. Configuration of river is reloaded during restart. You can restart running indexing, or stopped indexing (see previous command):
+
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/restart
 
 Force full index update for all jira projects:
 
@@ -227,7 +235,6 @@ Force full index update for all jira projects:
 Force full index update for jira project with key `projectKey`:
 
 	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/fullupdate/projectKey
-
 
 
 License

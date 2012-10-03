@@ -8,6 +8,9 @@ import org.elasticsearch.river.RiversModule;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateAction;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.RestFullUpdateAction;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.TransportFullUpdateAction;
+import org.jboss.elasticsearch.river.jira.mgm.lifecycle.JRLifecycleAction;
+import org.jboss.elasticsearch.river.jira.mgm.lifecycle.RestJRLifecycleAction;
+import org.jboss.elasticsearch.river.jira.mgm.lifecycle.TransportJRLifecycleAction;
 import org.jboss.elasticsearch.river.jira.mgm.state.JRStateAction;
 import org.jboss.elasticsearch.river.jira.mgm.state.RestJRStateAction;
 import org.jboss.elasticsearch.river.jira.mgm.state.TransportJRStateAction;
@@ -40,10 +43,12 @@ public class JiraRiverPlugin extends AbstractPlugin {
   public void onModule(RestModule module) {
     module.addRestAction(RestFullUpdateAction.class);
     module.addRestAction(RestJRStateAction.class);
+    module.addRestAction(RestJRLifecycleAction.class);
   }
 
   public void onModule(ActionModule module) {
     module.registerAction(FullUpdateAction.INSTANCE, TransportFullUpdateAction.class);
     module.registerAction(JRStateAction.INSTANCE, TransportJRStateAction.class);
+    module.registerAction(JRLifecycleAction.INSTANCE, TransportJRLifecycleAction.class);
   }
 }
