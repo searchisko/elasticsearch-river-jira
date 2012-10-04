@@ -12,7 +12,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
-import org.jboss.elasticsearch.river.jira.JiraRiver;
+import org.jboss.elasticsearch.river.jira.IJiraRiverMgm;
 import org.jboss.elasticsearch.river.jira.mgm.TransportJRMgmBaseAction;
 
 /**
@@ -35,7 +35,7 @@ public class TransportJRLifecycleAction extends
   }
 
   @Override
-  protected NodeJRLifecycleResponse performOperationOnJiraRiver(JiraRiver river, JRLifecycleRequest req,
+  protected NodeJRLifecycleResponse performOperationOnJiraRiver(IJiraRiverMgm river, JRLifecycleRequest req,
       DiscoveryNode node) throws Exception {
     JRLifecycleCommand command = req.getCommand();
     logger.debug("Go to perform lifecycle command {} on river '{}'", command, req.getRiverName());
@@ -70,7 +70,7 @@ public class TransportJRLifecycleAction extends
 
   @Override
   protected NodeJRLifecycleResponse newNodeResponse() {
-    return new NodeJRLifecycleResponse(clusterService.state().nodes().localNode());
+    return new NodeJRLifecycleResponse(clusterService.localNode());
   }
 
   @Override

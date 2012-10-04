@@ -19,7 +19,7 @@ public class NodeJRLifecycleRequest extends NodeJRMgmBaseRequest<JRLifecycleRequ
    * @param nodeId this request is for
    * @param request to be send to the node
    */
-  NodeJRLifecycleRequest(String nodeId, JRLifecycleRequest request) {
+  public NodeJRLifecycleRequest(String nodeId, JRLifecycleRequest request) {
     super(nodeId, request);
   }
 

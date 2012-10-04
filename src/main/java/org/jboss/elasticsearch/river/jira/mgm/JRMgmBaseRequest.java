@@ -34,6 +34,8 @@ public class JRMgmBaseRequest extends NodesOperationRequest {
    */
   public JRMgmBaseRequest(String riverName) {
     super();
+    if (riverName == null)
+      throw new IllegalArgumentException("riverName must be provided");
     this.riverName = riverName;
   }
 

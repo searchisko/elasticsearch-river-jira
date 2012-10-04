@@ -26,21 +26,21 @@ public class FullReindexRequestTest {
 
     {
       FullUpdateRequest testedSrc = new FullUpdateRequest();
-      FullUpdateRequest testedTarget = performser(testedSrc);
+      FullUpdateRequest testedTarget = performserialization(testedSrc);
       Assert.assertNull(testedTarget.getRiverName());
       Assert.assertNull(testedTarget.getProjectKey());
     }
 
     {
       FullUpdateRequest testedSrc = new FullUpdateRequest("myriver", null);
-      FullUpdateRequest testedTarget = performser(testedSrc);
+      FullUpdateRequest testedTarget = performserialization(testedSrc);
       Assert.assertEquals("myriver", testedTarget.getRiverName());
       Assert.assertNull(testedTarget.getProjectKey());
     }
 
     {
       FullUpdateRequest testedSrc = new FullUpdateRequest("myriver", "ORG");
-      FullUpdateRequest testedTarget = performser(testedSrc);
+      FullUpdateRequest testedTarget = performserialization(testedSrc);
       Assert.assertEquals("myriver", testedTarget.getRiverName());
       Assert.assertEquals("ORG", testedTarget.getProjectKey());
     }
@@ -52,7 +52,7 @@ public class FullReindexRequestTest {
    * @return
    * @throws IOException
    */
-  private FullUpdateRequest performser(FullUpdateRequest testedSrc) throws IOException {
+  private FullUpdateRequest performserialization(FullUpdateRequest testedSrc) throws IOException {
     BytesStreamOutput out = new BytesStreamOutput();
     testedSrc.writeTo(out);
     FullUpdateRequest testedTarget = new FullUpdateRequest();

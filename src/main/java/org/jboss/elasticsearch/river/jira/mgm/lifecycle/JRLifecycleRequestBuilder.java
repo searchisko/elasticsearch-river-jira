@@ -44,9 +44,15 @@ public class JRLifecycleRequestBuilder extends BaseRequestBuilder<JRLifecycleReq
 
   @Override
   protected void doExecute(ActionListener<JRLifecycleResponse> listener) {
+    if (request.getRiverName() == null)
+      throw new IllegalArgumentException("riverName must be provided for request");
     if (request.getCommand() == null)
       throw new IllegalArgumentException("command must be provided for request");
     client.execute(JRLifecycleAction.INSTANCE, request, listener);
+  }
+
+  protected Client getClient() {
+    return client;
   }
 
 }

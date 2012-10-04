@@ -12,7 +12,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
-import org.jboss.elasticsearch.river.jira.JiraRiver;
+import org.jboss.elasticsearch.river.jira.IJiraRiverMgm;
 import org.jboss.elasticsearch.river.jira.mgm.TransportJRMgmBaseAction;
 
 /**
@@ -35,7 +35,7 @@ public class TransportFullUpdateAction extends
   }
 
   @Override
-  protected NodeFullUpdateResponse performOperationOnJiraRiver(JiraRiver river, FullUpdateRequest req,
+  protected NodeFullUpdateResponse performOperationOnJiraRiver(IJiraRiverMgm river, FullUpdateRequest req,
       DiscoveryNode node) throws Exception {
     logger.debug("Go to schedule full reindex for river '{}' and project {}", req.getRiverName(), req.getProjectKey());
     String ret = river.forceFullReindex(req.getProjectKey());

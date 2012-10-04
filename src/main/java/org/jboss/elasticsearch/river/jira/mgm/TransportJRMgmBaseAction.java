@@ -20,6 +20,7 @@ import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
+import org.jboss.elasticsearch.river.jira.IJiraRiverMgm;
 import org.jboss.elasticsearch.river.jira.JiraRiver;
 
 /**
@@ -71,14 +72,14 @@ public abstract class TransportJRMgmBaseAction<Request extends JRMgmBaseRequest,
   protected NodeResponse nodeOperation(NodeRequest nodeRequest) throws ElasticSearchException {
     Request req = nodeRequest.getRequest();
     logger.debug("Go to look for river '{}' on this node", req.getRiverName());
-    JiraRiver river = JiraRiver.getRunningInstance(req.getRiverName());
+    IJiraRiverMgm river = JiraRiver.getRunningInstance(req.getRiverName());
     if (river == null) {
       logger.debug("JIRA River {} not found on this node", req.getRiverName());
       return newNodeResponse();
     } else {
       logger.debug("JIRA River {} found on this node, go to call mgm operation on it {}", req.getRiverName(), req);
       try {
-        return performOperationOnJiraRiver(river, req, clusterService.state().nodes().localNode());
+        return performOperationOnJiraRiver(river, req, clusterService.localNode());
       } catch (Exception e) {
         throw new ElasticSearchException(e.getMessage(), e);
       }
@@ -95,6 +96,6 @@ public abstract class TransportJRMgmBaseAction<Request extends JRMgmBaseRequest,
    * @return node response with operation result
    * @throws Exception if something is wrong
    */
-  protected abstract NodeResponse performOperationOnJiraRiver(JiraRiver river, Request req, DiscoveryNode node)
+  protected abstract NodeResponse performOperationOnJiraRiver(IJiraRiverMgm river, Request req, DiscoveryNode node)
       throws Exception;
 }

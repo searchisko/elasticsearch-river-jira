@@ -43,14 +43,14 @@ import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactor
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration {
+public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration, IJiraRiverMgm {
 
   private static final String PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY = "river_stopped_permanently";
 
   /**
    * Map of running river instances. Used for management operations dispatching. See {@link #getRunningInstance(String)}
    */
-  protected static Map<String, JiraRiver> riverInstances = new HashMap<String, JiraRiver>();
+  protected static Map<String, IJiraRiverMgm> riverInstances = new HashMap<String, IJiraRiverMgm>();
 
   /**
    * How often is project list refreshed from JIRA instance [ms].
@@ -306,7 +306,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       throw new IllegalStateException("Can't start already running river");
     logger.info("starting JIRA River");
     synchronized (riverInstances) {
-      riverInstances.put(riverName().getName(), this);
+      addRunningInstance(this);
     }
     refreshSearchIndex(getRiverIndexName());
     try {
@@ -349,6 +349,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * 
    * @param permanent set to true if info about river stopped can be persisted
    */
+  @Override
   public synchronized void stop(boolean permanent) {
     logger.info("stopping JIRA River indexing process");
     closed = true;
@@ -362,6 +363,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
       try {
         permanentStopDate = new Date();
         storeDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY, permanentStopDate, null);
+        refreshSearchIndex(getRiverIndexName());
       } catch (IOException e) {
         logger.warn("Permanent stopped value storing failed {}", e.getMessage());
       }
@@ -394,6 +396,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   /**
    * Restart jira river. Configuration of river is updated.
    */
+  @Override
   public synchronized void restart() {
     logger.info("restarting JIRA River");
     boolean cleanPermanent = true;
@@ -431,6 +434,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    *         <code>jiraProjectKey</code> parameter was not found in this indexer
    * @throws Exception
    */
+  @Override
   public String forceFullReindex(String jiraProjectKey) throws Exception {
     if (coordinatorInstance == null)
       return null;
@@ -461,6 +465,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * @return String with JSON formatted info.
    * @throws Exception
    */
+  @Override
   public String getRiverOperationInfo(DiscoveryNode esNode, Date currentDate) throws Exception {
 
     XContentBuilder builder = jsonBuilder().prettyPrint();
@@ -542,10 +547,19 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * @param riverName to get instance for
    * @return river instance or null if not found
    */
-  public static JiraRiver getRunningInstance(String riverName) {
+  public static IJiraRiverMgm getRunningInstance(String riverName) {
     if (riverName == null)
       return null;
     return riverInstances.get(riverName);
+  }
+
+  /**
+   * Put running instance of jira river into registry. Used for REST management operations handling.
+   * 
+   * @param riverName to get instance for
+   */
+  public static void addRunningInstance(IJiraRiverMgm jiraRiver) {
+    riverInstances.put(jiraRiver.riverName().getName(), jiraRiver);
   }
 
   @Override

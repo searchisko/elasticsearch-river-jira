@@ -14,7 +14,7 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.transport.TransportService;
-import org.jboss.elasticsearch.river.jira.JiraRiver;
+import org.jboss.elasticsearch.river.jira.IJiraRiverMgm;
 import org.jboss.elasticsearch.river.jira.mgm.TransportJRMgmBaseAction;
 
 /**
@@ -37,7 +37,7 @@ public class TransportJRStateAction extends
   }
 
   @Override
-  protected NodeJRStateResponse performOperationOnJiraRiver(JiraRiver river, JRStateRequest req, DiscoveryNode node)
+  protected NodeJRStateResponse performOperationOnJiraRiver(IJiraRiverMgm river, JRStateRequest req, DiscoveryNode node)
       throws Exception {
     logger.debug("Go to get state information from river '{}'", req.getRiverName());
     String ret = river.getRiverOperationInfo(node, new Date());

@@ -13,6 +13,11 @@ public class NodeJRLifecycleResponse extends NodeJRMgmBaseResponse {
   protected NodeJRLifecycleResponse() {
   }
 
+  /**
+   * Create response with values to be send back to requestor. <code>riverFound</code> is set to <code>false</code>.
+   * 
+   * @param node this response is for.
+   */
   public NodeJRLifecycleResponse(DiscoveryNode node) {
     super(node);
   }
