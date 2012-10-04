@@ -1,0 +1,23 @@
+{
+    "type" : "jira",
+    "jira" : {
+        "urlBase"               : "https://issues.jboss.org",
+        "username"              : "jira_username",
+        "pwd"                   : "jira_user_password",
+        "jqlTimeZone"           : "America/New York",
+        "timeout"               : "5s",
+        "maxIssuesPerRequest"   : 50,
+        "projectKeysIndexed"    : "ORG,AS7",
+        "indexUpdatePeriod"     : "5m",
+        "indexFullUpdatePeriod" : "1h",
+        "maxIndexingThreads"    : 2
+    },
+    "index" : {
+        "index" : "my_jira_index_test",
+        "type"  : "jira_issue_test"
+    },
+    "activity_log": {
+        "index" : "jira_river_activity_test",
+        "type"  : "jira_river_indexupdate_test"
+    }
+}

@@ -248,10 +248,47 @@ public class JiraRiverTest extends ESRealClientTestBase {
       } catch (IllegalStateException e) {
         // OK
       }
+    }
+
+    // case - config reload error because no document
+    {
+      JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+      try {
+        tested.client = prepareESClientForUnitTest();
+        tested.closed = true;
+        tested.client.admin().indices().prepareCreate(tested.getRiverIndexName()).execute().actionGet();
+        tested.reconfigure();
+        Assert.fail("IllegalStateException must be thrown");
+      } catch (IllegalStateException e) {
+        // OK
+      } finally {
+        finalizeESClientForUnitTest();
+      }
 
     }
 
-    // TODO unittest
+    // case - config reload performed
+    {
+      JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+      try {
+        tested.client = prepareESClientForUnitTest();
+        tested.closed = true;
+        tested.client.prepareIndex(tested.getRiverIndexName(), tested.riverName().getName(), "_meta")
+            .setSource(TestUtils.readStringFromClasspathFile("/river_reconfiguration_test.json")).execute().actionGet();
+
+        tested.reconfigure();
+
+        Assert.assertEquals("https://issues.jboss.org/rest/api/2/",
+            ((JIRA5RestClient) tested.jiraClient).jiraRestAPIUrlBase);
+        Assert.assertEquals("my_jira_index_test", tested.indexName);
+        Assert.assertEquals("jira_issue_test", tested.typeName);
+        Assert.assertEquals("jira_river_activity_test", tested.activityLogIndexName);
+        Assert.assertEquals("jira_river_indexupdate_test", tested.activityLogTypeName);
+      } finally {
+        finalizeESClientForUnitTest();
+      }
+
+    }
   }
 
   @Test

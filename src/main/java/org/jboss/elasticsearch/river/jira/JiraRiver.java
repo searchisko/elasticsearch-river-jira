@@ -703,7 +703,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
   /**
    * @return
    */
-  private String getRiverIndexName() {
+  protected String getRiverIndexName() {
     return "_river";
     // return RiverIndexName.Conf.indexName(settings.globalSettings());
   }
