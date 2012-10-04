@@ -11,7 +11,6 @@ import junit.framework.Assert;
 
 import org.elasticsearch.common.io.stream.BytesStreamInput;
 import org.elasticsearch.common.io.stream.BytesStreamOutput;
-import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateRequest;
 import org.junit.Test;
 
 /**
@@ -19,7 +18,43 @@ import org.junit.Test;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class FullReindexRequestTest {
+public class FullUpdateRequestTest {
+
+  @Test
+  public void constructor_empty() {
+    {
+      FullUpdateRequest tested = new FullUpdateRequest();
+
+      tested.setRiverName("myriver");
+      tested.setProjectKey("AAA");
+      Assert.assertEquals("myriver", tested.getRiverName());
+      Assert.assertEquals("AAA", tested.getProjectKey());
+    }
+  }
+
+  @Test
+  public void constructor_filling() {
+
+    try {
+      new FullUpdateRequest(null, "AAA");
+      Assert.fail("IllegalArgumentException must be thrown");
+    } catch (IllegalArgumentException e) {
+      // OK
+    }
+    {
+      FullUpdateRequest tested = new FullUpdateRequest("myriver", null);
+      Assert.assertEquals("myriver", tested.getRiverName());
+      Assert.assertNull(tested.getProjectKey());
+      Assert.assertFalse(tested.isProjectKeyRequest());
+    }
+
+    {
+      FullUpdateRequest tested = new FullUpdateRequest("myriver", "AAA");
+      Assert.assertEquals("myriver", tested.getRiverName());
+      Assert.assertEquals("AAA", tested.getProjectKey());
+      Assert.assertTrue(tested.isProjectKeyRequest());
+    }
+  }
 
   @Test
   public void serialization() throws IOException {

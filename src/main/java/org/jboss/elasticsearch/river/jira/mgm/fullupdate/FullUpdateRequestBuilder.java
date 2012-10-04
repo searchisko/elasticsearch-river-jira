@@ -45,6 +45,8 @@ public class FullUpdateRequestBuilder extends BaseRequestBuilder<FullUpdateReque
 
   @Override
   protected void doExecute(ActionListener<FullUpdateResponse> listener) {
+    if (request.getRiverName() == null)
+      throw new IllegalArgumentException("riverName must be provided for request");
     client.execute(FullUpdateAction.INSTANCE, request, listener);
   }
 

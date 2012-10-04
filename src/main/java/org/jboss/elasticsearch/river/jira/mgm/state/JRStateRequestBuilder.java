@@ -33,6 +33,8 @@ public class JRStateRequestBuilder extends BaseRequestBuilder<JRStateRequest, JR
 
   @Override
   protected void doExecute(ActionListener<JRStateResponse> listener) {
+    if (request.getRiverName() == null)
+      throw new IllegalArgumentException("riverName must be provided for request");
     client.execute(JRStateAction.INSTANCE, request, listener);
   }
 

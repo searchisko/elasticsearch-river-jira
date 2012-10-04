@@ -61,7 +61,7 @@ public class TransportJRStateAction extends
 
   @Override
   protected NodeJRStateResponse newNodeResponse() {
-    return new NodeJRStateResponse(clusterService.state().nodes().localNode());
+    return new NodeJRStateResponse(clusterService.localNode());
   }
 
   @Override

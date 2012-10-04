@@ -21,7 +21,7 @@ import org.junit.Test;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class FullReindexResponseTest {
+public class FullUpdateResponseTest {
 
   @Test
   public void getSuccessNodeResponse() {

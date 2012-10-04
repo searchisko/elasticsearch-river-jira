@@ -59,7 +59,7 @@ public class TransportFullUpdateAction extends
 
   @Override
   protected NodeFullUpdateResponse newNodeResponse() {
-    return new NodeFullUpdateResponse(clusterService.state().nodes().localNode());
+    return new NodeFullUpdateResponse(clusterService.localNode());
   }
 
   @Override
