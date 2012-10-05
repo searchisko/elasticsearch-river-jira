@@ -232,7 +232,26 @@ public class JiraRiverTest extends ESRealClientTestBase {
 
   @Test
   public void stop_permanent() throws Exception {
-    // TODO unittest test permanent store of stop info
+    JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+    try {
+      tested.client = prepareESClientForUnitTest();
+      tested.client.admin().indices().prepareCreate(tested.getRiverIndexName()).execute().actionGet();
+
+      // case - not permanent stop
+      tested.closed = false;
+      tested.stop(false);
+      Assert.assertNull(tested.readDatetimeValue(null, JiraRiver.PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY));
+      Assert.assertTrue(tested.isClosed());
+
+      // case - permanent stop
+      tested.closed = false;
+      tested.stop(true);
+      Assert.assertNotNull(tested.readDatetimeValue(null, JiraRiver.PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY));
+      Assert.assertTrue(tested.isClosed());
+
+    } finally {
+      finalizeESClientForUnitTest();
+    }
   }
 
   @Test
@@ -264,7 +283,6 @@ public class JiraRiverTest extends ESRealClientTestBase {
       } finally {
         finalizeESClientForUnitTest();
       }
-
     }
 
     // case - config reload performed
@@ -277,7 +295,6 @@ public class JiraRiverTest extends ESRealClientTestBase {
             .setSource(TestUtils.readStringFromClasspathFile("/river_reconfiguration_test.json")).execute().actionGet();
 
         tested.reconfigure();
-
         Assert.assertEquals("https://issues.jboss.org/rest/api/2/",
             ((JIRA5RestClient) tested.jiraClient).jiraRestAPIUrlBase);
         Assert.assertEquals("my_jira_index_test", tested.indexName);
@@ -287,7 +304,6 @@ public class JiraRiverTest extends ESRealClientTestBase {
       } finally {
         finalizeESClientForUnitTest();
       }
-
     }
   }
 

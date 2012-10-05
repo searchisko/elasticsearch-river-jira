@@ -45,12 +45,18 @@ import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactor
  */
 public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration, IJiraRiverMgm {
 
-  private static final String PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY = "river_stopped_permanently";
-
   /**
    * Map of running river instances. Used for management operations dispatching. See {@link #getRunningInstance(String)}
    */
   protected static Map<String, IJiraRiverMgm> riverInstances = new HashMap<String, IJiraRiverMgm>();
+
+  /**
+   * Name of datetime property where permanent indexing stop date is stored
+   * 
+   * @see #storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+   * @see #readDatetimeValue(String, String)
+   */
+  protected static final String PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY = "river_stopped_permanently";
 
   /**
    * How often is project list refreshed from JIRA instance [ms].
@@ -364,6 +370,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
         permanentStopDate = new Date();
         storeDatetimeValue(null, PERMSTOREPROP_RIVER_STOPPED_PERMANENTLY, permanentStopDate, null);
         refreshSearchIndex(getRiverIndexName());
+        logger.info("JIRA River indexing process stopped permanently, you can restart it over management REST API");
       } catch (IOException e) {
         logger.warn("Permanent stopped value storing failed {}", e.getMessage());
       }
