@@ -24,7 +24,7 @@ import org.jboss.elasticsearch.river.jira.IJiraRiverMgm;
 import org.jboss.elasticsearch.river.jira.JiraRiver;
 
 /**
- * Base abstract transport action for Jira Rimer management operations.
+ * Base abstract transport action for Jira River management operations.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */

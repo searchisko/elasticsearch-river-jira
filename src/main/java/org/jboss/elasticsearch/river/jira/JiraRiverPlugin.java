@@ -11,6 +11,9 @@ import org.jboss.elasticsearch.river.jira.mgm.fullupdate.TransportFullUpdateActi
 import org.jboss.elasticsearch.river.jira.mgm.lifecycle.JRLifecycleAction;
 import org.jboss.elasticsearch.river.jira.mgm.lifecycle.RestJRLifecycleAction;
 import org.jboss.elasticsearch.river.jira.mgm.lifecycle.TransportJRLifecycleAction;
+import org.jboss.elasticsearch.river.jira.mgm.riverslist.ListRiversAction;
+import org.jboss.elasticsearch.river.jira.mgm.riverslist.RestListRiversAction;
+import org.jboss.elasticsearch.river.jira.mgm.riverslist.TransportListRiversAction;
 import org.jboss.elasticsearch.river.jira.mgm.state.JRStateAction;
 import org.jboss.elasticsearch.river.jira.mgm.state.RestJRStateAction;
 import org.jboss.elasticsearch.river.jira.mgm.state.TransportJRStateAction;
@@ -44,11 +47,13 @@ public class JiraRiverPlugin extends AbstractPlugin {
     module.addRestAction(RestFullUpdateAction.class);
     module.addRestAction(RestJRStateAction.class);
     module.addRestAction(RestJRLifecycleAction.class);
+    module.addRestAction(RestListRiversAction.class);
   }
 
   public void onModule(ActionModule module) {
     module.registerAction(FullUpdateAction.INSTANCE, TransportFullUpdateAction.class);
     module.registerAction(JRStateAction.INSTANCE, TransportJRStateAction.class);
     module.registerAction(JRLifecycleAction.INSTANCE, TransportJRLifecycleAction.class);
+    module.registerAction(ListRiversAction.INSTANCE, TransportListRiversAction.class);
   }
 }

@@ -6,6 +6,8 @@ import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateAction;
 import org.jboss.elasticsearch.river.jira.mgm.fullupdate.TransportFullUpdateAction;
 import org.jboss.elasticsearch.river.jira.mgm.lifecycle.JRLifecycleAction;
 import org.jboss.elasticsearch.river.jira.mgm.lifecycle.TransportJRLifecycleAction;
+import org.jboss.elasticsearch.river.jira.mgm.riverslist.ListRiversAction;
+import org.jboss.elasticsearch.river.jira.mgm.riverslist.TransportListRiversAction;
 import org.jboss.elasticsearch.river.jira.mgm.state.JRStateAction;
 import org.jboss.elasticsearch.river.jira.mgm.state.TransportJRStateAction;
 
@@ -26,5 +28,6 @@ public class JiraRiverModule extends ActionModule {
     registerAction(FullUpdateAction.INSTANCE, TransportFullUpdateAction.class);
     registerAction(JRStateAction.INSTANCE, TransportJRStateAction.class);
     registerAction(JRLifecycleAction.INSTANCE, TransportJRLifecycleAction.class);
+    registerAction(ListRiversAction.INSTANCE, TransportListRiversAction.class);
   }
 }

@@ -67,11 +67,13 @@ public abstract class ESRealClientTestBase {
       // path.data folder is created but we make sure it is removed after test finishes
       Settings settings = org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder()
           .put("index.store.type", "memory").put("gateway.type", "none").put("http.enabled", "false")
-          .put("path.data", tempFolderName).put("node.river", "_none_").build();
+          .put("path.data", tempFolderName).build();
 
       node = NodeBuilder.nodeBuilder().settings(settings).local(true).node();
 
       client = node.client();
+
+      // Thread.sleep(100);
 
       return client;
     } catch (Exception e) {

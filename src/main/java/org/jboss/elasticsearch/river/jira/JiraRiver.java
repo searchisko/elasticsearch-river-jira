@@ -5,10 +5,12 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -553,6 +555,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * 
    * @param riverName to get instance for
    * @return river instance or null if not found
+   * @see #addRunningInstance(IJiraRiverMgm)
+   * @see #getRunningInstances()
    */
   public static IJiraRiverMgm getRunningInstance(String riverName) {
     if (riverName == null)
@@ -564,9 +568,22 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
    * Put running instance of jira river into registry. Used for REST management operations handling.
    * 
    * @param riverName to get instance for
+   * @see #getRunningInstances()
+   * @see #getRunningInstance(String)
    */
   public static void addRunningInstance(IJiraRiverMgm jiraRiver) {
     riverInstances.put(jiraRiver.riverName().getName(), jiraRiver);
+  }
+
+  /**
+   * Get running instances of all jira rivers. Used for REST management operations handling.
+   * 
+   * @return Set with names of all jira river instances registered for management
+   * @see #addRunningInstance(IJiraRiverMgm)
+   * @see #getRunningInstance(String)
+   */
+  public static Set<String> getRunningInstances() {
+    return Collections.unmodifiableSet((riverInstances.keySet()));
   }
 
   @Override

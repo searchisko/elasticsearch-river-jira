@@ -89,7 +89,7 @@ public abstract class JRMgmBaseActionListener<Request extends JRMgmBaseRequest, 
    * @return document with message
    * @throws IOException
    */
-  protected XContentBuilder buildMessageDocument(RestRequest restRequest, String message) throws IOException {
+  public static XContentBuilder buildMessageDocument(RestRequest restRequest, String message) throws IOException {
     XContentBuilder builder = RestXContentBuilder.restContentBuilder(restRequest);
     builder.startObject();
     builder.field("message", message);
