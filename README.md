@@ -8,9 +8,9 @@ In order to install the plugin into ElasticSearch, simply run: `bin/plugin -inst
     -----------------------------------------------------------------------
     | JIRA River | ElasticSearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
-    | master     | 0.19.10          | 5+   | 2             |              |
+    | master     | 0.19.11          | 5+   | 2             |              |
     -----------------------------------------------------------------------
-    | 1.2.0      | 0.19.9, 0.19.10  | 5+   | 2             | 15.10.2012   |
+    | 1.2.0      | 0.19.9 - 0.19.11 | 5+   | 2             | 15.10.2012   |
     -----------------------------------------------------------------------
     | 1.1.0      | 0.19.9           | 5+   | 2             | 21.9.2012    |
     -----------------------------------------------------------------------
@@ -51,6 +51,7 @@ Creating the JIRA river can be done using:
 	'
 
 The example above lists all the main options controlling the creation and behaviour of a JIRA river. Full list of options with description is here:
+
 * `jira/urlBase` is required in order to connect to the JIRA REST API. It's only base URL, path to REST API is added automatically.
 * `jira/username` and `jira/pwd` are optional JIRA login credentials to access jira issues. Anonymous JIRA access is used if not provided.
 * `jira/jqlTimeZone` is optional [identifier of timezone](http://docs.oracle.com/javase/6/docs/api/java/util/TimeZone.html#getTimeZone%28java.lang.String%29) used to format time values into JQL when requesting updated issues. Timezone of ElasticSearch JVM is used if not provided. JQL uses timezone of jira user who perform JQL query (so this setting must reflex [jira timezone of user](https://confluence.atlassian.com/display/JIRA/Choosing+a+Time+Zone) provided by `jira/username` parameter), default timezone of JIRA in case of Anonymous access. Incorrect setting of this value may lead to some issue updates not reflected in search index during incremental update!!
