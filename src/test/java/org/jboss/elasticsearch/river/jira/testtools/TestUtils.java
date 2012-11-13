@@ -21,7 +21,7 @@ import org.junit.Assert;
 public abstract class TestUtils {
 
   /**
-   * Assert passed string is same as contnt of given file loaded from classpath.
+   * Assert passed string is same as content of given file loaded from classpath.
    * 
    * @param expectedFilePath path to file inside classpath
    * @param actual content to assert
