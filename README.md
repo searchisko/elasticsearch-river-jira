@@ -17,7 +17,7 @@ In order to install the plugin into ElasticSearch, simply run: `bin/plugin -inst
     | 1.0.0      | 0.19             | 5+   | 2             | 11.9.2012    |
     -----------------------------------------------------------------------
 
-For cahngelogs, planned milestones/enhancements and known bugs see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues) please.
+For changelog, planned milestones/enhancements and known bugs see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues) please.
 
 The JIRA river indexes JIRA issues and comments, and makes them searchable by ElasticSearch. JIRA is pooled periodically to detect changed issues (search operation with JQL query over `updatedDate` field) to update search index in incremental update mode. 
 Periodical full update may be configured too to completely refresh search index and remove issues deleted in JIRA from it (deletes are not catched by incremental updates).
@@ -73,7 +73,7 @@ The example above lists all the main options controlling the creation and behavi
 * `activity_log/index` defines name of index where information about jira river activity are stored.
 * `activity_log/type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used to store information about jira river activity. Parameter is optional, `jira_river_indexupdate` is used if ommited.
 
-Time value in configuration is number representing milliseconds, but you can use next postfixes appended to the number to define units: `s` for seconds, `m` for minutes, `h` for hours, `d` for days and `w` for weeks. So for example value `5h` means five fours, `2w` means two weeks.
+Time value in configuration is number representing milliseconds, but you can use these postfixes appended to the number to define units: `s` for seconds, `m` for minutes, `h` for hours, `d` for days and `w` for weeks. So for example value `5h` means five fours, `2w` means two weeks.
  
 To get rid of some unwanted WARN log messages add next line to the [logging configuration file](http://www.elasticsearch.org/guide/reference/setup/configuration.html) of your ElasticSearch instance which is `config/logging.yml`:
 
@@ -118,7 +118,7 @@ Same apply for 'comment' mapping if you use `child` or `standalone` mode!
 	}
 	'
 
-Alternativelly you can store [mappings in ElasticSearch node configuration](http://www.elasticsearch.org/guide/reference/mapping/conf-mappings.html).
+You can store [mappings in ElasticSearch node configuration](http://www.elasticsearch.org/guide/reference/mapping/conf-mappings.html) alternatively.
 
 See next chapter for description of JIRA issue indexed document structure to create better mappings meeting your needs. 
 
@@ -141,7 +141,7 @@ JIRA issue index document structure
 -----------------------------------
 You can configure which fields from JIRA will be available in search index and under which names. See [river_configuration_default.json](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/templates/river_configuration_default.json) file for example of river configuration, which is used to create default configuration.
 
-JIRA River writes JSON document with following structure to the search index for issue by default. Issue key is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index by default (you can change this over `index/jira_field_issue_document_id` setting which defines field in issue data which value is used as document id. Be carefull for uniqueness of this value!).
+JIRA River writes JSON document with following structure to the search index for issue by default. Issue key is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index by default (you can change this over `index/jira_field_issue_document_id` setting which defines field in issue data which value is used as document id. Be careful for uniqueness of this value!).
 
     ----------------------------------------------------------------------------------------------------------------------------------------------------
     | **index field** | **JIRA JSON field**   | **indexed field value notes**                                                | **river configuration** |
