@@ -258,7 +258,7 @@ public class JIRA5RestClient implements IJIRAClient {
    * Perform defined REST call to remote JIRA REST API.
    * 
    * @param restOperation name of REST operation to call on JIRA API (eg. 'search' or 'project' )
-   * @param params GEP parameters used for call
+   * @param params GET parameters used for call
    * @return response from server if successful
    * @throws Exception in case of unsuccessful call
    */
