@@ -28,94 +28,95 @@ import org.mockito.Mockito;
  */
 public class TransportListRiversActionTest {
 
-  public static final ClusterName clusterName = new ClusterName("myCluster");
+	public static final ClusterName clusterName = new ClusterName("myCluster");
 
-  @Test
-  public void transportAction() {
-    TransportListRiversAction tested = prepareTestedInstance(clusterName);
-    Assert.assertEquals(ListRiversAction.NAME, tested.transportAction());
-  }
+	@Test
+	public void transportAction() {
+		TransportListRiversAction tested = prepareTestedInstance(clusterName);
+		Assert.assertEquals(ListRiversAction.NAME, tested.transportAction());
+	}
 
-  @Test
-  public void newRequest() {
-    TransportListRiversAction tested = prepareTestedInstance(clusterName);
-    Assert.assertNotNull(tested.newRequest());
-  }
+	@Test
+	public void newRequest() {
+		TransportListRiversAction tested = prepareTestedInstance(clusterName);
+		Assert.assertNotNull(tested.newRequest());
+	}
 
-  @Test
-  public void newNodeRequest() {
-    TransportListRiversAction tested = prepareTestedInstance(clusterName);
+	@SuppressWarnings("unused")
+	@Test
+	public void newNodeRequest() {
+		TransportListRiversAction tested = prepareTestedInstance(clusterName);
 
-    {
-      Assert.assertNotNull(tested.newNodeRequest());
-    }
+		{
+			Assert.assertNotNull(tested.newNodeRequest());
+		}
 
-    {
-      ListRiversRequest request = new ListRiversRequest();
-      NodeListRiversRequest nodeReq = tested.newNodeRequest("myNodeId", request);
-    }
-  }
+		{
+			ListRiversRequest request = new ListRiversRequest();
+			NodeListRiversRequest nodeReq = tested.newNodeRequest("myNodeId", request);
+		}
+	}
 
-  @Test
-  public void newNodeResponse() {
-    TransportListRiversAction tested = prepareTestedInstance(clusterName);
-    Mockito.when(clusterService.localNode()).thenReturn(dn);
+	@Test
+	public void newNodeResponse() {
+		TransportListRiversAction tested = prepareTestedInstance(clusterName);
+		Mockito.when(clusterService.localNode()).thenReturn(dn);
 
-    NodeListRiversResponse resp = tested.newNodeResponse();
-    Assert.assertNotNull(resp);
-    Assert.assertEquals(dn, resp.node());
-  }
+		NodeListRiversResponse resp = tested.newNodeResponse();
+		Assert.assertNotNull(resp);
+		Assert.assertEquals(dn, resp.node());
+	}
 
-  @Test
-  public void nodeOperation() throws Exception {
+	@Test
+	public void nodeOperation() throws Exception {
 
-    TransportListRiversAction tested = prepareTestedInstance(clusterName);
+		TransportListRiversAction tested = prepareTestedInstance(clusterName);
 
-    {
-      NodeListRiversRequest req = new NodeListRiversRequest(dn.getId());
-      NodeListRiversResponse resp = tested.nodeOperation(req);
-      Assert.assertNotNull(resp);
-      Assert.assertNotNull(resp.jiraRiverNames);
-      Assert.assertEquals(0, resp.jiraRiverNames.size());
-    }
+		{
+			NodeListRiversRequest req = new NodeListRiversRequest(dn.getId());
+			NodeListRiversResponse resp = tested.nodeOperation(req);
+			Assert.assertNotNull(resp);
+			Assert.assertNotNull(resp.jiraRiverNames);
+			Assert.assertEquals(0, resp.jiraRiverNames.size());
+		}
 
-    {
-      IJiraRiverMgm jiraRiverMock = Mockito.mock(IJiraRiverMgm.class);
-      RiverName riverName = new RiverName("jira", "myRiver");
-      Mockito.when(jiraRiverMock.riverName()).thenReturn(riverName);
-      JiraRiver.addRunningInstance(jiraRiverMock);
-      NodeListRiversRequest req = new NodeListRiversRequest(dn.getId());
-      NodeListRiversResponse resp = tested.nodeOperation(req);
-      Assert.assertNotNull(resp);
-      Assert.assertNotNull(resp.jiraRiverNames);
-      Assert.assertEquals(1, resp.jiraRiverNames.size());
-      Assert.assertTrue(resp.jiraRiverNames.contains("myRiver"));
-    }
+		{
+			IJiraRiverMgm jiraRiverMock = Mockito.mock(IJiraRiverMgm.class);
+			RiverName riverName = new RiverName("jira", "myRiver");
+			Mockito.when(jiraRiverMock.riverName()).thenReturn(riverName);
+			JiraRiver.addRunningInstance(jiraRiverMock);
+			NodeListRiversRequest req = new NodeListRiversRequest(dn.getId());
+			NodeListRiversResponse resp = tested.nodeOperation(req);
+			Assert.assertNotNull(resp);
+			Assert.assertNotNull(resp.jiraRiverNames);
+			Assert.assertEquals(1, resp.jiraRiverNames.size());
+			Assert.assertTrue(resp.jiraRiverNames.contains("myRiver"));
+		}
 
-    {
-      IJiraRiverMgm jiraRiverMock = Mockito.mock(IJiraRiverMgm.class);
-      RiverName riverName = new RiverName("jira", "myRiver2");
-      Mockito.when(jiraRiverMock.riverName()).thenReturn(riverName);
-      JiraRiver.addRunningInstance(jiraRiverMock);
-      NodeListRiversRequest req = new NodeListRiversRequest(dn.getId());
-      NodeListRiversResponse resp = tested.nodeOperation(req);
-      Assert.assertNotNull(resp);
-      Assert.assertNotNull(resp.jiraRiverNames);
-      Assert.assertEquals(2, resp.jiraRiverNames.size());
-      Assert.assertTrue(resp.jiraRiverNames.contains("myRiver"));
-      Assert.assertTrue(resp.jiraRiverNames.contains("myRiver2"));
-    }
-  }
+		{
+			IJiraRiverMgm jiraRiverMock = Mockito.mock(IJiraRiverMgm.class);
+			RiverName riverName = new RiverName("jira", "myRiver2");
+			Mockito.when(jiraRiverMock.riverName()).thenReturn(riverName);
+			JiraRiver.addRunningInstance(jiraRiverMock);
+			NodeListRiversRequest req = new NodeListRiversRequest(dn.getId());
+			NodeListRiversResponse resp = tested.nodeOperation(req);
+			Assert.assertNotNull(resp);
+			Assert.assertNotNull(resp.jiraRiverNames);
+			Assert.assertEquals(2, resp.jiraRiverNames.size());
+			Assert.assertTrue(resp.jiraRiverNames.contains("myRiver"));
+			Assert.assertTrue(resp.jiraRiverNames.contains("myRiver2"));
+		}
+	}
 
-  private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
-  private static ClusterService clusterService = Mockito.mock(ClusterService.class);
+	private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
+	private static ClusterService clusterService = Mockito.mock(ClusterService.class);
 
-  public static TransportListRiversAction prepareTestedInstance(ClusterName clusterName) {
-    Settings settings = Mockito.mock(Settings.class);
-    ThreadPool threadPool = new ThreadPool();
-    TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-    TransportListRiversAction tested = new TransportListRiversAction(settings, clusterName, threadPool, clusterService,
-        transportService);
-    return tested;
-  }
+	public static TransportListRiversAction prepareTestedInstance(ClusterName clusterName) {
+		Settings settings = Mockito.mock(Settings.class);
+		ThreadPool threadPool = new ThreadPool();
+		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
+		TransportListRiversAction tested = new TransportListRiversAction(settings, clusterName, threadPool, clusterService,
+				transportService);
+		return tested;
+	}
 }
