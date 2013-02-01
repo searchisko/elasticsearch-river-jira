@@ -9,6 +9,7 @@
   <packaging>jar</packaging>
   <description>JIRA River for ElasticSearch</description>
   <inceptionYear>2012</inceptionYear>
+  <url>http://github.com/jbossorg/elasticsearch-river-jira</url>
 
   <developers>
     <developer>
@@ -35,6 +36,8 @@
     <java.version>1.6</java.version>
     <elasticsearch.version>0.19.11</elasticsearch.version>
     <structured-content-tools.version>1.2.0</structured-content-tools.version>
+    <jboss.releases.repo.url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</jboss.releases.repo.url>
+    <jboss.snapshots.repo.url>https://repository.jboss.org/nexus/content/repositories/snapshots/</jboss.snapshots.repo.url>
   </properties>
 
   <repositories>
@@ -100,6 +103,19 @@
     </dependency>
 
   </dependencies>
+
+  <distributionManagement>
+    <repository>
+      <id>jboss-releases-repository</id>
+      <name>JBoss Release Repository</name>
+      <url>${jboss.releases.repo.url}</url>
+    </repository>
+    <snapshotRepository>
+      <id>jboss-snapshots-repository</id>
+      <name>JBoss Snapshot Repository</name>
+      <url>${jboss.snapshots.repo.url}</url>
+    </snapshotRepository>
+  </distributionManagement>
 
   <build>
     <plugins>
