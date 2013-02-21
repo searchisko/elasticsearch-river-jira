@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jboss.elasticsearch</groupId>
   <artifactId>elasticsearch-river-jira</artifactId>
-  <version>1.2.4</version>
+  <version>1.2.5</version>
   <packaging>jar</packaging>
   <description>JIRA River for ElasticSearch</description>
   <inceptionYear>2012</inceptionYear>
@@ -34,8 +34,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.6</java.version>
-    <elasticsearch.version>0.19.11</elasticsearch.version>
-    <structured-content-tools.version>1.2.1</structured-content-tools.version>
+    <elasticsearch.version>0.19.12</elasticsearch.version>
+    <structured-content-tools.version>1.2.2</structured-content-tools.version>
     <jboss.releases.repo.url>https://repository.jboss.org/nexus/service/local/staging/deploy/maven2/</jboss.releases.repo.url>
     <jboss.snapshots.repo.url>https://repository.jboss.org/nexus/content/repositories/snapshots/</jboss.snapshots.repo.url>
   </properties>
