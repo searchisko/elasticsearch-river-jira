@@ -9,11 +9,11 @@ import org.elasticsearch.action.support.nodes.NodeOperationRequest;
  */
 public class NodeListRiversRequest extends NodeOperationRequest {
 
-  protected NodeListRiversRequest() {
-    super();
-  }
+	protected NodeListRiversRequest() {
+		super();
+	}
 
-  protected NodeListRiversRequest(String nodeId) {
-    super(nodeId);
-  }
+	protected NodeListRiversRequest(String nodeId, ListRiversRequest request) {
+		super(request, nodeId);
+	}
 }

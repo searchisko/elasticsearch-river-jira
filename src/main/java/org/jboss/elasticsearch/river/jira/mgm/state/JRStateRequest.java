@@ -12,24 +12,24 @@ import org.jboss.elasticsearch.river.jira.mgm.JRMgmBaseRequest;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JRStateRequest extends JRMgmBaseRequest {
+public class JRStateRequest extends JRMgmBaseRequest<JRStateRequest> {
 
-  JRStateRequest() {
+	JRStateRequest() {
 
-  }
+	}
 
-  /**
-   * Construct request.
-   * 
-   * @param riverName for request
-   */
-  public JRStateRequest(String riverName) {
-    super(riverName);
-  }
+	/**
+	 * Construct request.
+	 * 
+	 * @param riverName for request
+	 */
+	public JRStateRequest(String riverName) {
+		super(riverName);
+	}
 
-  @Override
-  public String toString() {
-    return "JRStateRequest [riverName=" + riverName + "]";
-  }
+	@Override
+	public String toString() {
+		return "JRStateRequest [riverName=" + riverName + "]";
+	}
 
 }

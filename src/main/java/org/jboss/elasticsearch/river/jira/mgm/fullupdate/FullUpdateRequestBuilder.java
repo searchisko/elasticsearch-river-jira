@@ -6,48 +6,50 @@
 package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.support.BaseRequestBuilder;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.support.nodes.NodesOperationRequestBuilder;
+import org.elasticsearch.client.ClusterAdminClient;
+import org.elasticsearch.client.internal.InternalClusterAdminClient;
 
 /**
  * Request builder to force full index update for some jira river and some or all projects in it.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class FullUpdateRequestBuilder extends BaseRequestBuilder<FullUpdateRequest, FullUpdateResponse> {
+public class FullUpdateRequestBuilder extends
+		NodesOperationRequestBuilder<FullUpdateRequest, FullUpdateResponse, FullUpdateRequestBuilder> {
 
-  public FullUpdateRequestBuilder(Client client) {
-    super(client, new FullUpdateRequest());
-  }
+	public FullUpdateRequestBuilder(ClusterAdminClient client) {
+		super((InternalClusterAdminClient) client, new FullUpdateRequest());
+	}
 
-  /**
-   * Set name of river to force full index update for.
-   * 
-   * @param riverName name of river to force full index update for
-   * @return builder for chaining
-   */
-  public FullUpdateRequestBuilder setRiverName(String riverName) {
-    this.request.setRiverName(riverName);
-    return this;
-  }
+	/**
+	 * Set name of river to force full index update for.
+	 * 
+	 * @param riverName name of river to force full index update for
+	 * @return builder for chaining
+	 */
+	public FullUpdateRequestBuilder setRiverName(String riverName) {
+		this.request.setRiverName(riverName);
+		return this;
+	}
 
-  /**
-   * Set JIRA project key to force full index update for. If not specified then full update is forced for all projects
-   * managed by given jira river.
-   * 
-   * @param projectKey to force full index update for
-   * @return builder for chaining
-   */
-  public FullUpdateRequestBuilder setProjectKey(String projectKey) {
-    this.request.setProjectKey(projectKey);
-    return this;
-  }
+	/**
+	 * Set JIRA project key to force full index update for. If not specified then full update is forced for all projects
+	 * managed by given jira river.
+	 * 
+	 * @param projectKey to force full index update for
+	 * @return builder for chaining
+	 */
+	public FullUpdateRequestBuilder setProjectKey(String projectKey) {
+		this.request.setProjectKey(projectKey);
+		return this;
+	}
 
-  @Override
-  protected void doExecute(ActionListener<FullUpdateResponse> listener) {
-    if (request.getRiverName() == null)
-      throw new IllegalArgumentException("riverName must be provided for request");
-    client.execute(FullUpdateAction.INSTANCE, request, listener);
-  }
+	@Override
+	protected void doExecute(ActionListener<FullUpdateResponse> listener) {
+		if (request.getRiverName() == null)
+			throw new IllegalArgumentException("riverName must be provided for request");
+		((InternalClusterAdminClient) client).execute(FullUpdateAction.INSTANCE, request, listener);
+	}
 
 }

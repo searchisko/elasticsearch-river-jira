@@ -5,31 +5,32 @@
  */
 package org.jboss.elasticsearch.river.jira.mgm.lifecycle;
 
-import org.elasticsearch.action.Action;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.admin.cluster.ClusterAction;
+import org.elasticsearch.client.ClusterAdminClient;
 
 /**
  * JIRA River lifecycle action implementation.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JRLifecycleAction extends Action<JRLifecycleRequest, JRLifecycleResponse, JRLifecycleRequestBuilder> {
+public class JRLifecycleAction extends
+		ClusterAction<JRLifecycleRequest, JRLifecycleResponse, JRLifecycleRequestBuilder> {
 
-  public static final JRLifecycleAction INSTANCE = new JRLifecycleAction();
-  public static final String NAME = "jira_river/lifecycle";
+	public static final JRLifecycleAction INSTANCE = new JRLifecycleAction();
+	public static final String NAME = "jira_river/lifecycle";
 
-  protected JRLifecycleAction() {
-    super(NAME);
-  }
+	protected JRLifecycleAction() {
+		super(NAME);
+	}
 
-  @Override
-  public JRLifecycleRequestBuilder newRequestBuilder(Client client) {
-    return new JRLifecycleRequestBuilder(client);
-  }
+	@Override
+	public JRLifecycleRequestBuilder newRequestBuilder(ClusterAdminClient client) {
+		return new JRLifecycleRequestBuilder(client);
+	}
 
-  @Override
-  public JRLifecycleResponse newResponse() {
-    return new JRLifecycleResponse();
-  }
+	@Override
+	public JRLifecycleResponse newResponse() {
+		return new JRLifecycleResponse();
+	}
 
 }

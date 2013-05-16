@@ -5,31 +5,31 @@
  */
 package org.jboss.elasticsearch.river.jira.mgm.state;
 
-import org.elasticsearch.action.Action;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.admin.cluster.ClusterAction;
+import org.elasticsearch.client.ClusterAdminClient;
 
 /**
  * JIRA River get state info action implementation.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JRStateAction extends Action<JRStateRequest, JRStateResponse, JRStateRequestBuilder> {
+public class JRStateAction extends ClusterAction<JRStateRequest, JRStateResponse, JRStateRequestBuilder> {
 
-  public static final JRStateAction INSTANCE = new JRStateAction();
-  public static final String NAME = "jira_river/state";
+	public static final JRStateAction INSTANCE = new JRStateAction();
+	public static final String NAME = "jira_river/state";
 
-  protected JRStateAction() {
-    super(NAME);
-  }
+	protected JRStateAction() {
+		super(NAME);
+	}
 
-  @Override
-  public JRStateRequestBuilder newRequestBuilder(Client client) {
-    return new JRStateRequestBuilder(client);
-  }
+	@Override
+	public JRStateRequestBuilder newRequestBuilder(ClusterAdminClient client) {
+		return new JRStateRequestBuilder(client);
+	}
 
-  @Override
-  public JRStateResponse newResponse() {
-    return new JRStateResponse();
-  }
+	@Override
+	public JRStateResponse newResponse() {
+		return new JRStateResponse();
+	}
 
 }

@@ -5,8 +5,7 @@
  */
 package org.jboss.elasticsearch.river.jira.mgm.lifecycle;
 
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.internal.InternalClient;
+import org.elasticsearch.client.internal.InternalClusterAdminClient;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -18,23 +17,22 @@ import org.mockito.Mockito;
  */
 public class JRLifecycleActionTest {
 
-  @Test
-  public void constructor() {
-    Assert.assertEquals(JRLifecycleAction.NAME, JRLifecycleAction.INSTANCE.name());
-  }
+	@Test
+	public void constructor() {
+		Assert.assertEquals(JRLifecycleAction.NAME, JRLifecycleAction.INSTANCE.name());
+	}
 
-  @Test
-  public void newRequestBuilder() {
-    Client client = Mockito.mock(InternalClient.class);
+	@Test
+	public void newRequestBuilder() {
+		InternalClusterAdminClient client = Mockito.mock(InternalClusterAdminClient.class);
 
-    JRLifecycleRequestBuilder rb = JRLifecycleAction.INSTANCE.newRequestBuilder(client);
-    Assert.assertNotNull(rb);
-    Assert.assertEquals(client, rb.getClient());
-  }
+		JRLifecycleRequestBuilder rb = JRLifecycleAction.INSTANCE.newRequestBuilder(client);
+		Assert.assertNotNull(rb);
+	}
 
-  @Test
-  public void newResponse() {
-    JRLifecycleResponse rb = JRLifecycleAction.INSTANCE.newResponse();
-    Assert.assertNotNull(rb);
-  }
+	@Test
+	public void newResponse() {
+		JRLifecycleResponse rb = JRLifecycleAction.INSTANCE.newResponse();
+		Assert.assertNotNull(rb);
+	}
 }

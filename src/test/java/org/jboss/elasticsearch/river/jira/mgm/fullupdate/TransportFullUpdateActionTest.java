@@ -26,127 +26,127 @@ import org.mockito.Mockito;
  */
 public class TransportFullUpdateActionTest {
 
-  public static final ClusterName clusterName = new ClusterName("myCluster");
+	public static final ClusterName clusterName = new ClusterName("myCluster");
 
-  @Test
-  public void transportAction() {
-    TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
-    Assert.assertEquals(FullUpdateAction.NAME, tested.transportAction());
-  }
+	@Test
+	public void transportAction() {
+		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
+		Assert.assertEquals(FullUpdateAction.NAME, tested.transportAction());
+	}
 
-  @Test
-  public void newRequest() {
-    TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
-    Assert.assertNotNull(tested.newRequest());
-  }
+	@Test
+	public void newRequest() {
+		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
+		Assert.assertNotNull(tested.newRequest());
+	}
 
-  @Test
-  public void newNodeRequest() {
-    TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
+	@Test
+	public void newNodeRequest() {
+		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
 
-    {
-      Assert.assertNotNull(tested.newNodeRequest());
-    }
+		{
+			Assert.assertNotNull(tested.newNodeRequest());
+		}
 
-    {
-      FullUpdateRequest request = new FullUpdateRequest();
-      NodeFullUpdateRequest nodeReq = tested.newNodeRequest("myNodeId", request);
-      Assert.assertEquals(request, nodeReq.getRequest());
-    }
-  }
+		{
+			FullUpdateRequest request = new FullUpdateRequest();
+			NodeFullUpdateRequest nodeReq = tested.newNodeRequest("myNodeId", request);
+			Assert.assertEquals(request, nodeReq.getRequest());
+		}
+	}
 
-  @Test
-  public void newNodeResponse() {
-    TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
-    Mockito.when(clusterService.localNode()).thenReturn(dn);
+	@Test
+	public void newNodeResponse() {
+		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
+		Mockito.when(clusterService.localNode()).thenReturn(dn);
 
-    NodeFullUpdateResponse resp = tested.newNodeResponse();
-    Assert.assertNotNull(resp);
-    Assert.assertEquals(dn, resp.node());
-  }
+		NodeFullUpdateResponse resp = tested.newNodeResponse();
+		Assert.assertNotNull(resp);
+		Assert.assertEquals(dn, resp.getNode());
+	}
 
-  @Test
-  public void newNodeResponseArray() {
-    TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
-    NodeFullUpdateResponse[] array = tested.newNodeResponseArray(2);
-    Assert.assertNotNull(array);
-    Assert.assertEquals(2, array.length);
-  }
+	@Test
+	public void newNodeResponseArray() {
+		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
+		NodeFullUpdateResponse[] array = tested.newNodeResponseArray(2);
+		Assert.assertNotNull(array);
+		Assert.assertEquals(2, array.length);
+	}
 
-  @Test
-  public void newResponse() {
-    TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
+	@Test
+	public void newResponse() {
+		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
 
-    NodeFullUpdateResponse[] array = new NodeFullUpdateResponse[0];
-    FullUpdateResponse resp = tested.newResponse(clusterName, array);
-    Assert.assertNotNull(resp);
-    Assert.assertEquals(resp.clusterName(), clusterName);
-    Assert.assertEquals(resp.getNodes(), array);
+		NodeFullUpdateResponse[] array = new NodeFullUpdateResponse[0];
+		FullUpdateResponse resp = tested.newResponse(clusterName, array);
+		Assert.assertNotNull(resp);
+		Assert.assertEquals(resp.getClusterName(), clusterName);
+		Assert.assertEquals(resp.getNodes(), array);
 
-  }
+	}
 
-  @Test
-  public void performOperationOnJiraRiver() throws Exception {
+	@Test
+	public void performOperationOnJiraRiver() throws Exception {
 
-    TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
+		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
 
-    IJiraRiverMgm river = Mockito.mock(IJiraRiverMgm.class);
+		IJiraRiverMgm river = Mockito.mock(IJiraRiverMgm.class);
 
-    {
-      Mockito.when(river.forceFullReindex(null)).thenReturn("AAA,JJJ");
+		{
+			Mockito.when(river.forceFullReindex(null)).thenReturn("AAA,JJJ");
 
-      FullUpdateRequest req = new FullUpdateRequest("myriver", null);
-      NodeFullUpdateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
-      Assert.assertNotNull(resp);
-      Assert.assertTrue(resp.isRiverFound());
-      Assert.assertEquals(dn, resp.getNode());
-      Assert.assertEquals(true, resp.projectFound);
-      Assert.assertEquals("AAA,JJJ", resp.reindexedProjectNames);
-      Mockito.verify(river).forceFullReindex(null);
-      Mockito.verifyNoMoreInteractions(river);
-    }
+			FullUpdateRequest req = new FullUpdateRequest("myriver", null);
+			NodeFullUpdateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
+			Assert.assertNotNull(resp);
+			Assert.assertTrue(resp.isRiverFound());
+			Assert.assertEquals(dn, resp.getNode());
+			Assert.assertEquals(true, resp.projectFound);
+			Assert.assertEquals("AAA,JJJ", resp.reindexedProjectNames);
+			Mockito.verify(river).forceFullReindex(null);
+			Mockito.verifyNoMoreInteractions(river);
+		}
 
-    // case - project found
-    Mockito.reset(river);
-    {
-      Mockito.when(river.forceFullReindex("AAA")).thenReturn("AAA");
-      FullUpdateRequest req = new FullUpdateRequest("myriver", "AAA");
-      NodeFullUpdateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
-      Assert.assertNotNull(resp);
-      Assert.assertTrue(resp.isRiverFound());
-      Assert.assertEquals(dn, resp.getNode());
-      Assert.assertEquals(true, resp.projectFound);
-      Assert.assertEquals("AAA", resp.reindexedProjectNames);
-      Mockito.verify(river).forceFullReindex("AAA");
-      Mockito.verifyNoMoreInteractions(river);
-    }
+		// case - project found
+		Mockito.reset(river);
+		{
+			Mockito.when(river.forceFullReindex("AAA")).thenReturn("AAA");
+			FullUpdateRequest req = new FullUpdateRequest("myriver", "AAA");
+			NodeFullUpdateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
+			Assert.assertNotNull(resp);
+			Assert.assertTrue(resp.isRiverFound());
+			Assert.assertEquals(dn, resp.getNode());
+			Assert.assertEquals(true, resp.projectFound);
+			Assert.assertEquals("AAA", resp.reindexedProjectNames);
+			Mockito.verify(river).forceFullReindex("AAA");
+			Mockito.verifyNoMoreInteractions(river);
+		}
 
-    // case - project not found
-    Mockito.reset(river);
-    {
-      Mockito.when(river.forceFullReindex("AAA")).thenReturn(null);
-      FullUpdateRequest req = new FullUpdateRequest("myriver", "AAA");
-      NodeFullUpdateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
-      Assert.assertNotNull(resp);
-      Assert.assertTrue(resp.isRiverFound());
-      Assert.assertEquals(dn, resp.getNode());
-      Assert.assertEquals(false, resp.projectFound);
-      Assert.assertEquals(null, resp.reindexedProjectNames);
-      Mockito.verify(river).forceFullReindex("AAA");
-      Mockito.verifyNoMoreInteractions(river);
-    }
+		// case - project not found
+		Mockito.reset(river);
+		{
+			Mockito.when(river.forceFullReindex("AAA")).thenReturn(null);
+			FullUpdateRequest req = new FullUpdateRequest("myriver", "AAA");
+			NodeFullUpdateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
+			Assert.assertNotNull(resp);
+			Assert.assertTrue(resp.isRiverFound());
+			Assert.assertEquals(dn, resp.getNode());
+			Assert.assertEquals(false, resp.projectFound);
+			Assert.assertEquals(null, resp.reindexedProjectNames);
+			Mockito.verify(river).forceFullReindex("AAA");
+			Mockito.verifyNoMoreInteractions(river);
+		}
 
-  }
+	}
 
-  private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
-  private static ClusterService clusterService = Mockito.mock(ClusterService.class);
+	private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
+	private static ClusterService clusterService = Mockito.mock(ClusterService.class);
 
-  public static TransportFullUpdateAction prepareTestedInstance(ClusterName clusterName) {
-    Settings settings = Mockito.mock(Settings.class);
-    ThreadPool threadPool = new ThreadPool();
-    TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-    TransportFullUpdateAction tested = new TransportFullUpdateAction(settings, clusterName, threadPool, clusterService,
-        transportService);
-    return tested;
-  }
+	public static TransportFullUpdateAction prepareTestedInstance(ClusterName clusterName) {
+		Settings settings = Mockito.mock(Settings.class);
+		ThreadPool threadPool = new ThreadPool();
+		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
+		TransportFullUpdateAction tested = new TransportFullUpdateAction(settings, clusterName, threadPool, clusterService,
+				transportService);
+		return tested;
+	}
 }

@@ -23,28 +23,33 @@ import org.jboss.elasticsearch.river.jira.mgm.RestJRMgmBaseAction;
  */
 public class RestJRStateAction extends RestJRMgmBaseAction {
 
-  @Inject
-  protected RestJRStateAction(Settings settings, Client client, RestController controller) {
-    super(settings, client);
-    String baseUrl = baseRestMgmUrl();
-    controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.GET, baseUrl + "state", this);
-  }
+	@Inject
+	protected RestJRStateAction(Settings settings, Client client, RestController controller) {
+		super(settings, client);
+		String baseUrl = baseRestMgmUrl();
+		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.GET, baseUrl + "state", this);
+	}
 
-  @Override
-  public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
+	@Override
+	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
 
-    JRStateRequest actionRequest = new JRStateRequest(restRequest.param("riverName"));
+		JRStateRequest actionRequest = new JRStateRequest(restRequest.param("riverName"));
 
-    client.execute(JRStateAction.INSTANCE, actionRequest,
-        new JRMgmBaseActionListener<JRStateRequest, JRStateResponse, NodeJRStateResponse>(actionRequest, restRequest,
-            restChannel) {
+		client
+				.admin()
+				.cluster()
+				.execute(
+						JRStateAction.INSTANCE,
+						actionRequest,
+						new JRMgmBaseActionListener<JRStateRequest, JRStateResponse, NodeJRStateResponse>(actionRequest,
+								restRequest, restChannel) {
 
-          @Override
-          protected void handleJiraRiverResponse(NodeJRStateResponse nodeInfo) throws Exception {
-            restChannel.sendResponse(new BytesRestResponse(nodeInfo.stateInformation.getBytes(), XContentType.JSON
-                .restContentType()));
-          }
+							@Override
+							protected void handleJiraRiverResponse(NodeJRStateResponse nodeInfo) throws Exception {
+								restChannel.sendResponse(new BytesRestResponse(nodeInfo.stateInformation.getBytes(), XContentType.JSON
+										.restContentType()));
+							}
 
-        });
-  }
+						});
+	}
 }

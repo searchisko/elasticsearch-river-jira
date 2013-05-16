@@ -24,33 +24,38 @@ import org.jboss.elasticsearch.river.jira.mgm.RestJRMgmBaseAction;
  */
 public class RestJRLifecycleAction extends RestJRMgmBaseAction {
 
-  @Inject
-  protected RestJRLifecycleAction(Settings settings, Client client, RestController controller) {
-    super(settings, client);
-    String baseUrl = baseRestMgmUrl();
-    controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "stop", this);
-    controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "restart", this);
-  }
+	@Inject
+	protected RestJRLifecycleAction(Settings settings, Client client, RestController controller) {
+		super(settings, client);
+		String baseUrl = baseRestMgmUrl();
+		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "stop", this);
+		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "restart", this);
+	}
 
-  @Override
-  public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
+	@Override
+	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
 
-    JRLifecycleCommand command = JRLifecycleCommand.RESTART;
-    if (restRequest.path().endsWith("stop"))
-      command = JRLifecycleCommand.STOP;
+		JRLifecycleCommand command = JRLifecycleCommand.RESTART;
+		if (restRequest.path().endsWith("stop"))
+			command = JRLifecycleCommand.STOP;
 
-    JRLifecycleRequest actionRequest = new JRLifecycleRequest(restRequest.param("riverName"), command);
+		JRLifecycleRequest actionRequest = new JRLifecycleRequest(restRequest.param("riverName"), command);
 
-    client.execute(JRLifecycleAction.INSTANCE, actionRequest,
-        new JRMgmBaseActionListener<JRLifecycleRequest, JRLifecycleResponse, NodeJRLifecycleResponse>(actionRequest,
-            restRequest, restChannel) {
+		client
+				.admin()
+				.cluster()
+				.execute(
+						JRLifecycleAction.INSTANCE,
+						actionRequest,
+						new JRMgmBaseActionListener<JRLifecycleRequest, JRLifecycleResponse, NodeJRLifecycleResponse>(
+								actionRequest, restRequest, restChannel) {
 
-          @Override
-          protected void handleJiraRiverResponse(NodeJRLifecycleResponse nodeInfo) throws Exception {
-            restChannel.sendResponse(new XContentRestResponse(restRequest, OK, buildMessageDocument(restRequest,
-                "Command successful")));
-          }
+							@Override
+							protected void handleJiraRiverResponse(NodeJRLifecycleResponse nodeInfo) throws Exception {
+								restChannel.sendResponse(new XContentRestResponse(restRequest, OK, buildMessageDocument(restRequest,
+										"Command successful")));
+							}
 
-        });
-  }
+						});
+	}
 }

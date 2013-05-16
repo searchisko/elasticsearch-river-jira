@@ -28,107 +28,107 @@ import org.mockito.Mockito;
  */
 public class TransportJRStateActionTest {
 
-  public static final ClusterName clusterName = new ClusterName("myCluster");
+	public static final ClusterName clusterName = new ClusterName("myCluster");
 
-  @Test
-  public void transportAction() {
-    TransportJRStateAction tested = prepareTestedInstance(clusterName);
-    Assert.assertEquals(JRStateAction.NAME, tested.transportAction());
-  }
+	@Test
+	public void transportAction() {
+		TransportJRStateAction tested = prepareTestedInstance(clusterName);
+		Assert.assertEquals(JRStateAction.NAME, tested.transportAction());
+	}
 
-  @Test
-  public void newRequest() {
-    TransportJRStateAction tested = prepareTestedInstance(clusterName);
-    Assert.assertNotNull(tested.newRequest());
-  }
+	@Test
+	public void newRequest() {
+		TransportJRStateAction tested = prepareTestedInstance(clusterName);
+		Assert.assertNotNull(tested.newRequest());
+	}
 
-  @Test
-  public void newNodeRequest() {
-    TransportJRStateAction tested = prepareTestedInstance(clusterName);
+	@Test
+	public void newNodeRequest() {
+		TransportJRStateAction tested = prepareTestedInstance(clusterName);
 
-    {
-      Assert.assertNotNull(tested.newNodeRequest());
-    }
+		{
+			Assert.assertNotNull(tested.newNodeRequest());
+		}
 
-    {
-      JRStateRequest request = new JRStateRequest();
-      NodeJRStateRequest nodeReq = tested.newNodeRequest("myNodeId", request);
-      Assert.assertEquals(request, nodeReq.getRequest());
-    }
-  }
+		{
+			JRStateRequest request = new JRStateRequest();
+			NodeJRStateRequest nodeReq = tested.newNodeRequest("myNodeId", request);
+			Assert.assertEquals(request, nodeReq.getRequest());
+		}
+	}
 
-  @Test
-  public void newNodeResponse() {
-    TransportJRStateAction tested = prepareTestedInstance(clusterName);
-    Mockito.when(clusterService.localNode()).thenReturn(dn);
+	@Test
+	public void newNodeResponse() {
+		TransportJRStateAction tested = prepareTestedInstance(clusterName);
+		Mockito.when(clusterService.localNode()).thenReturn(dn);
 
-    NodeJRStateResponse resp = tested.newNodeResponse();
-    Assert.assertNotNull(resp);
-    Assert.assertEquals(dn, resp.node());
-  }
+		NodeJRStateResponse resp = tested.newNodeResponse();
+		Assert.assertNotNull(resp);
+		Assert.assertEquals(dn, resp.getNode());
+	}
 
-  @Test
-  public void newNodeResponseArray() {
-    TransportJRStateAction tested = prepareTestedInstance(clusterName);
-    NodeJRStateResponse[] array = tested.newNodeResponseArray(2);
-    Assert.assertNotNull(array);
-    Assert.assertEquals(2, array.length);
-  }
+	@Test
+	public void newNodeResponseArray() {
+		TransportJRStateAction tested = prepareTestedInstance(clusterName);
+		NodeJRStateResponse[] array = tested.newNodeResponseArray(2);
+		Assert.assertNotNull(array);
+		Assert.assertEquals(2, array.length);
+	}
 
-  @Test
-  public void newResponse() {
-    TransportJRStateAction tested = prepareTestedInstance(clusterName);
+	@Test
+	public void newResponse() {
+		TransportJRStateAction tested = prepareTestedInstance(clusterName);
 
-    NodeJRStateResponse[] array = new NodeJRStateResponse[0];
-    JRStateResponse resp = tested.newResponse(clusterName, array);
-    Assert.assertNotNull(resp);
-    Assert.assertEquals(resp.clusterName(), clusterName);
-    Assert.assertEquals(resp.getNodes(), array);
+		NodeJRStateResponse[] array = new NodeJRStateResponse[0];
+		JRStateResponse resp = tested.newResponse(clusterName, array);
+		Assert.assertNotNull(resp);
+		Assert.assertEquals(resp.getClusterName(), clusterName);
+		Assert.assertEquals(resp.getNodes(), array);
 
-  }
+	}
 
-  @Test
-  public void performOperationOnJiraRiver() throws Exception {
+	@Test
+	public void performOperationOnJiraRiver() throws Exception {
 
-    TransportJRStateAction tested = prepareTestedInstance(clusterName);
+		TransportJRStateAction tested = prepareTestedInstance(clusterName);
 
-    IJiraRiverMgm river = Mockito.mock(IJiraRiverMgm.class);
+		IJiraRiverMgm river = Mockito.mock(IJiraRiverMgm.class);
 
-    {
-      JRStateRequest req = new JRStateRequest("myriver");
-      NodeJRStateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
-      Assert.assertNotNull(resp);
-      Assert.assertTrue(resp.isRiverFound());
-      Assert.assertEquals(dn, resp.getNode());
-      Assert.assertEquals(null, resp.stateInformation);
-      Mockito.verify(river).getRiverOperationInfo(Mockito.eq(dn), (Date) Mockito.notNull());
-      Mockito.verifyNoMoreInteractions(river);
-    }
+		{
+			JRStateRequest req = new JRStateRequest("myriver");
+			NodeJRStateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
+			Assert.assertNotNull(resp);
+			Assert.assertTrue(resp.isRiverFound());
+			Assert.assertEquals(dn, resp.getNode());
+			Assert.assertEquals(null, resp.stateInformation);
+			Mockito.verify(river).getRiverOperationInfo(Mockito.eq(dn), (Date) Mockito.notNull());
+			Mockito.verifyNoMoreInteractions(river);
+		}
 
-    Mockito.reset(river);
-    {
-      Mockito.when(river.getRiverOperationInfo(Mockito.eq(dn), Mockito.any(Date.class))).thenReturn("state info");
-      JRStateRequest req = new JRStateRequest("myriver");
-      NodeJRStateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
-      Assert.assertNotNull(resp);
-      Assert.assertTrue(resp.isRiverFound());
-      Assert.assertEquals(dn, resp.getNode());
-      Assert.assertEquals("state info", resp.stateInformation);
-      Mockito.verify(river).getRiverOperationInfo(Mockito.eq(dn), (Date) Mockito.notNull());
-      Mockito.verifyNoMoreInteractions(river);
-    }
+		Mockito.reset(river);
+		{
+			Mockito.when(river.getRiverOperationInfo(Mockito.eq(dn), Mockito.any(Date.class))).thenReturn("state info");
+			JRStateRequest req = new JRStateRequest("myriver");
+			NodeJRStateResponse resp = tested.performOperationOnJiraRiver(river, req, dn);
+			Assert.assertNotNull(resp);
+			Assert.assertTrue(resp.isRiverFound());
+			Assert.assertEquals(dn, resp.getNode());
+			Assert.assertEquals("state info", resp.stateInformation);
+			Mockito.verify(river).getRiverOperationInfo(Mockito.eq(dn), (Date) Mockito.notNull());
+			Mockito.verifyNoMoreInteractions(river);
+		}
 
-  }
+	}
 
-  private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
-  private static ClusterService clusterService = Mockito.mock(ClusterService.class);
+	private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
+	private static ClusterService clusterService = Mockito.mock(ClusterService.class);
 
-  public static TransportJRStateAction prepareTestedInstance(ClusterName clusterName) {
-    Settings settings = Mockito.mock(Settings.class);
-    ThreadPool threadPool = new ThreadPool();
-    TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-    TransportJRStateAction tested = new TransportJRStateAction(settings, clusterName, threadPool, clusterService,
-        transportService);
-    return tested;
-  }
+	public static TransportJRStateAction prepareTestedInstance(ClusterName clusterName) {
+		Settings settings = Mockito.mock(Settings.class);
+		ThreadPool threadPool = new ThreadPool();
+		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
+		TransportJRStateAction tested = new TransportJRStateAction(settings, clusterName, threadPool, clusterService,
+				transportService);
+		return tested;
+	}
 }

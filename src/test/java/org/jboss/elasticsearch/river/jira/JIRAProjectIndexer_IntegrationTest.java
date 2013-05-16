@@ -461,8 +461,8 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
 		SearchResponse resp = srb.execute().actionGet();
 		List<String> expected = Arrays.asList(documentIds);
-		Assert.assertEquals("Documents number is wrong", expected.size(), resp.hits().getTotalHits());
-		for (SearchHit hit : resp.hits().getHits()) {
+		Assert.assertEquals("Documents number is wrong", expected.size(), resp.getHits().getTotalHits());
+		for (SearchHit hit : resp.getHits().getHits()) {
 			Assert.assertTrue("Document list can't contain document with id " + hit.id(), expected.contains(hit.id()));
 		}
 	}
@@ -484,7 +484,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 				.setQuery(QueryBuilders.matchAllQuery());
 
 		SearchResponse resp = srb.execute().actionGet();
-		Assert.assertEquals("Documents number is wrong", expectedNum, resp.hits().getTotalHits());
+		Assert.assertEquals("Documents number is wrong", expectedNum, resp.getHits().getTotalHits());
 	}
 
 	/**

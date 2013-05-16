@@ -30,49 +30,50 @@ import org.jboss.elasticsearch.river.jira.mgm.RestJRMgmBaseAction;
  */
 public class RestListRiversAction extends RestJRMgmBaseAction {
 
-  @Inject
-  protected RestListRiversAction(Settings settings, Client client, RestController controller) {
-    super(settings, client);
-    controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.GET, "/_jira_river/list", this);
-  }
+	@Inject
+	protected RestListRiversAction(Settings settings, Client client, RestController controller) {
+		super(settings, client);
+		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.GET, "/_jira_river/list", this);
+	}
 
-  @Override
-  public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
+	@Override
+	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
 
-    ListRiversRequest actionRequest = new ListRiversRequest();
+		ListRiversRequest actionRequest = new ListRiversRequest();
 
-    logger.debug("Go to look for jira rivers in cluster");
-    client.execute(ListRiversAction.INSTANCE, actionRequest, new ActionListener<ListRiversResponse>() {
+		logger.debug("Go to look for jira rivers in cluster");
+		client.admin().cluster()
+				.execute(ListRiversAction.INSTANCE, actionRequest, new ActionListener<ListRiversResponse>() {
 
-      @Override
-      public void onResponse(ListRiversResponse response) {
-        try {
-          Set<String> allRivers = new HashSet<String>();
-          for (NodeListRiversResponse node : response.nodes()) {
-            if (node.jiraRiverNames != null) {
-              allRivers.addAll(node.jiraRiverNames);
-            }
-          }
+					@Override
+					public void onResponse(ListRiversResponse response) {
+						try {
+							Set<String> allRivers = new HashSet<String>();
+							for (NodeListRiversResponse node : response.getNodes()) {
+								if (node.jiraRiverNames != null) {
+									allRivers.addAll(node.jiraRiverNames);
+								}
+							}
 
-          XContentBuilder builder = RestXContentBuilder.restContentBuilder(restRequest);
-          builder.startObject();
-          builder.field("jira_river_names", allRivers);
-          builder.endObject();
-          restChannel.sendResponse(new XContentRestResponse(restRequest, RestStatus.OK, builder));
-        } catch (Exception e) {
-          onFailure(e);
-        }
-      }
+							XContentBuilder builder = RestXContentBuilder.restContentBuilder(restRequest);
+							builder.startObject();
+							builder.field("jira_river_names", allRivers);
+							builder.endObject();
+							restChannel.sendResponse(new XContentRestResponse(restRequest, RestStatus.OK, builder));
+						} catch (Exception e) {
+							onFailure(e);
+						}
+					}
 
-      @Override
-      public void onFailure(Throwable e) {
-        try {
-          restChannel.sendResponse(new XContentThrowableRestResponse(restRequest, e));
-        } catch (IOException e1) {
-          logger.error("Failed to send failure response", e1);
-        }
-      }
+					@Override
+					public void onFailure(Throwable e) {
+						try {
+							restChannel.sendResponse(new XContentThrowableRestResponse(restRequest, e));
+						} catch (IOException e1) {
+							logger.error("Failed to send failure response", e1);
+						}
+					}
 
-    });
-  }
+				});
+	}
 }

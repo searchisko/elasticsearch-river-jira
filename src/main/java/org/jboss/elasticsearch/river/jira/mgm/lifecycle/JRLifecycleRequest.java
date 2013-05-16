@@ -16,50 +16,50 @@ import org.jboss.elasticsearch.river.jira.mgm.JRMgmBaseRequest;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class JRLifecycleRequest extends JRMgmBaseRequest {
+public class JRLifecycleRequest extends JRMgmBaseRequest<JRLifecycleRequest> {
 
-  protected JRLifecycleCommand command;
+	protected JRLifecycleCommand command;
 
-  JRLifecycleRequest() {
+	JRLifecycleRequest() {
 
-  }
+	}
 
-  /**
-   * Construct request.
-   * 
-   * @param riverName for request
-   * @param command to be performed
-   */
-  public JRLifecycleRequest(String riverName, JRLifecycleCommand command) {
-    super(riverName);
-    if (command == null)
-      throw new IllegalArgumentException("command must be provided");
-    this.command = command;
-  }
+	/**
+	 * Construct request.
+	 * 
+	 * @param riverName for request
+	 * @param command to be performed
+	 */
+	public JRLifecycleRequest(String riverName, JRLifecycleCommand command) {
+		super(riverName);
+		if (command == null)
+			throw new IllegalArgumentException("command must be provided");
+		this.command = command;
+	}
 
-  @Override
-  public void readFrom(StreamInput in) throws IOException {
-    super.readFrom(in);
-    command = JRLifecycleCommand.detectById(in.readVInt());
-  }
+	@Override
+	public void readFrom(StreamInput in) throws IOException {
+		super.readFrom(in);
+		command = JRLifecycleCommand.detectById(in.readVInt());
+	}
 
-  @Override
-  public void writeTo(StreamOutput out) throws IOException {
-    super.writeTo(out);
-    out.writeVInt(command.getId());
-  }
+	@Override
+	public void writeTo(StreamOutput out) throws IOException {
+		super.writeTo(out);
+		out.writeVInt(command.getId());
+	}
 
-  public JRLifecycleCommand getCommand() {
-    return command;
-  }
+	public JRLifecycleCommand getCommand() {
+		return command;
+	}
 
-  public void setCommand(JRLifecycleCommand command) {
-    this.command = command;
-  }
+	public void setCommand(JRLifecycleCommand command) {
+		this.command = command;
+	}
 
-  @Override
-  public String toString() {
-    return "JRLifecycleRequest [command=" + command + ", riverName=" + riverName + "]";
-  }
+	@Override
+	public String toString() {
+		return "JRLifecycleRequest [command=" + command + ", riverName=" + riverName + "]";
+	}
 
 }

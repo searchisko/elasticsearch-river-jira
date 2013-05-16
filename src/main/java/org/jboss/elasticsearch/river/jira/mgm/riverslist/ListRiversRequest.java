@@ -12,10 +12,10 @@ import org.elasticsearch.action.support.nodes.NodesOperationRequest;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class ListRiversRequest extends NodesOperationRequest {
+public class ListRiversRequest extends NodesOperationRequest<ListRiversRequest> {
 
-  public ListRiversRequest() {
-    super();
-  }
+	public ListRiversRequest() {
+		super();
+	}
 
 }

@@ -25,40 +25,45 @@ import org.jboss.elasticsearch.river.jira.mgm.RestJRMgmBaseAction;
  */
 public class RestFullUpdateAction extends RestJRMgmBaseAction {
 
-  @Inject
-  protected RestFullUpdateAction(Settings settings, Client client, RestController controller) {
-    super(settings, client);
-    String baseUrl = baseRestMgmUrl();
-    controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "fullupdate", this);
-    controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "fullupdate/{projectKey}",
-        this);
-  }
+	@Inject
+	protected RestFullUpdateAction(Settings settings, Client client, RestController controller) {
+		super(settings, client);
+		String baseUrl = baseRestMgmUrl();
+		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "fullupdate", this);
+		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "fullupdate/{projectKey}",
+				this);
+	}
 
-  @Override
-  public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
+	@Override
+	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
 
-    final String riverName = restRequest.param("riverName");
-    final String projectKey = restRequest.param("projectKey");
+		final String riverName = restRequest.param("riverName");
+		final String projectKey = restRequest.param("projectKey");
 
-    FullUpdateRequest actionRequest = new FullUpdateRequest(riverName, projectKey);
+		FullUpdateRequest actionRequest = new FullUpdateRequest(riverName, projectKey);
 
-    client.execute(FullUpdateAction.INSTANCE, actionRequest,
-        new JRMgmBaseActionListener<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateResponse>(actionRequest, restRequest,
-            restChannel) {
+		client
+				.admin()
+				.cluster()
+				.execute(
+						FullUpdateAction.INSTANCE,
+						actionRequest,
+						new JRMgmBaseActionListener<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateResponse>(actionRequest,
+								restRequest, restChannel) {
 
-          @Override
-          protected void handleJiraRiverResponse(NodeFullUpdateResponse nodeInfo) throws Exception {
-            if (actionRequest.isProjectKeyRequest() && !nodeInfo.projectFound) {
-              restChannel.sendResponse(new XContentRestResponse(restRequest, RestStatus.NOT_FOUND,
-                  buildMessageDocument(restRequest, "Project '" + projectKey
-                      + "' is not indexed by JiraRiver with name: " + riverName)));
-            } else {
-              restChannel.sendResponse(new XContentRestResponse(restRequest, OK, buildMessageDocument(restRequest,
-                  "Scheduled full reindex for JIRA projects: " + nodeInfo.reindexedProjectNames)));
-            }
-          }
+							@Override
+							protected void handleJiraRiverResponse(NodeFullUpdateResponse nodeInfo) throws Exception {
+								if (actionRequest.isProjectKeyRequest() && !nodeInfo.projectFound) {
+									restChannel.sendResponse(new XContentRestResponse(restRequest, RestStatus.NOT_FOUND,
+											buildMessageDocument(restRequest, "Project '" + projectKey
+													+ "' is not indexed by JiraRiver with name: " + riverName)));
+								} else {
+									restChannel.sendResponse(new XContentRestResponse(restRequest, OK, buildMessageDocument(restRequest,
+											"Scheduled full reindex for JIRA projects: " + nodeInfo.reindexedProjectNames)));
+								}
+							}
 
-        });
-  }
+						});
+	}
 
 }

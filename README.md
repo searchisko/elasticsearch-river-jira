@@ -1,14 +1,22 @@
 JIRA River Plugin for ElasticSearch
 ===================================
 
-The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/software/jira) issues and issue comments into [ElasticSearch](http://www.elasticsearch.org). It's implemented as ElasticSearch [river](http://www.elasticsearch.org/guide/reference/river/) [plugin](http://www.elasticsearch.org/guide/reference/modules/plugins.html) and uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) to obtain issus from JIRA instance.
+The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/software/jira) 
+issues and issue comments into [ElasticSearch](http://www.elasticsearch.org). 
+It's implemented as ElasticSearch [river](http://www.elasticsearch.org/guide/reference/river/) 
+[plugin](http://www.elasticsearch.org/guide/reference/modules/plugins.html) and 
+uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) 
+to obtain issus from JIRA instance.
 
-In order to install the plugin into ElasticSearch, simply run: `bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.2.6/elasticsearch-river-jira-1.2.6.zip -install elasticsearch-river-jira`.
+In order to install the plugin into ElasticSearch, simply run: 
+`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.3.0/elasticsearch-river-jira-1.3.0.zip -install elasticsearch-river-jira`.
 
     -----------------------------------------------------------------------
     | JIRA River | ElasticSearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
-    | master     | 0.19.11          | 5+   | 2             |              |
+    | master     | 0.90.0           | 5+   | 2             |              |
+    -----------------------------------------------------------------------
+    | 1.3.0      | 0.90.0           | 5+   | 2             | 16.5.2013    |
     -----------------------------------------------------------------------
     | 1.2.6      | 0.19.9 - 0.19.12 | 5+   | 2             | 17.4.2013    |
     -----------------------------------------------------------------------
@@ -29,10 +37,16 @@ In order to install the plugin into ElasticSearch, simply run: `bin/plugin -url 
     | 1.0.0      | 0.19             | 5+   | 2             | 11.9.2012    |
     -----------------------------------------------------------------------
 
-For changelog, planned milestones/enhancements and known bugs see [github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues) please.
+For changelog, planned milestones/enhancements and known bugs see 
+[github issue tracker](https://github.com/jbossorg/elasticsearch-river-jira/issues) please.
 
-The JIRA river indexes JIRA issues and comments, and makes them searchable by ElasticSearch. JIRA is pooled periodically to detect changed issues (search operation with JQL query over `updatedDate` field) to update search index in incremental update mode. 
-Periodical full update may be configured too to completely refresh search index and remove issues deleted in JIRA from it (deletes are not catched by incremental updates).
+The JIRA river indexes JIRA issues and comments, and makes them searchable 
+by ElasticSearch. JIRA is pooled periodically to detect changed issues 
+(search operation with JQL query over `updatedDate` field) to update search 
+index in incremental update mode. 
+Periodical full update may be configured too to completely refresh search 
+index and remove issues deleted in JIRA from it (deletes are not catched by 
+incremental updates).
 
 Creating the JIRA river can be done using:
 
@@ -62,7 +76,8 @@ Creating the JIRA river can be done using:
 	}
 	'
 
-The example above lists all the main options controlling the creation and behavior of a JIRA river. Full list of options with description is here:
+The example above lists all the main options controlling the creation and behavior of a JIRA river. 
+Full list of options with description is here:
 
 * `jira/urlBase` is required in order to connect to the JIRA REST API. It's only base URL, path to REST API is added automatically.
 * `jira/username` and `jira/pwd` are optional JIRA login credentials to access jira issues. Anonymous JIRA access is used if not provided.

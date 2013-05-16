@@ -6,23 +6,25 @@
 package org.jboss.elasticsearch.river.jira.mgm.riverslist;
 
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.support.BaseRequestBuilder;
-import org.elasticsearch.client.Client;
+import org.elasticsearch.action.support.nodes.NodesOperationRequestBuilder;
+import org.elasticsearch.client.ClusterAdminClient;
+import org.elasticsearch.client.internal.InternalClusterAdminClient;
 
 /**
  * Request builder to get lit of all jira rivers in cluster.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public class ListRiversRequestBuilder extends BaseRequestBuilder<ListRiversRequest, ListRiversResponse> {
+public class ListRiversRequestBuilder extends
+		NodesOperationRequestBuilder<ListRiversRequest, ListRiversResponse, ListRiversRequestBuilder> {
 
-  public ListRiversRequestBuilder(Client client) {
-    super(client, new ListRiversRequest());
-  }
+	public ListRiversRequestBuilder(ClusterAdminClient client) {
+		super((InternalClusterAdminClient) client, new ListRiversRequest());
+	}
 
-  @Override
-  protected void doExecute(ActionListener<ListRiversResponse> listener) {
-    client.execute(ListRiversAction.INSTANCE, request, listener);
-  }
+	@Override
+	protected void doExecute(ActionListener<ListRiversResponse> listener) {
+		((InternalClusterAdminClient) client).execute(ListRiversAction.INSTANCE, request, listener);
+	}
 
 }
