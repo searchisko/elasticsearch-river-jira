@@ -246,25 +246,25 @@ Management REST API
 -------------------
 JIRA river supports next REST commands for management purposes. Note `my_jira_river` in examples is name of jira river you can call operation for, soi replace it with real name for your calls.
 
-Get [state info](https://github.com/jbossorg/elasticsearch-river-jira/blob/master/src/main/resources/examples/mgm/rest_river_info.json) about jira river operation:
+Get [state info](/src/main/resources/examples/mgm/rest_river_info.json) about jira river operation:
 
-	curl -XGET localhost:9200/_river/my_jira_river/_mgm/state
+	curl -XGET localhost:9200/_river/my_jira_river/_mgm_jr/state
 
 Stop jira river indexing process. Process is stopped permanently, so even after complete elasticsearch cluster restart or river migration to another node. You need to `restart` it over management REST API (see next command):
 
-	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/stop
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm_jr/stop
 
 Restart JIRA river indexing process. Configuration of river is reloaded during restart. You can restart running indexing, or stopped indexing (see previous command):
 
-	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/restart
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm_jr/restart
 
 Force full index update for all jira projects:
 
-	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/fullupdate
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm_jr/fullupdate
 
 Force full index update for jira project with key `projectKey`:
 
-	curl -XPOST localhost:9200/_river/my_jira_river/_mgm/fullupdate/projectKey
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm_jr/fullupdate/projectKey
 
 List names of all JIRA Rivers running in ES cluster:
 

@@ -17,18 +17,18 @@ import org.elasticsearch.river.RiverIndexName;
  */
 public abstract class RestJRMgmBaseAction extends BaseRestHandler {
 
-  protected RestJRMgmBaseAction(Settings settings, Client client) {
-    super(settings, client);
-  }
+	protected RestJRMgmBaseAction(Settings settings, Client client) {
+		super(settings, client);
+	}
 
-  /**
-   * Prepare base REST URL for JIRA river management operations. <code>riverName</code> request parameter is defined
-   * here.
-   * 
-   * @return base REST management url ending by <code>/</code>
-   */
-  protected String baseRestMgmUrl() {
-    return "/" + RiverIndexName.Conf.indexName(settings) + "/{riverName}/_mgm/";
-  }
+	/**
+	 * Prepare base REST URL for JIRA river management operations. <code>riverName</code> request parameter is defined
+	 * here.
+	 * 
+	 * @return base REST management url ending by <code>/</code>
+	 */
+	protected String baseRestMgmUrl() {
+		return "/" + RiverIndexName.Conf.indexName(settings) + "/{riverName}/_mgm_jr/";
+	}
 
 }
