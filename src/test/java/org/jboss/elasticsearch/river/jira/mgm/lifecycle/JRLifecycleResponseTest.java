@@ -9,6 +9,7 @@ import java.io.IOException;
 
 import junit.framework.Assert;
 
+import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.io.stream.BytesStreamInput;
@@ -39,9 +40,9 @@ public class JRLifecycleResponseTest {
 	public void serialization() throws IOException {
 		ClusterName cn = new ClusterName("mycluster");
 
-		DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
-		DiscoveryNode dn2 = new DiscoveryNode("aa2", DummyTransportAddress.INSTANCE);
-		DiscoveryNode dn3 = new DiscoveryNode("aa3", DummyTransportAddress.INSTANCE);
+		DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE, Version.CURRENT);
+		DiscoveryNode dn2 = new DiscoveryNode("aa2", DummyTransportAddress.INSTANCE, Version.CURRENT);
+		DiscoveryNode dn3 = new DiscoveryNode("aa3", DummyTransportAddress.INSTANCE, Version.CURRENT);
 
 		{
 			NodeJRLifecycleResponse[] nodes = new NodeJRLifecycleResponse[] {};
@@ -80,9 +81,9 @@ public class JRLifecycleResponseTest {
 
 		ClusterName cn = new ClusterName("mycluster");
 
-		DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
-		DiscoveryNode dn2 = new DiscoveryNode("aa2", DummyTransportAddress.INSTANCE);
-		DiscoveryNode dn3 = new DiscoveryNode("aa3", DummyTransportAddress.INSTANCE);
+		DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE, Version.CURRENT);
+		DiscoveryNode dn2 = new DiscoveryNode("aa2", DummyTransportAddress.INSTANCE, Version.CURRENT);
+		DiscoveryNode dn3 = new DiscoveryNode("aa3", DummyTransportAddress.INSTANCE, Version.CURRENT);
 
 		{
 			JRLifecycleResponse tested = new JRLifecycleResponse();

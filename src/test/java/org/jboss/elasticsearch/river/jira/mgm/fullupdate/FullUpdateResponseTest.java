@@ -9,6 +9,7 @@ import java.io.IOException;
 
 import junit.framework.Assert;
 
+import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.io.stream.BytesStreamInput;
@@ -34,21 +35,21 @@ public class FullUpdateResponseTest {
 		Assert.assertNull(tested.getSuccessNodeResponse());
 
 		nodes = new NodeFullUpdateResponse[] { new NodeFullUpdateResponse(new DiscoveryNode("nd1",
-				DummyTransportAddress.INSTANCE), false, false, null) };
+				DummyTransportAddress.INSTANCE, Version.CURRENT), false, false, null) };
 		tested = new FullUpdateResponse(new ClusterName("cl"), nodes);
 		Assert.assertNull(tested.getSuccessNodeResponse());
 
 		nodes = new NodeFullUpdateResponse[] {
-				new NodeFullUpdateResponse(new DiscoveryNode("nd1", DummyTransportAddress.INSTANCE), false, false, null),
-				new NodeFullUpdateResponse(new DiscoveryNode("nd2", DummyTransportAddress.INSTANCE), false, false, null),
-				new NodeFullUpdateResponse(new DiscoveryNode("nd3", DummyTransportAddress.INSTANCE), false, false, null) };
+				new NodeFullUpdateResponse(new DiscoveryNode("nd1", DummyTransportAddress.INSTANCE, Version.CURRENT), false, false, null),
+				new NodeFullUpdateResponse(new DiscoveryNode("nd2", DummyTransportAddress.INSTANCE, Version.CURRENT), false, false, null),
+				new NodeFullUpdateResponse(new DiscoveryNode("nd3", DummyTransportAddress.INSTANCE, Version.CURRENT), false, false, null) };
 		tested = new FullUpdateResponse(new ClusterName("cl"), nodes);
 		Assert.assertNull(tested.getSuccessNodeResponse());
 
 		nodes = new NodeFullUpdateResponse[] {
-				new NodeFullUpdateResponse(new DiscoveryNode("nd1", DummyTransportAddress.INSTANCE), false, false, null),
-				new NodeFullUpdateResponse(new DiscoveryNode("nd2", DummyTransportAddress.INSTANCE), true, false, null),
-				new NodeFullUpdateResponse(new DiscoveryNode("nd3", DummyTransportAddress.INSTANCE), false, false, null) };
+				new NodeFullUpdateResponse(new DiscoveryNode("nd1", DummyTransportAddress.INSTANCE, Version.CURRENT), false, false, null),
+				new NodeFullUpdateResponse(new DiscoveryNode("nd2", DummyTransportAddress.INSTANCE, Version.CURRENT), true, false, null),
+				new NodeFullUpdateResponse(new DiscoveryNode("nd3", DummyTransportAddress.INSTANCE, Version.CURRENT), false, false, null) };
 		tested = new FullUpdateResponse(new ClusterName("cl"), nodes);
 		NodeFullUpdateResponse r = tested.getSuccessNodeResponse();
 		Assert.assertNotNull(r);
@@ -59,9 +60,9 @@ public class FullUpdateResponseTest {
 	@Test
 	public void serialization() throws IOException {
 		NodeFullUpdateResponse[] nodes = new NodeFullUpdateResponse[] {
-				new NodeFullUpdateResponse(new DiscoveryNode("nd1", DummyTransportAddress.INSTANCE), false, false, null),
-				new NodeFullUpdateResponse(new DiscoveryNode("nd2", DummyTransportAddress.INSTANCE), false, false, null),
-				new NodeFullUpdateResponse(new DiscoveryNode("nd3", DummyTransportAddress.INSTANCE), true, true, "ORG") };
+				new NodeFullUpdateResponse(new DiscoveryNode("nd1", DummyTransportAddress.INSTANCE, Version.CURRENT), false, false, null),
+				new NodeFullUpdateResponse(new DiscoveryNode("nd2", DummyTransportAddress.INSTANCE, Version.CURRENT), false, false, null),
+				new NodeFullUpdateResponse(new DiscoveryNode("nd3", DummyTransportAddress.INSTANCE, Version.CURRENT), true, true, "ORG") };
 		FullUpdateResponse testedSrc = new FullUpdateResponse(new ClusterName("cl"), nodes);
 
 		BytesStreamOutput out = new BytesStreamOutput();

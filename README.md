@@ -6,15 +6,17 @@ issues and issue comments into [ElasticSearch](http://www.elasticsearch.org).
 It's implemented as ElasticSearch [river](http://www.elasticsearch.org/guide/reference/river/) 
 [plugin](http://www.elasticsearch.org/guide/reference/modules/plugins.html) and 
 uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) 
-to obtain issus from JIRA instance.
+to obtain issues from JIRA instance.
 
 In order to install the plugin into ElasticSearch, simply run: 
-`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.3.0/elasticsearch-river-jira-1.3.0.zip -install elasticsearch-river-jira`.
+`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.3.1/elasticsearch-river-jira-1.3.1.zip -install elasticsearch-river-jira`.
 
     -----------------------------------------------------------------------
     | JIRA River | ElasticSearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
-    | master     | 0.90.0           | 5+   | 2             |              |
+    | master     | 0.90.5           | 5+   | 2             |              |
+    -----------------------------------------------------------------------
+    | 1.3.1      | 0.90.5           | 5+   | 2             | 19.9.2013    |
     -----------------------------------------------------------------------
     | 1.3.0      | 0.90.0           | 5+   | 2             | 16.5.2013    |
     -----------------------------------------------------------------------
@@ -45,7 +47,7 @@ by ElasticSearch. JIRA is pooled periodically to detect changed issues
 (search operation with JQL query over `updatedDate` field) to update search 
 index in incremental update mode. 
 Periodical full update may be configured too to completely refresh search 
-index and remove issues deleted in JIRA from it (deletes are not catched by 
+index and remove issues deleted in JIRA from it (deletes are not catch by
 incremental updates).
 
 Creating the JIRA river can be done using:
@@ -84,7 +86,7 @@ Full list of options with description is here:
 * `jira/jqlTimeZone` is optional [identifier of timezone](http://docs.oracle.com/javase/6/docs/api/java/util/TimeZone.html#getTimeZone%28java.lang.String%29) used to format time values into JQL when requesting updated issues. Timezone of ElasticSearch JVM is used if not provided. JQL uses timezone of jira user who perform JQL query (so this setting must reflex [jira timezone of user](https://confluence.atlassian.com/display/JIRA/Choosing+a+Time+Zone) provided by `jira/username` parameter), default timezone of JIRA in case of Anonymous access. Incorrect setting of this value may lead to some issue updates not reflected in search index during incremental update!!
 * `jira/timeout` time value, defines timeout for http/s REST request to the JIRA. Optional, 5s is default if not provided.
 * `jira/maxIssuesPerRequest` defines maximal number of updated issues requested from JIRA by one REST request. Optional, 50 used if not provided. The maximum allowable value is dictated by the JIRA configuration property `jira.search.views.default.max`. If you specify a value that is higher than this number, your request results will be truncated to this number anyway.
-* `jira/projectKeysIndexed` comma separated list of JIRA project keys to be indexed. Optional, list of projects is obtained from JIRA instance if ommited (so new projects are indexed automatically).
+* `jira/projectKeysIndexed` comma separated list of JIRA project keys to be indexed. Optional, list of projects is obtained from JIRA instance if omitted (so new projects are indexed automatically).
 * `jira/projectKeysExcluded` comma separated list of JIRA project keys to be excluded from indexing if list is obtained from JIRA instance (so used only if no `jira/projectKeysIndexed` is defined). Optional.
 * `jira/indexUpdatePeriod`  time value, defines how often is search index updated from JIRA instance. Optional, default 5 minutes.
 * `jira/indexFullUpdatePeriod` time value, defines how often is search index updated from JIRA instance in full update mode. Optional, default 12 hours. You can use `0` to disable automatic full updates. Full update updates all issues in search index from JIRA, and removes issues deleted in JIRA from search index also. This brings more load to both JIRA and ElasticSearch servers, and may run for long time in case of JIRA instance with many issues. Incremental updates are performed between full updates as defined by `indexUpdatePeriod` parameter.
@@ -94,9 +96,9 @@ Full list of options with description is here:
 * `index/field_river_name`, `index/field_project_key`, `index/field_issue_key`, `index/field_jira_url` `index/fields`, `index/value_filters`, `index/jira_field_issue_document_id` can be used to change structure of indexed issue document. See 'JIRA issue index document structure' chapter.
 * `index/comment_mode` defines mode of issue comments indexing: `none` - no comments indexed, `embedded` - comments indexed as array in issue document, `child` - comment indexed as separate document with [parent-child relation](http://www.elasticsearch.org/guide/reference/mapping/parent-field.html) to issue document, `standalone` - comment indexed as separate document. Setting is optional, `embedded` value is default if not provided.
 * `index/comment_type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue comment is stored into search index in `child` or `standalone` mode. Parameter is optional, `jira_issue_comment` is used if omitted. See related notes later!
-* `index/field_comments`, `index/comment_fields` can be used to change structure comment informations in indexed documents. See 'JIRA issue index document structure' chapter.
+* `index/field_comments`, `index/comment_fields` can be used to change structure comment information in indexed documents. See 'JIRA issue index document structure' chapter.
 * `index/preprocessors` optional parameter. Defines chain of preprocessors applied to issue data read from JIRA before stored into index. See related notes later!
-* `activity_log` part defines where information about jira river index update activity are stored. If omitted then no activity informations are stored.
+* `activity_log` part defines where information about jira river index update activity are stored. If omitted then no activity information are stored.
 * `activity_log/index` defines name of index where information about jira river activity are stored.
 * `activity_log/type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used to store information about jira river activity. Parameter is optional, `jira_river_indexupdate` is used if ommited.
 
@@ -236,7 +238,7 @@ JIRA River uses following structure to store comment informations in search inde
     | comment_updater | updateAuthor          | Object with fields `username`, `email_address`, `display_name`               | index/comment_fields    |
     ----------------------------------------------------------------------------------------------------------------------------------------------------
 
-You can also implement and configure some preprocessors, which allows you to change/extend issue informations loaded from JIRA and store these changes/extensions to the search index.
+You can also implement and configure some preprocessors, which allows you to change/extend issue information loaded from JIRA and store these changes/extensions to the search index.
 This allows you for example value normalizations, or creation of some index fields with values aggregated from more issue fields.
 
 Framework called [structured-content-tools](https://github.com/jbossorg/structured-content-tools) is used to implement these preprocessors. Example how to configure preprocessors is visible [here](/src/main/resources/examples/river_configuration_example.json).

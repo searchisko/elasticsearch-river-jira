@@ -20,6 +20,7 @@ import java.util.TimeZone;
 
 import junit.framework.Assert;
 
+import org.elasticsearch.Version;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -548,7 +549,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
 
 		// case - nothing stored in audit log index - no exception!
 		String info = tested.getRiverOperationInfo(new DiscoveryNode("My Node", "fsdfsdfxzd",
-				DummyTransportAddress.INSTANCE, new HashMap<String, String>()), DateTimeUtils
+				DummyTransportAddress.INSTANCE, new HashMap<String, String>(), Version.CURRENT), DateTimeUtils
 				.parseISODateTime("2012-09-27T09:21:26.422Z"));
 		TestUtils.assertStringFromClasspathFile("/asserts/JiraRiver_getRiverOperationInfo_1.json", info);
 
@@ -591,7 +592,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
 
 			// case - nothing stored in audit log index - no exception!
 			String info = tested.getRiverOperationInfo(new DiscoveryNode("My Node", "fsdfsdfxzd",
-					DummyTransportAddress.INSTANCE, new HashMap<String, String>()), DateTimeUtils
+					DummyTransportAddress.INSTANCE, new HashMap<String, String>(), Version.CURRENT), DateTimeUtils
 					.parseISODateTime("2012-09-27T09:21:26.422Z"));
 			TestUtils.assertStringFromClasspathFile("/asserts/JiraRiver_getRiverOperationInfo_1.json", info);
 
@@ -607,7 +608,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
 					.parseISODateTime("2012-09-27T08:11:25.422Z"), true, 1810, null));
 			tested.refreshSearchIndex(tested.activityLogIndexName);
 			info = tested.getRiverOperationInfo(new DiscoveryNode("My Node", "fsdfsdfxzd", DummyTransportAddress.INSTANCE,
-					new HashMap<String, String>()), DateTimeUtils.parseISODateTime("2012-09-27T09:21:26.422Z"));
+					new HashMap<String, String>(), Version.CURRENT), DateTimeUtils.parseISODateTime("2012-09-27T09:21:26.422Z"));
 			TestUtils.assertStringFromClasspathFile("/asserts/JiraRiver_getRiverOperationInfo_2.json", info);
 
 		} finally {

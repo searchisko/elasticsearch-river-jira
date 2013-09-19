@@ -7,6 +7,7 @@ package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
 import junit.framework.Assert;
 
+import org.elasticsearch.Version;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -138,7 +139,7 @@ public class TransportFullUpdateActionTest {
 
 	}
 
-	private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE);
+	private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE, Version.CURRENT);
 	private static ClusterService clusterService = Mockito.mock(ClusterService.class);
 
 	public static TransportFullUpdateAction prepareTestedInstance(ClusterName clusterName) {

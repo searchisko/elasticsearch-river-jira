@@ -567,7 +567,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 	/**
 	 * Put running instance of jira river into registry. Used for REST management operations handling.
 	 * 
-	 * @param riverName to get instance for
+	 * @param jiraRiver to get instance for
 	 * @see #getRunningInstances()
 	 * @see #getRunningInstance(String)
 	 */
@@ -585,6 +585,18 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 	public static Set<String> getRunningInstances() {
 		return Collections.unmodifiableSet((riverInstances.keySet()));
 	}
+
+    /**
+     * Remove rivers of given names.
+     * Note: this method was added because of unit tests. Do not call this method in production code.
+     *
+     * @param riverNames names of the rivers to remove
+     */
+    public static void removeRunningInstances(String... riverNames) {
+        for (String riverName : riverNames) {
+            riverInstances.remove(riverName);
+        }
+    }
 
 	@Override
 	public List<String> getAllIndexedProjectsKeys() throws Exception {
