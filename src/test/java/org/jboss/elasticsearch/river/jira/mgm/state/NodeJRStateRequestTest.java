@@ -23,7 +23,7 @@ public class NodeJRStateRequestTest {
   @Test
   public void constructor() {
 
-    // note nodeId cann't be asserted because private and no getter for it :-(
+    // note nodeId can't be asserted because private and no getter for it :-(
 
     {
       NodeJRStateRequest tested = new NodeJRStateRequest();

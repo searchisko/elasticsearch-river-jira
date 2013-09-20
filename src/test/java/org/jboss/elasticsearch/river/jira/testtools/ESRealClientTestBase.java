@@ -18,7 +18,7 @@ import org.elasticsearch.node.NodeBuilder;
 
 /**
  * Base class for unit tests which need to run some test against ElasticSearch cluster. You can use next pattern in your
- * unit test method to obtain testing client connected to inmemory ES cluster without any data.
+ * unit test method to obtain testing client connected to in-memory ES cluster without any data.
  * 
  * <pre>
  * try{
@@ -43,7 +43,7 @@ public abstract class ESRealClientTestBase {
 	private File tempFolder;
 
 	/**
-	 * Prepare ES inmemory client for unit test. Do not forgot to call {@link #finalizeESClientForUnitTest()} at the end
+	 * Prepare ES in-memory client for unit test. Do not forgot to call {@link #finalizeESClientForUnitTest()} at the end
 	 * of test!
 	 * 
 	 * @return
@@ -103,7 +103,7 @@ public abstract class ESRealClientTestBase {
 	}
 
 	/**
-	 * Create index in inmemory client.
+	 * Create index in in-memory client.
 	 * 
 	 * @param indexName
 	 */

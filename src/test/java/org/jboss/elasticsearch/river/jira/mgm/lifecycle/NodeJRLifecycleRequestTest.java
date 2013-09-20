@@ -24,7 +24,7 @@ public class NodeJRLifecycleRequestTest {
   @Test
   public void constructor() {
 
-    // note nodeId cann't be asserted because private and no getter for it :-(
+    // note nodeId can't be asserted because private and no getter for it :-(
 
     {
       NodeJRLifecycleRequest tested = new NodeJRLifecycleRequest();

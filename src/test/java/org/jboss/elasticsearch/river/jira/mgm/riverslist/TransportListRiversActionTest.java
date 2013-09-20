@@ -122,6 +122,10 @@ public class TransportListRiversActionTest {
 	private static DiscoveryNode dn = new DiscoveryNode("aa", DummyTransportAddress.INSTANCE, Version.CURRENT);
 	private static ClusterService clusterService = Mockito.mock(ClusterService.class);
 
+	static {
+		Mockito.when(clusterService.localNode()).thenReturn(dn);
+	}
+
 	public static TransportListRiversAction prepareTestedInstance(ClusterName clusterName) {
 		Settings settings = Mockito.mock(Settings.class);
 		ThreadPool threadPool = new ThreadPool();
