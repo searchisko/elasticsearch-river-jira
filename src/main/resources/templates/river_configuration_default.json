@@ -48,6 +48,15 @@
             "comment_updater" : {"jira_field" : "updateAuthor", "value_filter" : "user"},
             "comment_created" : {"jira_field" : "created"},
             "comment_updated" : {"jira_field" : "updated"}
+        },
+        "changelog_mode"   : "none",
+        "changelog_type"   : "jira_issue_change", 
+        "field_changelogs" : "changelogs",
+        "changelog_fields" : {
+            "change_id"      : {"jira_field" : "id"},
+            "change_items"   : {"jira_field" : "items"},
+            "change_author"  : {"jira_field" : "author", "value_filter" : "user"},
+            "change_created" : {"jira_field" : "created"}
         }
     }
 }

@@ -204,7 +204,11 @@ public class JIRA5RestClient implements IJIRAClient {
 		if (indexStructureBuilder != null) {
 			String fields = indexStructureBuilder.getRequiredJIRACallIssueFields();
 			if (fields != null) {
-				params.add(new BasicNameValuePair("fields", indexStructureBuilder.getRequiredJIRACallIssueFields()));
+				params.add(new BasicNameValuePair("fields", fields));
+			}
+			String expands = indexStructureBuilder.getRequiredJIRACallIssueExpands();
+			if (expands != null && expands.length() > 0) {
+				params.add(new BasicNameValuePair("expand", expands));
 			}
 		}
 

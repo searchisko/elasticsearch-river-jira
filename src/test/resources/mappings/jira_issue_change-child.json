@@ -1,0 +1,10 @@
+{
+    "jira_issue_change" : {
+        "_timestamp" : { "enabled" : true },
+        "_parent"    : { "type" : "jira_issue" },
+        "properties" : {
+            "project_key" : {"type" : "string", "analyzer" : "keyword"},
+            "source"      : {"type" : "string", "analyzer" : "keyword"}
+        }
+    }
+}

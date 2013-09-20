@@ -27,6 +27,14 @@
             "comment_author2" : {"jira_field" : "author", "value_filter" : "user2"},
             "comment_updater" : {"jira_field" : "updateAuthor", "value_filter" : "user2"},
             "comment_created" : {"jira_field" : "created"}
+        },
+        "changelog_mode"   : "child",
+        "changelog_type"   : "jira_issue_change_type", 
+        "field_changelogs" : "all_changelogs",
+        "changelog_fields" : {
+            "change_id"      : {"jira_field" : "id"},
+            "change_items"   : {"jira_field" : "items"},
+            "change_author2"  : {"jira_field" : "author", "value_filter" : "user2"}
         }
     }
 }

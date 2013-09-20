@@ -152,6 +152,7 @@ public class JIRA5RestClientTest {
 				Assert.assertNotNull(params);
 				String mr = "-1";
 				String fields = "";
+				String expand = "";
 				String startAt = "";
 				for (NameValuePair param : params) {
 					if (param.getName().equals("maxResults")) {
@@ -160,6 +161,8 @@ public class JIRA5RestClientTest {
 						Assert.assertEquals("JQL string", param.getValue());
 					} else if (param.getName().equals("fields")) {
 						fields = param.getValue();
+					} else if (param.getName().equals("expand")) {
+						expand = param.getValue();
 					} else if (param.getName().equals("startAt")) {
 						startAt = param.getValue();
 					}
@@ -173,8 +176,8 @@ public class JIRA5RestClientTest {
 					Assert.assertEquals(3, params.size());
 				}
 
-				return ("{\"maxResults\": " + mr + ", \"startAt\": " + startAt + ", \"fields\" : \"" + fields + "\" }")
-						.getBytes("UTF-8");
+				return ("{\"maxResults\": " + mr + ", \"startAt\": " + startAt + ", \"fields\" : \"" + fields + "\""
+						+ ", \"expand\" : \"" + expand + "\" }").getBytes("UTF-8");
 			};
 
 			@Override
@@ -194,7 +197,7 @@ public class JIRA5RestClientTest {
 		byte[] ret = tested.performJIRAChangedIssuesREST("ORG", 10, ua, ub);
 		Assert
 				.assertEquals(
-						"{\"maxResults\": -1, \"startAt\": 10, \"fields\" : \"key,status,issuetype,created,updated,reporter,assignee,summary,description\" }",
+						"{\"maxResults\": -1, \"startAt\": 10, \"fields\" : \"key,status,issuetype,created,updated,reporter,assignee,summary,description\", \"expand\" : \"\" }",
 						new String(ret, "UTF-8"));
 
 		// case - maxResults parameter defined
@@ -202,14 +205,23 @@ public class JIRA5RestClientTest {
 		ret = tested.performJIRAChangedIssuesREST("ORG", 20, ua, ub);
 		Assert
 				.assertEquals(
-						"{\"maxResults\": 10, \"startAt\": 20, \"fields\" : \"key,status,issuetype,created,updated,reporter,assignee,summary,description\" }",
+						"{\"maxResults\": 10, \"startAt\": 20, \"fields\" : \"key,status,issuetype,created,updated,reporter,assignee,summary,description\", \"expand\" : \"\" }",
 						new String(ret, "UTF-8"));
 
 		// case - no fields defined
 		reset(jiraIssueIndexStructureBuilderMock);
 		tested.listJIRAIssuesMax = 20;
 		ret = tested.performJIRAChangedIssuesREST("ORG", 30, ua, ub);
-		Assert.assertEquals("{\"maxResults\": 20, \"startAt\": 30, \"fields\" : \"\" }", new String(ret, "UTF-8"));
+		Assert.assertEquals("{\"maxResults\": 20, \"startAt\": 30, \"fields\" : \"\", \"expand\" : \"\" }", new String(ret,
+				"UTF-8"));
+
+		// case - expand defines
+		reset(jiraIssueIndexStructureBuilderMock);
+		tested.listJIRAIssuesMax = 10;
+		when(jiraIssueIndexStructureBuilderMock.getRequiredJIRACallIssueExpands()).thenReturn("changelog");
+		ret = tested.performJIRAChangedIssuesREST("ORG", 30, ua, ub);
+		Assert.assertEquals("{\"maxResults\": 10, \"startAt\": 30, \"fields\" : \"\", \"expand\" : \"changelog\" }",
+				new String(ret, "UTF-8"));
 
 	}
 

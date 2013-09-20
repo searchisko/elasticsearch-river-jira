@@ -16,33 +16,47 @@ import org.junit.Test;
  */
 public class IssueCommentIndexingModeTest {
 
-  @Test
-  public void parseConfiguration() {
-    Assert.assertEquals(IssueCommentIndexingMode.NONE, IssueCommentIndexingMode.parseConfiguration("none"));
-    Assert.assertEquals(IssueCommentIndexingMode.NONE, IssueCommentIndexingMode.parseConfiguration("None"));
-    Assert.assertEquals(IssueCommentIndexingMode.CHILD, IssueCommentIndexingMode.parseConfiguration("child"));
-    Assert.assertEquals(IssueCommentIndexingMode.CHILD, IssueCommentIndexingMode.parseConfiguration("Child"));
-    Assert.assertEquals(IssueCommentIndexingMode.STANDALONE, IssueCommentIndexingMode.parseConfiguration("standalone"));
-    Assert.assertEquals(IssueCommentIndexingMode.STANDALONE, IssueCommentIndexingMode.parseConfiguration("Standalone"));
-    Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED, IssueCommentIndexingMode.parseConfiguration("embedded"));
-    Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED, IssueCommentIndexingMode.parseConfiguration("Embedded"));
-    Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED, IssueCommentIndexingMode.parseConfiguration(null));
-    Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED, IssueCommentIndexingMode.parseConfiguration("  "));
+	@Test
+	public void parseConfiguration() {
+		Assert.assertEquals(IssueCommentIndexingMode.NONE,
+				IssueCommentIndexingMode.parseConfiguration("none", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.NONE,
+				IssueCommentIndexingMode.parseConfiguration("None", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.CHILD,
+				IssueCommentIndexingMode.parseConfiguration("child", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.CHILD,
+				IssueCommentIndexingMode.parseConfiguration("Child", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.STANDALONE,
+				IssueCommentIndexingMode.parseConfiguration("standalone", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.STANDALONE,
+				IssueCommentIndexingMode.parseConfiguration("Standalone", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED,
+				IssueCommentIndexingMode.parseConfiguration("embedded", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED,
+				IssueCommentIndexingMode.parseConfiguration("Embedded", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED,
+				IssueCommentIndexingMode.parseConfiguration(null, IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.EMBEDDED,
+				IssueCommentIndexingMode.parseConfiguration("  ", IssueCommentIndexingMode.EMBEDDED));
+		Assert.assertEquals(IssueCommentIndexingMode.NONE,
+				IssueCommentIndexingMode.parseConfiguration(null, IssueCommentIndexingMode.NONE));
+		Assert.assertEquals(IssueCommentIndexingMode.NONE,
+				IssueCommentIndexingMode.parseConfiguration("  ", IssueCommentIndexingMode.NONE));
 
-    try {
-      IssueCommentIndexingMode.parseConfiguration("nonsense");
-      Assert.fail("SettingsException must be thrown");
-    } catch (SettingsException e) {
-      // OK
-    }
-  }
+		try {
+			IssueCommentIndexingMode.parseConfiguration("nonsense", IssueCommentIndexingMode.NONE);
+			Assert.fail("SettingsException must be thrown");
+		} catch (SettingsException e) {
+			// OK
+		}
+	}
 
-  @Test
-  public void isExtraDocumentIndexed() {
-    Assert.assertFalse(IssueCommentIndexingMode.NONE.isExtraDocumentIndexed());
-    Assert.assertFalse(IssueCommentIndexingMode.EMBEDDED.isExtraDocumentIndexed());
-    Assert.assertTrue(IssueCommentIndexingMode.STANDALONE.isExtraDocumentIndexed());
-    Assert.assertTrue(IssueCommentIndexingMode.CHILD.isExtraDocumentIndexed());
-  }
+	@Test
+	public void isExtraDocumentIndexed() {
+		Assert.assertFalse(IssueCommentIndexingMode.NONE.isExtraDocumentIndexed());
+		Assert.assertFalse(IssueCommentIndexingMode.EMBEDDED.isExtraDocumentIndexed());
+		Assert.assertTrue(IssueCommentIndexingMode.STANDALONE.isExtraDocumentIndexed());
+		Assert.assertTrue(IssueCommentIndexingMode.CHILD.isExtraDocumentIndexed());
+	}
 
 }

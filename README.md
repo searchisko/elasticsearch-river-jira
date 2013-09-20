@@ -9,12 +9,14 @@ uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+A
 to obtain issues from JIRA instance.
 
 In order to install the plugin into ElasticSearch, simply run: 
-`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.3.1/elasticsearch-river-jira-1.3.1.zip -install elasticsearch-river-jira`.
+`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.4.0/elasticsearch-river-jira-1.4.0.zip -install elasticsearch-river-jira`.
 
     -----------------------------------------------------------------------
     | JIRA River | ElasticSearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
     | master     | 0.90.5           | 5+   | 2             |              |
+    -----------------------------------------------------------------------
+    | 1.4.0      | 0.90.5           | 5+   | 2             | 20.9.2013    |
     -----------------------------------------------------------------------
     | 1.3.1      | 0.90.5           | 5+   | 2             | 19.9.2013    |
     -----------------------------------------------------------------------
@@ -96,7 +98,10 @@ Full list of options with description is here:
 * `index/field_river_name`, `index/field_project_key`, `index/field_issue_key`, `index/field_jira_url` `index/fields`, `index/value_filters`, `index/jira_field_issue_document_id` can be used to change structure of indexed issue document. See 'JIRA issue index document structure' chapter.
 * `index/comment_mode` defines mode of issue comments indexing: `none` - no comments indexed, `embedded` - comments indexed as array in issue document, `child` - comment indexed as separate document with [parent-child relation](http://www.elasticsearch.org/guide/reference/mapping/parent-field.html) to issue document, `standalone` - comment indexed as separate document. Setting is optional, `embedded` value is default if not provided.
 * `index/comment_type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue comment is stored into search index in `child` or `standalone` mode. Parameter is optional, `jira_issue_comment` is used if omitted. See related notes later!
-* `index/field_comments`, `index/comment_fields` can be used to change structure comment information in indexed documents. See 'JIRA issue index document structure' chapter.
+* `index/field_comments`, `index/comment_fields` can be used to change structure of comment information in indexed documents. See 'JIRA issue index document structure' chapter.
+* `index/changelog_mode` defines mode of issue changelog indexing: `none` - no changelog indexed, `embedded` - changelog indexed as array in issue document, `child` - changelog indexed as separate document with [parent-child relation](http://www.elasticsearch.org/guide/reference/mapping/parent-field.html) to issue document, `standalone` - changelog indexed as separate document. Setting is optional, `none` value is default if not provided.
+* `index/changelog_type` defines [type](http://www.elasticsearch.org/guide/appendix/glossary.html#type) used when issue changelog is stored into search index in `child` or `standalone` mode. Parameter is optional, `jira_issue_change` is used if omitted. See related notes later!
+* `index/field_changelogs`, `index/changelog_fields` can be used to change structure of changelog information in indexed documents. See 'JIRA issue index document structure' chapter.
 * `index/preprocessors` optional parameter. Defines chain of preprocessors applied to issue data read from JIRA before stored into index. See related notes later!
 * `activity_log` part defines where information about jira river index update activity are stored. If omitted then no activity information are stored.
 * `activity_log/index` defines name of index where information about jira river activity are stored.
@@ -133,11 +138,23 @@ Type [Mapping](http://www.elasticsearch.org/guide/reference/mapping/) for issue 
 	}
 	'
 
-Same apply for 'comment' mapping if you use `child` or `standalone` mode!
+Same apply for 'comment' and 'changelog' mapping if you use `child` or `standalone` mode!
 
 	curl -XPUT localhost:9200/my_jira_index/jira_issue_comment/_mapping -d '
 	{
 	    "jira_issue_comment" : {
+	        "_timestamp" : { "enabled" : true },
+	        "properties" : {
+	            "project_key" : {"type" : "string", "analyzer" : "keyword"},
+	            "source"      : {"type" : "string", "analyzer" : "keyword"}
+	        }
+	    }
+	}
+	'
+
+	curl -XPUT localhost:9200/my_jira_index/jira_issue_change/_mapping -d '
+	{
+	    "jira_issue_change" : {
 	        "_timestamp" : { "enabled" : true },
 	        "properties" : {
 	            "project_key" : {"type" : "string", "analyzer" : "keyword"},
@@ -209,7 +226,9 @@ JIRA River writes JSON document with following structure to the search index for
     ----------------------------------------------------------------------------------------------------------------------------------------------------
     | components      | field.components      | Array containing Objects with `name` field                                   | index/fields            |
     ----------------------------------------------------------------------------------------------------------------------------------------------------
-    | comments        | field.comment         | Array of comments (comment indexing in `embedded` mode is used by default)   | index/field_comments    |
+    | comments        | field.comment.comments| Array of comments (comment indexing in `embedded` mode is used by default)   | index/field_comments    |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | changelogs      | changelog.histories   | Array of changelog items (not indexed by default)                            | index/field_changelogs  |
     ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 JIRA River uses following structure to store comment informations in search index by default. Comment id is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index in `child` or `standalone` mode.
@@ -225,7 +244,7 @@ JIRA River uses following structure to store comment informations in search inde
     ----------------------------------------------------------------------------------------------------------------------------------------------------
     | document_url    | N/A                   | URL to show comment in JIRA GUI                                              | index/field_jira_url    |
     ----------------------------------------------------------------------------------------------------------------------------------------------------
-    | comment_id      | id                    | Name of project in JIRA                                                      | index/comment_fields    |
+    | comment_id      | id                    | ID of comment in JIRA                                                        | index/comment_fields    |
     ----------------------------------------------------------------------------------------------------------------------------------------------------
     | comment_body    | body                  | Comment text. May contain JIRA WIKI syntax                                   | index/comment_fields    |
     ----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -237,6 +256,40 @@ JIRA River uses following structure to store comment informations in search inde
     ----------------------------------------------------------------------------------------------------------------------------------------------------
     | comment_updater | updateAuthor          | Object with fields `username`, `email_address`, `display_name`               | index/comment_fields    |
     ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+JIRA River uses following structure to store changelog informations in search index by default. Changelog item id is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index in `child` or `standalone` mode.
+
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | **index field** | **JIRA comment JSON field** | **indexed field value notes**                                          | **river configuration** |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | source          | N/A                   | name of JiraRiver item was indexed over, not used in `embedded` mode         | index/field_river_name  |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | project_key     | N/A                   | Key of project in JIRA item is for, not used in `embedded` mode              | index/field_project_key |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | issue_key       | N/A                   | key of issue item is for, not used in `embedded` mode                        | index/field_issue_key   |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | document_url    | N/A                   | URL to show issue for this changelog in JIRA GUI                             | index/field_jira_url    |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | change_id       | id                    | ID of change item in JIRA                                                    | index/changelog_fields  |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | change_items    | items                 | Array of changed items objects (see later)                                   | index/changelog_fields  |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | change_created  | created               | Full timestamp format eg. `2012-08-15T03:30:02.000-0400`                     | index/changelog_fields   |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+    | change_author   | author                | Object with fields `username`, `email_address`, `display_name`               | index/changelog_fields   |
+    ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+Example of change item object from JIRA:
+		
+		{
+		  "field": "Fix Version",
+		  "fieldtype": "jira",
+		  "from": null,
+		  "fromString": null,
+		  "to": "10225",
+		  "toString": "1.0.0.GA"
+		}
+
 
 You can also implement and configure some preprocessors, which allows you to change/extend issue information loaded from JIRA and store these changes/extensions to the search index.
 This allows you for example value normalizations, or creation of some index fields with values aggregated from more issue fields.

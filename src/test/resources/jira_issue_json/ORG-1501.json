@@ -132,6 +132,68 @@
                 }
             ]
         }
+    },
+    "changelog": {
+
+    "startAt": 0,
+    "maxResults": 14,
+    "total": 14,
+    "histories": [
+        {
+            "id": "10600",
+            "author": {
+                "self": "https://logstash.jira.com/rest/api/2/user?username=untergeek",
+						    "name": "untergeek",
+						    "emailAddress": "aaron@mildensteins.com",
+						    "avatarUrls": {
+						        "16x16": "https://logstash.jira.com/secure/useravatar?size=xsmall&ownerId=untergeek&avatarId=10150",
+						        "24x24": "https://logstash.jira.com/secure/useravatar?size=small&ownerId=untergeek&avatarId=10150",
+						        "32x32": "https://logstash.jira.com/secure/useravatar?size=medium&ownerId=untergeek&avatarId=10150",
+						        "48x48": "https://logstash.jira.com/secure/useravatar?ownerId=untergeek&avatarId=10150"
+						    },
+						    "displayName": "Aaron Mildenstein",
+						    "active": true 
+            },
+            "created": "2011-09-23T16:10:34.911-0500",
+            "items": [
+                {
+                    "field": "Attachment",
+                    "fieldtype": "jira",
+                    "from": "10316",
+                    "fromString": "clearESindices.py",
+                    "to": null,
+                    "toString": null
+                }
+            ]
+        },
+        {
+            "id": "10601",
+            "author": {
+                "self": "https://logstash.jira.com/rest/api/2/user?username=untergeek",
+                "name": "untergeek",
+                "emailAddress": "aaron@mildensteins.com",
+                "avatarUrls": {
+                    "16x16": "https://logstash.jira.com/secure/useravatar?size=xsmall&ownerId=untergeek&avatarId=10150",
+                    "24x24": "https://logstash.jira.com/secure/useravatar?size=small&ownerId=untergeek&avatarId=10150",
+                    "32x32": "https://logstash.jira.com/secure/useravatar?size=medium&ownerId=untergeek&avatarId=10150",
+                    "48x48": "https://logstash.jira.com/secure/useravatar?ownerId=untergeek&avatarId=10150"
+                },
+                "displayName": "Aaron Mildenstein",
+                "active": true
+            },
+            "created": "2011-09-23T16:11:57.887-0500",
+            "items": [
+                {
+                    "field": "Attachment",
+                    "fieldtype": "jira",
+                    "from": null,
+                    "fromString": null,
+                    "to": "10317",
+                    "toString": "clearESindices.py"
+                }
+            ]
+        }
+        ]
     }
 
 }
