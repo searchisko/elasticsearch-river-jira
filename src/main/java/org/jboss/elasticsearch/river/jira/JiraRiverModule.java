@@ -25,9 +25,5 @@ public class JiraRiverModule extends ActionModule {
   @Override
   protected void configure() {
     bind(River.class).to(JiraRiver.class).asEagerSingleton();
-    registerAction(FullUpdateAction.INSTANCE, TransportFullUpdateAction.class);
-    registerAction(JRStateAction.INSTANCE, TransportJRStateAction.class);
-    registerAction(JRLifecycleAction.INSTANCE, TransportJRLifecycleAction.class);
-    registerAction(ListRiversAction.INSTANCE, TransportListRiversAction.class);
   }
 }
