@@ -2,14 +2,6 @@ package org.jboss.elasticsearch.river.jira;
 
 import org.elasticsearch.action.ActionModule;
 import org.elasticsearch.river.River;
-import org.jboss.elasticsearch.river.jira.mgm.fullupdate.FullUpdateAction;
-import org.jboss.elasticsearch.river.jira.mgm.fullupdate.TransportFullUpdateAction;
-import org.jboss.elasticsearch.river.jira.mgm.lifecycle.JRLifecycleAction;
-import org.jboss.elasticsearch.river.jira.mgm.lifecycle.TransportJRLifecycleAction;
-import org.jboss.elasticsearch.river.jira.mgm.riverslist.ListRiversAction;
-import org.jboss.elasticsearch.river.jira.mgm.riverslist.TransportListRiversAction;
-import org.jboss.elasticsearch.river.jira.mgm.state.JRStateAction;
-import org.jboss.elasticsearch.river.jira.mgm.state.TransportJRStateAction;
 
 /**
  * JIRA River ElasticSearch Module class.
@@ -18,12 +10,12 @@ import org.jboss.elasticsearch.river.jira.mgm.state.TransportJRStateAction;
  */
 public class JiraRiverModule extends ActionModule {
 
-  public JiraRiverModule() {
-    super(true);
-  }
+	public JiraRiverModule() {
+		super(true);
+	}
 
-  @Override
-  protected void configure() {
-    bind(River.class).to(JiraRiver.class).asEagerSingleton();
-  }
+	@Override
+	protected void configure() {
+		bind(River.class).to(JiraRiver.class).asEagerSingleton();
+	}
 }
