@@ -11,7 +11,7 @@ import org.elasticsearch.common.io.stream.StreamOutput;
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
-public abstract class NodeJRMgmBaseRequest<T extends JRMgmBaseRequest> extends NodeOperationRequest {
+public abstract class NodeJRMgmBaseRequest<T extends JRMgmBaseRequest<?>> extends NodeOperationRequest {
 
 	protected T request;
 
