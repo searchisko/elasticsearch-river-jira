@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.elasticsearch.ElasticSearchParseException;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.SettingsException;
@@ -91,8 +91,8 @@ public class Utils {
 			try {
 				ret = TimeValue.parseTimeValue(XContentMapValues.nodeStringValue(jiraSettings.get(key), null),
 						new TimeValue(defaultDuration, defaultTimeUnit)).millis();
-			} catch (ElasticSearchParseException e) {
-				throw new ElasticSearchParseException(e.getMessage() + " for setting: " + key);
+			} catch (ElasticsearchParseException e) {
+				throw new ElasticsearchParseException(e.getMessage() + " for setting: " + key);
 			}
 		}
 		return ret;
