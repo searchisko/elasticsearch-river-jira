@@ -187,7 +187,7 @@ If you use update activity logging then you can create index and mapping for it 
 
 JIRA issue index document structure
 -----------------------------------
-You can configure which fields from JIRA will be available in search index and under which names. See [river_configuration_default.json](/src/main/resources/templates/river_configuration_default.json) file for example of river configuration, which is used to create default configuration.
+You can configure which fields from JIRA will be available in search index and under which names. See [river_configuration_default.json](/src/main/resources/templates/jira_river_configuration_default.json) file for example of river configuration, which is used to create default configuration.
 
 JIRA River writes JSON document with following structure to the search index for issue by default. Issue key is used as document [id](http://www.elasticsearch.org/guide/appendix/glossary.html#id) in search index by default (you can change this over `index/jira_field_issue_document_id` setting which defines field in issue data which value is used as document id. Be careful for uniqueness of this value!).
 
