@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import org.elasticsearch.ElasticSearchException;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -533,7 +533,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 			try {
 				refreshSearchIndex(activityLogIndexName);
 				SearchResponse sr = client.prepareSearch(activityLogIndexName).setTypes(activityLogTypeName)
-						.setFilter(FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_PROJECT_KEY, projectKey))
+						.setPostFilter(FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_PROJECT_KEY, projectKey))
 						.setQuery(QueryBuilders.matchAllQuery()).addSort(ProjectIndexingInfo.DOCFIELD_START_DATE, SortOrder.DESC)
 						.addField("_source").setSize(1).execute().actionGet();
 				if (sr.getHits().getTotalHits() > 0) {
@@ -725,7 +725,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 
 		DeleteResponse lastSeqGetResponse = client.prepareDelete(getRiverIndexName(), riverName.name(), documentName)
 				.execute().actionGet();
-		if (lastSeqGetResponse.isNotFound()) {
+		if (!lastSeqGetResponse.isFound()) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("{} document doesn't exist in JIRA river persistent store", documentName);
 			}
@@ -770,7 +770,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 	public void executeESBulkRequest(BulkRequestBuilder esBulk) throws Exception {
 		BulkResponse response = esBulk.execute().actionGet();
 		if (response.hasFailures()) {
-			throw new ElasticSearchException("Failed to execute ES index bulk update: " + response.buildFailureMessage());
+			throw new ElasticsearchException("Failed to execute ES index bulk update: " + response.buildFailureMessage());
 		}
 	}
 
