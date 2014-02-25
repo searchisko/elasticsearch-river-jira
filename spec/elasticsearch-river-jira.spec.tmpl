@@ -1,0 +1,46 @@
+%define  _deploy_dir /services/elasticsearch/plugins/river_jira
+
+Name:           elasticsearch-river-jira
+Version:        1.4.1
+Release:        1.el6
+Summary:        JIRA River for ElasticSearch
+
+Group:          System Environment/Daemons
+License:        Apache License, Version 2.0
+URL:            https://github.com/searchisko/elasticsearch-river-jira
+
+
+BuildRoot:      %{_tmppath}/%{name}-%{version}.%{release}-root-%(%{__id_u} -n)
+BuildArch:      noarch
+
+#set $i = 0
+#for $artifact in $all_artifacts
+  #if $artifact.startswith('elasticsearch-river-jira') and $artifact.endswith('.zip')
+Source0: $artifact
+  #end if
+#end for
+
+Requires(post): chkconfig
+Requires(preun): chkconfig
+# This is for /sbin/service
+Requires(preun): initscripts
+
+%description
+JIRA River for ElasticSearch
+
+%install
+rm -rf %{buildroot}
+/usr/bin/install -d %{buildroot}%{_deploy_dir}
+unzip -d %{buildroot}%{_deploy_dir} %{SOURCE0}
+
+%clean
+rm -rf %{buildroot}
+
+%files
+%defattr(-,jboss,jboss,-)
+%{_deploy_dir}
+
+
+%changelog
+* Tue Feb 25 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.4.1
+- Initial RHEL6 rpm spec template
