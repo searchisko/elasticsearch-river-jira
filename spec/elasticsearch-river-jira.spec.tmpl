@@ -2,7 +2,7 @@
 
 Name:           elasticsearch-river-jira
 Version:        1.4.1
-Release:        1.el6
+Release:        2.el6
 Summary:        JIRA River for ElasticSearch
 
 Group:          System Environment/Daemons
@@ -15,7 +15,7 @@ BuildArch:      noarch
 
 #set $i = 0
 #for $artifact in $all_artifacts
-  #if $artifact.startswith('elasticsearch-river-jira') and $artifact.endswith('.zip')
+  #if $artifact.startswith('elasticsearch-river-jira') and $artifact.endswith('.zip') and not $artifact.endswith('sources.zip')
 Source0: $artifact
   #end if
 #end for
@@ -42,5 +42,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Feb 27 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.2.3
+- Source 0 selection condition to ignore *sources.zip artifact
+
 * Tue Feb 25 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.4.1
 - Initial RHEL6 rpm spec template
