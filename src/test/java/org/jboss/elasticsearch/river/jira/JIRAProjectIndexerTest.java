@@ -390,10 +390,10 @@ public class JIRAProjectIndexerTest {
 			when(esIntegrationMock.prepareESScrollSearchRequestBuilder(Mockito.anyString())).thenReturn(
 					new SearchRequestBuilder(null));
 			SearchResponse sr1 = prepareSearchResponse("scrlid1", new InternalSearchHit(1, "ORG-12", new StringText(""),
-					null, null));
+					null));
 			when(esIntegrationMock.executeESSearchRequest(Mockito.any(SearchRequestBuilder.class))).thenReturn(sr1);
 			SearchResponse sr2 = prepareSearchResponse("scrlid1", new InternalSearchHit(1, "ORG-12", new StringText(""),
-					null, null));
+					null));
 			when(esIntegrationMock.executeESScrollSearchNextRequest(sr1)).thenReturn(sr2);
 			when(esIntegrationMock.executeESScrollSearchNextRequest(sr2)).thenReturn(prepareSearchResponse("scrlid3"));
 
@@ -500,21 +500,20 @@ public class JIRAProjectIndexerTest {
 			SearchRequestBuilder srbmock = new SearchRequestBuilder(null);
 			when(esIntegrationMock.prepareESScrollSearchRequestBuilder(jiraIndexName)).thenReturn(srbmock);
 
-			SearchResponse sr = prepareSearchResponse("scrlid0", new InternalSearchHit(1, "ORG-12", new StringText(""), null,
-					null));
+			SearchResponse sr = prepareSearchResponse("scrlid0", new InternalSearchHit(1, "ORG-12", new StringText(""), null));
 			when(esIntegrationMock.executeESSearchRequest(srbmock)).thenReturn(sr);
 
 			BulkRequestBuilder brbmock = new BulkRequestBuilder(null);
 			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brbmock);
 
-			InternalSearchHit hit1_1 = new InternalSearchHit(1, "ORG-12", new StringText(""), null, null);
-			InternalSearchHit hit1_2 = new InternalSearchHit(2, "ORG-124", new StringText(""), null, null);
+			InternalSearchHit hit1_1 = new InternalSearchHit(1, "ORG-12", new StringText(""), null);
+			InternalSearchHit hit1_2 = new InternalSearchHit(2, "ORG-124", new StringText(""), null);
 			SearchResponse sr1 = prepareSearchResponse("scrlid1", hit1_1, hit1_2);
 			when(esIntegrationMock.executeESScrollSearchNextRequest(sr)).thenReturn(sr1);
 
-			InternalSearchHit hit2_1 = new InternalSearchHit(1, "ORG-22", new StringText(""), null, null);
-			InternalSearchHit hit2_2 = new InternalSearchHit(2, "ORG-224", new StringText(""), null, null);
-			InternalSearchHit hit2_3 = new InternalSearchHit(3, "ORG-2243", new StringText(""), null, null);
+			InternalSearchHit hit2_1 = new InternalSearchHit(1, "ORG-22", new StringText(""), null);
+			InternalSearchHit hit2_2 = new InternalSearchHit(2, "ORG-224", new StringText(""), null);
+			InternalSearchHit hit2_3 = new InternalSearchHit(3, "ORG-2243", new StringText(""), null);
 			SearchResponse sr2 = prepareSearchResponse("scrlid2", hit2_1, hit2_2, hit2_3);
 			when(esIntegrationMock.executeESScrollSearchNextRequest(sr1)).thenReturn(sr2);
 
@@ -550,7 +549,7 @@ public class JIRAProjectIndexerTest {
 
 	private SearchResponse prepareSearchResponse(String scrollId, InternalSearchHit... hits) {
 		InternalSearchHits hitsi = new InternalSearchHits(hits, hits.length, 10f);
-		InternalSearchResponse sr1i = new InternalSearchResponse(hitsi, null, null, false);
+		InternalSearchResponse sr1i = new InternalSearchResponse(hitsi, null, null, null, false);
 		SearchResponse sr1 = new SearchResponse(sr1i, scrollId, 1, 1, 100, null);
 		return sr1;
 	}

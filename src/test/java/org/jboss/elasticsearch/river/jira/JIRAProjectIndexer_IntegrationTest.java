@@ -545,7 +545,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
 		SearchRequestBuilder srb = client.prepareSearch(CFG_INDEX_NAME).setTypes(documentType)
 				.setQuery(QueryBuilders.matchAllQuery());
-		srb.setFilter(FilterBuilders.termFilter("_parent", parentDocumentId));
+		srb.setPostFilter(FilterBuilders.termFilter("_parent", parentDocumentId));
 
 		assertImplSearchResults(client, srb, childDocumentIds);
 	}
@@ -620,7 +620,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 			filterTime = FilterBuilders.rangeFilter("_timestamp").gte(boundDate);
 		}
 		SearchRequestBuilder srb = client.prepareSearch(CFG_INDEX_NAME).setTypes(documentType)
-				.setQuery(QueryBuilders.matchAllQuery()).setFilter(filterTime);
+				.setQuery(QueryBuilders.matchAllQuery()).setPostFilter(filterTime);
 
 		assertImplSearchResults(client, srb, documentIds);
 	}

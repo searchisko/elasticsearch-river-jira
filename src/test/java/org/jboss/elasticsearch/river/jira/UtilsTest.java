@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.elasticsearch.ElasticSearchParseException;
+import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.common.xcontent.support.XContentMapValues;
 import org.junit.Assert;
 import org.junit.Test;
@@ -99,14 +99,14 @@ public class UtilsTest {
     jiraSettings.put("errortest2", "ahojs");
     try {
       Utils.parseTimeValue(jiraSettings, "errortest", 1250, TimeUnit.MILLISECONDS);
-      Assert.fail("ElasticSearchParseException must be thrown");
-    } catch (ElasticSearchParseException e) {
+      Assert.fail("ElasticsearchParseException must be thrown");
+    } catch (ElasticsearchParseException e) {
       // ok
     }
     try {
       Utils.parseTimeValue(jiraSettings, "errortest2", 1250, TimeUnit.MILLISECONDS);
       Assert.fail("ElasticSearchParseException must be thrown");
-    } catch (ElasticSearchParseException e) {
+    } catch (ElasticsearchParseException e) {
       // ok
     }
   }
