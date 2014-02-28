@@ -5,14 +5,6 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -37,6 +29,15 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit test for {@link JIRA5RestIssueIndexStructureBuilder}.
@@ -419,7 +420,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 					DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
 			Assert.assertArrayEquals(new String[] { "issue_type" }, srb.request().types());
 			assertTrue(
-					"Should equals",
+					"Should equals: " + srb.toString(),
 					toJsonNode(srb.toString()).equals(
 							toJsonNode(TestUtils
 									.readStringFromClasspathFile("/asserts/buildSearchForIndexedDocumentsNotUpdatedAfter.json"))));
