@@ -9,14 +9,14 @@ uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+A
 to obtain issues from JIRA instance.
 
 In order to install the plugin into ElasticSearch, simply run: 
-`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.5.0/elasticsearch-river-jira-1.5.0.zip -install elasticsearch-river-jira`.
+`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.5.1/elasticsearch-river-jira-1.5.1.zip -install elasticsearch-river-jira`.
 
     -----------------------------------------------------------------------
     | JIRA River | ElasticSearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
     | master     | 1.0.0            | 5+   | 2             |              |
     -----------------------------------------------------------------------
-    | 1.5.0      | 1.0.0            | 5+   | 2             | 28.2.2014    |
+    | 1.5.1      | 1.0.0            | 5+   | 2             | 28.2.2014    |
     -----------------------------------------------------------------------
     | 1.4.1      | 0.90.5           | 5+   | 2             | 10.10.2013   |
     -----------------------------------------------------------------------
