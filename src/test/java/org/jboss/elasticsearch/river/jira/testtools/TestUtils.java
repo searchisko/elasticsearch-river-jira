@@ -10,6 +10,10 @@ import java.io.StringWriter;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.elasticsearch.common.settings.SettingsException;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.jboss.elasticsearch.river.jira.Utils;
 import org.junit.Assert;
 
@@ -20,39 +24,57 @@ import org.junit.Assert;
  */
 public abstract class TestUtils {
 
-  /**
-   * Assert passed string is same as content of given file loaded from classpath.
-   * 
-   * @param expectedFilePath path to file inside classpath
-   * @param actual content to assert
-   * @throws IOException
-   */
-  public static void assertStringFromClasspathFile(String expectedFilePath, String actual) throws IOException {
-    Assert.assertEquals(readStringFromClasspathFile(expectedFilePath), actual);
-  }
+	/**
+	 * Assert passed string is same as content of given file loaded from classpath.
+	 * 
+	 * @param expectedFilePath path to file inside classpath
+	 * @param actual content to assert
+	 * @throws IOException
+	 */
+	public static void assertStringFromClasspathFile(String expectedFilePath, String actual) throws IOException {
+		Assert.assertEquals(readStringFromClasspathFile(expectedFilePath), actual);
+	}
 
-  /**
-   * Read JIRA JSON issue data for tests. Loaded from folder <code>/src/test/resources/jira_issue_json/</code>.
-   * 
-   * @param key of issue to load data for
-   * @return Map of Maps structure with issue data
-   * @throws IOException
-   */
-  public static Map<String, Object> readJiraJsonIssueDataFromClasspathFile(String key) throws IOException {
-    return Utils.loadJSONFromJarPackagedFile("/jira_issue_json/" + key + ".json");
-  }
+	/**
+	 * Read JIRA JSON issue data for tests. Loaded from folder <code>/src/test/resources/jira_issue_json/</code>.
+	 * 
+	 * @param key of issue to load data for
+	 * @return Map of Maps structure with issue data
+	 * @throws IOException
+	 */
+	public static Map<String, Object> readJiraJsonIssueDataFromClasspathFile(String key) throws IOException {
+		return Utils.loadJSONFromJarPackagedFile("/jira_issue_json/" + key + ".json");
+	}
 
-  /**
-   * Read file from classpath into String. UTF-8 encoding expected.
-   * 
-   * @param filePath in classpath to read data from.
-   * @return file content.
-   * @throws IOException
-   */
-  public static String readStringFromClasspathFile(String filePath) throws IOException {
-    StringWriter stringWriter = new StringWriter();
-    IOUtils.copy(TestUtils.class.getResourceAsStream(filePath), stringWriter, "UTF-8");
-    return stringWriter.toString();
-  }
+	/**
+	 * Read file from classpath into String. UTF-8 encoding expected.
+	 * 
+	 * @param filePath in classpath to read data from.
+	 * @return file content.
+	 * @throws IOException
+	 */
+	public static String readStringFromClasspathFile(String filePath) throws IOException {
+		StringWriter stringWriter = new StringWriter();
+		IOUtils.copy(TestUtils.class.getResourceAsStream(filePath), stringWriter, "UTF-8");
+		return stringWriter.toString();
+	}
+
+	/**
+	 * Read JSON from string representation.
+	 * 
+	 * @param jsonString to parse
+	 * @return parsed JSON
+	 * @throws SettingsException
+	 */
+	public static Map<String, Object> getJSONMapFromString(String jsonString) throws IOException {
+		XContentParser parser = null;
+		try {
+			parser = XContentFactory.xContent(XContentType.JSON).createParser(jsonString);
+			return parser.mapAndClose();
+		} finally {
+			if (parser != null)
+				parser.close();
+		}
+	}
 
 }
