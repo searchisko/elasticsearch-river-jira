@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jboss.elasticsearch</groupId>
   <artifactId>elasticsearch-river-jira</artifactId>
-  <version>1.5.1</version>
+  <version>1.5.2</version>
   <packaging>jar</packaging>
   <description>JIRA River for ElasticSearch</description>
   <inceptionYear>2012</inceptionYear>
@@ -132,6 +132,12 @@
   </distributionManagement>
 
   <build>
+  	<resources>
+				<resource>
+						<filtering>true</filtering>
+						<directory>src/main/resources</directory>
+				</resource>
+		</resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
