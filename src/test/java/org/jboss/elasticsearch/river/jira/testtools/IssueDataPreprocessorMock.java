@@ -8,6 +8,7 @@ package org.jboss.elasticsearch.river.jira.testtools;
 import java.util.Map;
 
 import org.elasticsearch.common.settings.SettingsException;
+import org.jboss.elasticsearch.tools.content.PreprocessChainContext;
 import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorBase;
 
 /**
@@ -17,16 +18,16 @@ import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorBase;
  */
 public class IssueDataPreprocessorMock extends StructuredContentPreprocessorBase {
 
-  public Map<String, Object> settings = null;
+	public Map<String, Object> settings = null;
 
-  @Override
-  public void init(Map<String, Object> settings) throws SettingsException {
-    this.settings = settings;
-  }
+	@Override
+	public void init(Map<String, Object> settings) throws SettingsException {
+		this.settings = settings;
+	}
 
-  @Override
-  public Map<String, Object> preprocessData(Map<String, Object> issueData) {
-    return issueData;
-  }
+	@Override
+	public Map<String, Object> preprocessData(Map<String, Object> data, PreprocessChainContext chainContext) {
+		return data;
+	}
 
 }
