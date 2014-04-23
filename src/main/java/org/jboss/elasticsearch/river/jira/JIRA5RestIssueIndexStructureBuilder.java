@@ -5,10 +5,6 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
-import static org.elasticsearch.client.Requests.deleteRequest;
-import static org.elasticsearch.client.Requests.indexRequest;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -29,6 +25,10 @@ import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
+
+import static org.elasticsearch.client.Requests.deleteRequest;
+import static org.elasticsearch.client.Requests.indexRequest;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 /**
  * JIRA 5 REST API implementation of component responsible to transform issue data obtained from JIRA instance call to
@@ -463,7 +463,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 		FilterBuilder filterProject = FilterBuilders.termFilter(indexFieldForProjectKey, jiraProjectKey);
 		FilterBuilder filterSource = FilterBuilders.termFilter(indexFieldForRiverName, riverName);
 		FilterBuilder filter = FilterBuilders.boolFilter().must(filterTime).must(filterProject).must(filterSource);
-		srb.setQuery(QueryBuilders.matchAllQuery()).addField("_id").setPostFilter(filter);
+		srb.setQuery(QueryBuilders.matchAllQuery()).addField("_id").setFilter(filter);
 		Set<String> st = new LinkedHashSet<String>();
 		st.add(issueTypeName);
 		if (commentIndexingMode.isExtraDocumentIndexed())

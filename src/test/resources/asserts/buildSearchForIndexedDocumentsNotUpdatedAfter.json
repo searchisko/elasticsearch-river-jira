@@ -2,7 +2,7 @@
   "query" : {
     "match_all" : { }
   },
-  "post_filter" : {
+  "filter" : {
     "bool" : {
       "must" : [ {
         "range" : {
