@@ -5,9 +5,6 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +29,9 @@ import org.jboss.elasticsearch.river.jira.testtools.ESRealClientTestBase;
 import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * jUnit test for {@link JIRAProjectIndexer} which tests search index update processes against embedded inmemory elastic
@@ -545,7 +545,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 
 		SearchRequestBuilder srb = client.prepareSearch(CFG_INDEX_NAME).setTypes(documentType)
 				.setQuery(QueryBuilders.matchAllQuery());
-		srb.setPostFilter(FilterBuilders.termFilter("_parent", parentDocumentId));
+		srb.setFilter(FilterBuilders.termFilter("_parent", parentDocumentId));
 
 		assertImplSearchResults(client, srb, childDocumentIds);
 	}
@@ -620,7 +620,7 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 			filterTime = FilterBuilders.rangeFilter("_timestamp").gte(boundDate);
 		}
 		SearchRequestBuilder srb = client.prepareSearch(CFG_INDEX_NAME).setTypes(documentType)
-				.setQuery(QueryBuilders.matchAllQuery()).setPostFilter(filterTime);
+				.setQuery(QueryBuilders.matchAllQuery()).setFilter(filterTime);
 
 		assertImplSearchResults(client, srb, documentIds);
 	}
