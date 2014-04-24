@@ -16,51 +16,55 @@ import org.jboss.elasticsearch.river.jira.mgm.NodeJRMgmBaseResponse;
  */
 public class NodeListRiversResponse extends NodeJRMgmBaseResponse {
 
-  Set<String> jiraRiverNames;
+	protected Set<String> jiraRiverNames;
 
-  protected NodeListRiversResponse() {
-  }
+	protected NodeListRiversResponse() {
+	}
 
-  public NodeListRiversResponse(DiscoveryNode node) {
-    super(node);
-  }
+	public NodeListRiversResponse(DiscoveryNode node) {
+		super(node);
+	}
 
-  /**
-   * Create response with values to be send back to requestor.
-   * 
-   * @param node this response is for.
-   * @param jiraRiverNames set of jira river names found on this node.
-   */
-  public NodeListRiversResponse(DiscoveryNode node, Set<String> jiraRiverNames) {
-    super(node, jiraRiverNames != null && !jiraRiverNames.isEmpty());
-    this.jiraRiverNames = jiraRiverNames;
-  }
+	/**
+	 * Create response with values to be send back to requestor.
+	 * 
+	 * @param node this response is for.
+	 * @param jiraRiverNames set of jira river names found on this node.
+	 */
+	public NodeListRiversResponse(DiscoveryNode node, Set<String> jiraRiverNames) {
+		super(node, jiraRiverNames != null && !jiraRiverNames.isEmpty());
+		this.jiraRiverNames = jiraRiverNames;
+	}
 
-  @Override
-  public void readFrom(StreamInput in) throws IOException {
-    super.readFrom(in);
-    int len = in.readInt();
-    if (len >= 0) {
-      jiraRiverNames = new HashSet<String>();
-      for (int i = 0; i < len; i++) {
-        jiraRiverNames.add(in.readString());
-      }
-    }
-  }
+	@Override
+	public void readFrom(StreamInput in) throws IOException {
+		super.readFrom(in);
+		int len = in.readInt();
+		if (len >= 0) {
+			jiraRiverNames = new HashSet<String>();
+			for (int i = 0; i < len; i++) {
+				jiraRiverNames.add(in.readString());
+			}
+		}
+	}
 
-  @Override
-  public void writeTo(StreamOutput out) throws IOException {
-    super.writeTo(out);
-    if (jiraRiverNames == null) {
-      out.writeInt(-1);
-    } else {
-      out.writeInt(jiraRiverNames.size());
-      if (jiraRiverNames != null) {
-        for (String s : jiraRiverNames) {
-          out.writeString(s);
-        }
-      }
-    }
-  }
+	@Override
+	public void writeTo(StreamOutput out) throws IOException {
+		super.writeTo(out);
+		if (jiraRiverNames == null) {
+			out.writeInt(-1);
+		} else {
+			out.writeInt(jiraRiverNames.size());
+			if (jiraRiverNames != null) {
+				for (String s : jiraRiverNames) {
+					out.writeString(s);
+				}
+			}
+		}
+	}
+
+	public Set<String> getJiraRiverNames() {
+		return jiraRiverNames;
+	}
 
 }
