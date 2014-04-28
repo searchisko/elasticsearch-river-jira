@@ -1,8 +1,8 @@
 %define  _deploy_dir /services/elasticsearch/plugins/river_jira
 
 Name:           elasticsearch-river-jira
-Version:        1.4.1
-Release:        2.el6
+Version:        1.4.4
+Release:        ${release}.el6
 Summary:        JIRA River for ElasticSearch
 
 Group:          System Environment/Daemons
@@ -42,8 +42,11 @@ rm -rf %{buildroot}
 
 
 %changelog
-* Thu Feb 27 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.2.3
+* Mon Apr 28 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.4.4
+- Upgrade RPM release to version 1.4.4
+
+* Thu Feb 27 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.4.1
 - Source 0 selection condition to ignore *sources.zip artifact
 
-* Tue Feb 25 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.4.1
+* Tue Feb 25 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.2.3
 - Initial RHEL6 rpm spec template
