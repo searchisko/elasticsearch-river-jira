@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
@@ -61,7 +61,7 @@ public class TransportListRiversAction extends
 	}
 
 	@Override
-	protected NodeListRiversResponse nodeOperation(NodeListRiversRequest nodeRequest) throws ElasticsearchException {
+	protected NodeListRiversResponse nodeOperation(NodeListRiversRequest nodeRequest) throws ElasticSearchException {
 		logger.debug("Go to look for jira rivers on this node");
 		return new NodeListRiversResponse(clusterService.localNode(), JiraRiver.getRunningInstances());
 	}

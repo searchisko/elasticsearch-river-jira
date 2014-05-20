@@ -1,8 +1,5 @@
 package org.jboss.elasticsearch.river.jira;
 
-import static org.elasticsearch.client.Requests.indexRequest;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Collections;
@@ -14,7 +11,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteResponse;
@@ -39,6 +36,9 @@ import org.elasticsearch.river.RiverSettings;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
 import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactory;
+
+import static org.elasticsearch.client.Requests.indexRequest;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 /**
  * JIRA River implementation class.
@@ -533,7 +533,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 			try {
 				refreshSearchIndex(activityLogIndexName);
 				SearchResponse sr = client.prepareSearch(activityLogIndexName).setTypes(activityLogTypeName)
-						.setPostFilter(FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_PROJECT_KEY, projectKey))
+						.setFilter(FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_PROJECT_KEY, projectKey))
 						.setQuery(QueryBuilders.matchAllQuery()).addSort(ProjectIndexingInfo.DOCFIELD_START_DATE, SortOrder.DESC)
 						.addField("_source").setSize(1).execute().actionGet();
 				if (sr.getHits().getTotalHits() > 0) {
@@ -586,17 +586,17 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 		return Collections.unmodifiableSet((riverInstances.keySet()));
 	}
 
-    /**
-     * Remove rivers of given names.
-     * Note: this method was added because of unit tests. Do not call this method in production code.
-     *
-     * @param riverNames names of the rivers to remove
-     */
-    public static void removeRunningInstances(String... riverNames) {
-        for (String riverName : riverNames) {
-            riverInstances.remove(riverName);
-        }
-    }
+	/**
+	 * Remove rivers of given names. Note: this method was added because of unit tests. Do not call this method in
+	 * production code.
+	 * 
+	 * @param riverNames names of the rivers to remove
+	 */
+	public static void removeRunningInstances(String... riverNames) {
+		for (String riverName : riverNames) {
+			riverInstances.remove(riverName);
+		}
+	}
 
 	@Override
 	public List<String> getAllIndexedProjectsKeys() throws Exception {
@@ -725,7 +725,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 
 		DeleteResponse lastSeqGetResponse = client.prepareDelete(getRiverIndexName(), riverName.name(), documentName)
 				.execute().actionGet();
-		if (!lastSeqGetResponse.isFound()) {
+		if (lastSeqGetResponse.isNotFound()) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("{} document doesn't exist in JIRA river persistent store", documentName);
 			}
@@ -770,7 +770,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 	public void executeESBulkRequest(BulkRequestBuilder esBulk) throws Exception {
 		BulkResponse response = esBulk.execute().actionGet();
 		if (response.hasFailures()) {
-			throw new ElasticsearchException("Failed to execute ES index bulk update: " + response.buildFailureMessage());
+			throw new ElasticSearchException("Failed to execute ES index bulk update: " + response.buildFailureMessage());
 		}
 	}
 
