@@ -98,7 +98,7 @@ public class JIRAProjectIndexer implements Runnable {
 			esIntegrationComponent.reportIndexingFinished(indexingInfo);
 			Throwable cause = e;
 			// do not log stacktrace for some operational exceptions to keep log file much clear
-			if ((cause instanceof IOException) || (cause instanceof InterruptedException))
+			if (((cause instanceof IOException) || (cause instanceof InterruptedException)) && cause.getMessage() != null)
 				cause = null;
 			logger.error("Failed {} update for JIRA project {} due: {}", cause, indexingInfo.fullUpdate ? "full"
 					: "incremental", projectKey, e.getMessage());
