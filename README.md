@@ -9,12 +9,14 @@ uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+A
 to obtain issues from JIRA instance.
 
 In order to install the plugin into Elasticsearch, simply run: 
-`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.5.5/elasticsearch-river-jira-1.5.5.zip -install elasticsearch-river-jira`.
+`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.5.6/elasticsearch-river-jira-1.5.6.zip -install elasticsearch-river-jira`.
 
     -----------------------------------------------------------------------
     | JIRA River | Elasticsearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
     | master     | 1.0.0            | 5+   | 2             |              |
+    -----------------------------------------------------------------------
+    | 1.5.6      | 1.0.0            | 5+   | 2             | 6.6.2014     |
     -----------------------------------------------------------------------
     | 1.5.5      | 1.0.0            | 5+   | 2             | 20.5.2014    |
     -----------------------------------------------------------------------
@@ -27,10 +29,6 @@ In order to install the plugin into Elasticsearch, simply run:
     | 1.5.2      | 1.0.0            | 5+   | 2             | 14.4.2014    |
     -----------------------------------------------------------------------
     | 1.4.2      | 0.90.5           | 5+   | 2             | 14.4.2014    |
-    -----------------------------------------------------------------------
-    | 1.5.1      | 1.0.0            | 5+   | 2             | 28.2.2014    |
-    -----------------------------------------------------------------------
-    | 1.4.1      | 0.90.5           | 5+   | 2             | 10.10.2013   |
     -----------------------------------------------------------------------
 
 For info about older releases, detailed changelog, planned milestones/enhancements and known bugs see 
@@ -326,7 +324,7 @@ License
 
     This software is licensed under the Apache 2 license, quoted below.
 
-    Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors as indicated by the @authors tag. 
+    Copyright 2012 - 2014 Red Hat Inc. and/or its affiliates and other contributors as indicated by the @authors tag. 
     All rights reserved.
 
     Licensed under the Apache License, Version 2.0 (the "License"); you may not
