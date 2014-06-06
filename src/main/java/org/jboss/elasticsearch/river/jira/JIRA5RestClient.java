@@ -42,8 +42,8 @@ import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 
 /**
- * Class used to call JIRA 5 series functions to obtain JIRA content over REST API version 2. One instance of this class
- * is used to access one instance of JIRA.
+ * Class used to call JIRA 5+ series functions to obtain JIRA content over REST API version 2. One instance of this
+ * class is used to access one instance of JIRA.
  * 
  * @author Vlastimil Elias (velias at redhat dot com)
  */
@@ -68,10 +68,12 @@ public class JIRA5RestClient implements IJIRAClient {
 	 * @param jiraUsername optional username to authenticate into JIRA
 	 * @param jiraPassword optional password to authenticate into JIRA
 	 * @param timeout JIRA http/s connection timeout in milliseconds
+	 * @param restApiVersion version of REST API to use, default is 2
 	 */
-	public JIRA5RestClient(String jiraUrlBase, String jiraUsername, String jiraPassword, Integer timeout) {
+	public JIRA5RestClient(String jiraUrlBase, String jiraUsername, String jiraPassword, Integer timeout,
+			String restApiVersion) {
 
-		jiraRestAPIUrlBase = prepareAPIURLFromBaseURL(jiraUrlBase);
+		jiraRestAPIUrlBase = prepareAPIURLFromBaseURL(jiraUrlBase, restApiVersion);
 		if (jiraRestAPIUrlBase == null) {
 			throw new SettingsException("Parameter jira/urlBase must be set!");
 		}
@@ -107,15 +109,21 @@ public class JIRA5RestClient implements IJIRAClient {
 	 * Prepare JIRA API URL from JIRA base URL.
 	 * 
 	 * @param baseURL base JIRA URL, ie. http://issues.jboss.org
+	 * @param restApiVersion to be used. Default to 2 if null or empty
 	 * @return
 	 */
-	protected static String prepareAPIURLFromBaseURL(String baseURL) {
+	protected static String prepareAPIURLFromBaseURL(String baseURL, String restApiVersion) {
 		if (Utils.isEmpty(baseURL))
 			return null;
+
+		restApiVersion = Utils.trimToNull(restApiVersion);
+		if (restApiVersion == null)
+			restApiVersion = "2";
+
 		if (!baseURL.endsWith("/")) {
 			baseURL = baseURL + "/";
 		}
-		return baseURL + "rest/api/2/";
+		return baseURL + "rest/api/" + restApiVersion + "/";
 	}
 
 	/**
@@ -332,6 +340,11 @@ public class JIRA5RestClient implements IJIRAClient {
 	@Override
 	public int getListJIRAIssuesMax() {
 		return listJIRAIssuesMax;
+	}
+
+	@Override
+	public String getJiraAPIUrlBase() {
+		return jiraRestAPIUrlBase;
 	}
 
 }

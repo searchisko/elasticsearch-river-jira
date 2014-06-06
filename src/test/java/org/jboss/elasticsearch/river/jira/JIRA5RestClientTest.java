@@ -5,10 +5,6 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.when;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -19,6 +15,10 @@ import junit.framework.Assert;
 import org.apache.http.NameValuePair;
 import org.elasticsearch.common.settings.SettingsException;
 import org.junit.Test;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit test for {@link JIRA5RestClient}.
@@ -49,7 +49,7 @@ public class JIRA5RestClientTest {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		IJIRAClient tested = new JIRA5RestClient("https://issues.jboss.org", null, null, 5000);
+		IJIRAClient tested = new JIRA5RestClient("https://issues.jboss.org", null, null, 5000, null);
 
 		// List<String> projects = tested.getAllJIRAProjects();
 		// System.out.println(projects);
@@ -63,41 +63,42 @@ public class JIRA5RestClientTest {
 	@Test
 	public void constructor() {
 		try {
-			new JIRA5RestClient(null, null, null, 5000);
+			new JIRA5RestClient(null, null, null, 5000, null);
 			Assert.fail("SettingsException not thrown");
 		} catch (SettingsException e) {
 			// OK
 		}
 		try {
-			new JIRA5RestClient("  ", null, null, 5000);
+			new JIRA5RestClient("  ", null, null, 5000, null);
 			Assert.fail("SettingsException not thrown");
 		} catch (SettingsException e) {
 			// OK
 		}
 		try {
-			new JIRA5RestClient("nonsenseUrl", null, null, 5000);
+			new JIRA5RestClient("nonsenseUrl", null, null, 5000, null);
 			Assert.fail("SettingsException not thrown");
 		} catch (SettingsException e) {
 			// OK
 		}
 
-		JIRA5RestClient tested = new JIRA5RestClient("http://issues.jboss.org", null, null, 5000);
-		Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL("http://issues.jboss.org"), tested.jiraRestAPIUrlBase);
-		tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000);
-		Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL(TEST_JIRA_URL), tested.jiraRestAPIUrlBase);
+		JIRA5RestClient tested = new JIRA5RestClient("http://issues.jboss.org", null, null, 5000, null);
+		Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL("http://issues.jboss.org", null),
+				tested.jiraRestAPIUrlBase);
+		tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, "latest");
+		Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL(TEST_JIRA_URL, "latest"), tested.jiraRestAPIUrlBase);
 		Assert.assertFalse(tested.isAuthConfigured);
 
-		tested = new JIRA5RestClient(TEST_JIRA_URL, "", "pwd", 5000);
+		tested = new JIRA5RestClient(TEST_JIRA_URL, "", "pwd", 5000, null);
 		Assert.assertFalse(tested.isAuthConfigured);
 
-		tested = new JIRA5RestClient(TEST_JIRA_URL, "uname", "pwd", 5000);
+		tested = new JIRA5RestClient(TEST_JIRA_URL, "uname", "pwd", 5000, null);
 		Assert.assertTrue(tested.isAuthConfigured);
 	}
 
 	@Test
 	public void getAllJIRAProjects() throws Exception {
 
-		IJIRAClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000) {
+		IJIRAClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null) {
 			@Override
 			protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
 				Assert.assertEquals("project", restOperation);
@@ -119,7 +120,7 @@ public class JIRA5RestClientTest {
 		final Date ua = new Date();
 		final Date ub = new Date();
 
-		IJIRAClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000) {
+		IJIRAClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null) {
 			@Override
 			protected byte[] performJIRAChangedIssuesREST(String projectKey, int startAt, Date updatedAfter,
 					Date updatedBefore) throws Exception {
@@ -145,7 +146,7 @@ public class JIRA5RestClientTest {
 		final Date ua = new Date();
 		final Date ub = new Date();
 
-		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000) {
+		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null) {
 			@Override
 			protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
 				Assert.assertEquals("search", restOperation);
@@ -227,18 +228,22 @@ public class JIRA5RestClientTest {
 
 	@Test
 	public void prepareAPIURLFromBaseURL() {
-		Assert.assertNull(JIRA5RestClient.prepareAPIURLFromBaseURL(null));
-		Assert.assertNull(JIRA5RestClient.prepareAPIURLFromBaseURL(""));
-		Assert.assertNull(JIRA5RestClient.prepareAPIURLFromBaseURL("  "));
+		Assert.assertNull(JIRA5RestClient.prepareAPIURLFromBaseURL(null, null));
+		Assert.assertNull(JIRA5RestClient.prepareAPIURLFromBaseURL("", null));
+		Assert.assertNull(JIRA5RestClient.prepareAPIURLFromBaseURL("  ", null));
 		Assert.assertEquals("http://issues.jboss.org/rest/api/2/",
-				JIRA5RestClient.prepareAPIURLFromBaseURL("http://issues.jboss.org"));
+				JIRA5RestClient.prepareAPIURLFromBaseURL("http://issues.jboss.org", null));
 		Assert.assertEquals("https://issues.jboss.org/rest/api/2/",
-				JIRA5RestClient.prepareAPIURLFromBaseURL("https://issues.jboss.org/"));
+				JIRA5RestClient.prepareAPIURLFromBaseURL("https://issues.jboss.org/", ""));
+		Assert.assertEquals("https://issues.jboss.org/rest/api/2/",
+				JIRA5RestClient.prepareAPIURLFromBaseURL("https://issues.jboss.org/", "  "));
+		Assert.assertEquals("https://issues.jboss.org/rest/api/latest/",
+				JIRA5RestClient.prepareAPIURLFromBaseURL("https://issues.jboss.org/", "latest"));
 	}
 
 	@Test
 	public void formatJQLDate() throws Exception {
-		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000);
+		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null);
 		Assert.assertNull(tested.formatJQLDate(null));
 
 		Date date1 = JQL_TEST_DATE_FORMAT.parse("2012-08-10 10:52");
@@ -255,7 +260,7 @@ public class JIRA5RestClientTest {
 
 	@Test
 	public void prepareJIRAChangedIssuesJQL() throws Exception {
-		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000);
+		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null);
 		tested.setJQLDateFormatTimezone(JQL_TEST_TIMEZONE);
 		try {
 			tested.prepareJIRAChangedIssuesJQL(null, null, null);

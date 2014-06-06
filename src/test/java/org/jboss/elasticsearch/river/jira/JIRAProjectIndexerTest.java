@@ -5,13 +5,6 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -35,6 +28,14 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import static org.mockito.Matchers.eq;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 /**
  * Unit test for {@link JIRAProjectIndexer}.
  * 
@@ -50,7 +51,7 @@ public class JIRAProjectIndexerTest {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		IJIRAClient jiraClient = new JIRA5RestClient("https://issues.jboss.org", null, null, 7000);
+		IJIRAClient jiraClient = new JIRA5RestClient("https://issues.jboss.org", null, null, 7000, null);
 		IESIntegration esIntegrationMock = mock(IESIntegration.class);
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 
@@ -61,7 +62,7 @@ public class JIRAProjectIndexerTest {
 
 	@Test
 	public void constructor() {
-		IJIRAClient jiraClient = new JIRA5RestClient("https://issues.jboss.org", null, null, 7000);
+		IJIRAClient jiraClient = new JIRA5RestClient("https://issues.jboss.org", null, null, 7000, null);
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", true, jiraClient, null,
 				jiraIssueIndexStructureBuilderMock);
@@ -389,11 +390,11 @@ public class JIRAProjectIndexerTest {
 			// prepare delete part
 			when(esIntegrationMock.prepareESScrollSearchRequestBuilder(Mockito.anyString())).thenReturn(
 					new SearchRequestBuilder(null));
-			SearchResponse sr1 = prepareSearchResponse("scrlid1", new InternalSearchHit(1, "ORG-12", new StringText(""),
-					null));
+			SearchResponse sr1 = prepareSearchResponse("scrlid1",
+					new InternalSearchHit(1, "ORG-12", new StringText(""), null));
 			when(esIntegrationMock.executeESSearchRequest(Mockito.any(SearchRequestBuilder.class))).thenReturn(sr1);
-			SearchResponse sr2 = prepareSearchResponse("scrlid1", new InternalSearchHit(1, "ORG-12", new StringText(""),
-					null));
+			SearchResponse sr2 = prepareSearchResponse("scrlid1",
+					new InternalSearchHit(1, "ORG-12", new StringText(""), null));
 			when(esIntegrationMock.executeESScrollSearchNextRequest(sr1)).thenReturn(sr2);
 			when(esIntegrationMock.executeESScrollSearchNextRequest(sr2)).thenReturn(prepareSearchResponse("scrlid3"));
 

@@ -76,6 +76,7 @@ The example above lists all the main options controlling the creation and behavi
 Full list of options with description is here:
 
 * `jira/urlBase` is required in order to connect to the JIRA REST API. It's only base URL, path to REST API is added automatically.
+* `jira/restApiVersion` version of JIRA REST API to be used. Default is `2`. You can use other values there, like `latest`, but it is not assured river will work correctly in this case, as it is tested against `2` only. See issue [#49](https://github.com/searchisko/elasticsearch-river-jira/issues/49).  
 * `jira/username` and `jira/pwd` are optional JIRA login credentials to access jira issues. Anonymous JIRA access is used if not provided.
 * `jira/jqlTimeZone` is optional [identifier of timezone](http://docs.oracle.com/javase/6/docs/api/java/util/TimeZone.html#getTimeZone%28java.lang.String%29) used to format time values into JQL when requesting updated issues. Timezone of Elasticsearch JVM is used if not provided. JQL uses timezone of jira user who perform JQL query (so this setting must reflex [jira timezone of user](https://confluence.atlassian.com/display/JIRA/Choosing+a+Time+Zone) provided by `jira/username` parameter), default timezone of JIRA in case of Anonymous access. Incorrect setting of this value may lead to some issue updates not reflected in search index during incremental update!!
 * `jira/timeout` time value, defines timeout for http/s REST request to the JIRA. Optional, 5s is default if not provided.

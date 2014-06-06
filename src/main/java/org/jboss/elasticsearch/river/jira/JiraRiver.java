@@ -1,8 +1,5 @@
 package org.jboss.elasticsearch.river.jira;
 
-import static org.elasticsearch.client.Requests.indexRequest;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.Collections;
@@ -39,6 +36,9 @@ import org.elasticsearch.river.RiverSettings;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
 import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessorFactory;
+
+import static org.elasticsearch.client.Requests.indexRequest;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 /**
  * JIRA River implementation class.
@@ -214,7 +214,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 			Integer timeout = new Long(Utils.parseTimeValue(jiraSettings, "timeout", 5, TimeUnit.SECONDS)).intValue();
 			jiraUser = XContentMapValues.nodeStringValue(jiraSettings.get("username"), "Anonymous access");
 			jiraClient = new JIRA5RestClient(jiraUrlBase, XContentMapValues.nodeStringValue(jiraSettings.get("username"),
-					null), XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout);
+					null), XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout,
+					XContentMapValues.nodeStringValue(jiraSettings.get("restApiVersion"), null));
 			jiraClient.setListJIRAIssuesMax(XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIssuesPerRequest"), 50));
 			if (jiraSettings.get("jqlTimeZone") != null) {
 				TimeZone tz = TimeZone.getTimeZone(XContentMapValues.nodeStringValue(jiraSettings.get("jqlTimeZone"), null));
@@ -271,8 +272,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 
 		logger
 				.info(
-						"Configured JIRA River '{}' for JIRA base URL [{}], jira user '{}', JQL timezone '{}'. Search index name '{}', document type for issues '{}'.",
-						riverName.getName(), jiraUrlBase, jiraUser, jiraJqlTimezone, indexName, typeName);
+						"Configured JIRA River '{}' for JIRA API base URL '{}', jira user '{}', JQL timezone '{}'. Search index name '{}', document type for issues '{}'.",
+						riverName.getName(), jiraClient.getJiraAPIUrlBase(), jiraUser, jiraJqlTimezone, indexName, typeName);
 		if (activityLogIndexName != null) {
 			logger.info(
 					"Activity log for JIRA River '{}' is enabled. Search index name '{}', document type for index updates '{}'.",
@@ -586,17 +587,17 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 		return Collections.unmodifiableSet((riverInstances.keySet()));
 	}
 
-    /**
-     * Remove rivers of given names.
-     * Note: this method was added because of unit tests. Do not call this method in production code.
-     *
-     * @param riverNames names of the rivers to remove
-     */
-    public static void removeRunningInstances(String... riverNames) {
-        for (String riverName : riverNames) {
-            riverInstances.remove(riverName);
-        }
-    }
+	/**
+	 * Remove rivers of given names. Note: this method was added because of unit tests. Do not call this method in
+	 * production code.
+	 * 
+	 * @param riverNames names of the rivers to remove
+	 */
+	public static void removeRunningInstances(String... riverNames) {
+		for (String riverName : riverNames) {
+			riverInstances.remove(riverName);
+		}
+	}
 
 	@Override
 	public List<String> getAllIndexedProjectsKeys() throws Exception {

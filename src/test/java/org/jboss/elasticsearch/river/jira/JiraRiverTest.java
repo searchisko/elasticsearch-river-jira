@@ -76,6 +76,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
 		Assert.assertEquals("my_jira_river", tested.indexName);
 		Assert.assertEquals(JiraRiver.INDEX_ISSUE_TYPE_NAME_DEFAULT, tested.typeName);
 		Assert.assertEquals(50, tested.jiraClient.getListJIRAIssuesMax());
+		Assert.assertEquals("https://issues.jboss.org/rest/api/2/", tested.jiraClient.getJiraAPIUrlBase());
 
 		Map<String, Object> indexSettings = new HashMap<String, Object>();
 		toplevelSettingsAdd.put("index", indexSettings);
@@ -91,10 +92,12 @@ public class JiraRiverTest extends ESRealClientTestBase {
 		jiraSettings.put("maxIssuesPerRequest", 20);
 		jiraSettings.put("timeout", "5s");
 		jiraSettings.put("jqlTimeZone", "Europe/Prague");
+		jiraSettings.put("restApiVersion", "latest");
 		indexSettings.put("index", "my_index_name");
 		indexSettings.put("type", "type_test");
 		tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", jiraSettings, toplevelSettingsAdd, false);
 
+		Assert.assertEquals("https://issues.jboss.org/rest/api/latest/", tested.jiraClient.getJiraAPIUrlBase());
 		Assert.assertEquals(5, tested.maxIndexingThreads);
 		Assert.assertEquals(20 * 60 * 1000, tested.indexUpdatePeriod);
 		Assert.assertEquals(5 * 60 * 60 * 1000, tested.indexFullUpdatePeriod);
