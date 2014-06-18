@@ -5,18 +5,18 @@
  */
 package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 
-import static org.elasticsearch.rest.RestStatus.OK;
-
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.rest.XContentRestResponse;
 import org.jboss.elasticsearch.river.jira.mgm.JRMgmBaseActionListener;
 import org.jboss.elasticsearch.river.jira.mgm.RestJRMgmBaseAction;
+
+import static org.elasticsearch.rest.RestStatus.OK;
 
 /**
  * REST action handler for force full index update operation.
@@ -54,11 +54,11 @@ public class RestFullUpdateAction extends RestJRMgmBaseAction {
 							@Override
 							protected void handleJiraRiverResponse(NodeFullUpdateResponse nodeInfo) throws Exception {
 								if (actionRequest.isProjectKeyRequest() && !nodeInfo.projectFound) {
-									restChannel.sendResponse(new XContentRestResponse(restRequest, RestStatus.NOT_FOUND,
-											buildMessageDocument(restRequest, "Project '" + projectKey
-													+ "' is not indexed by JiraRiver with name: " + riverName)));
+									restChannel
+											.sendResponse(new BytesRestResponse(RestStatus.NOT_FOUND, buildMessageDocument(restRequest,
+													"Project '" + projectKey + "' is not indexed by JiraRiver with name: " + riverName)));
 								} else {
-									restChannel.sendResponse(new XContentRestResponse(restRequest, OK, buildMessageDocument(restRequest,
+									restChannel.sendResponse(new BytesRestResponse(OK, buildMessageDocument(restRequest,
 											"Scheduled full reindex for JIRA projects: " + nodeInfo.reindexedProjectNames)));
 								}
 							}

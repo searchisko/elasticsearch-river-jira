@@ -13,6 +13,7 @@ import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
+import org.elasticsearch.rest.RestStatus;
 import org.jboss.elasticsearch.river.jira.mgm.JRMgmBaseActionListener;
 import org.jboss.elasticsearch.river.jira.mgm.RestJRMgmBaseAction;
 
@@ -46,8 +47,8 @@ public class RestJRStateAction extends RestJRMgmBaseAction {
 
 							@Override
 							protected void handleJiraRiverResponse(NodeJRStateResponse nodeInfo) throws Exception {
-								restChannel.sendResponse(new BytesRestResponse(nodeInfo.stateInformation.getBytes(), XContentType.JSON
-										.restContentType()));
+								restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, XContentType.JSON.restContentType(),
+										nodeInfo.stateInformation.getBytes()));
 							}
 
 						});

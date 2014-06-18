@@ -11,12 +11,10 @@ import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.rest.XContentRestResponse;
-import org.elasticsearch.rest.XContentThrowableRestResponse;
-import org.elasticsearch.rest.action.support.RestXContentBuilder;
 
 /**
  * Base action listener used for Jira River management action calls. Handles response in case if jira river is not
@@ -53,8 +51,8 @@ public abstract class JRMgmBaseActionListener<Request extends JRMgmBaseRequest<?
 		try {
 			NodeResponse nodeInfo = response.getSuccessNodeResponse();
 			if (nodeInfo == null) {
-				restChannel.sendResponse(new XContentRestResponse(restRequest, RestStatus.NOT_FOUND, buildMessageDocument(
-						restRequest, "No JiraRiver found for name: " + actionRequest.getRiverName())));
+				restChannel.sendResponse(new BytesRestResponse(RestStatus.NOT_FOUND, buildMessageDocument(restRequest,
+						"No JiraRiver found for name: " + actionRequest.getRiverName())));
 			} else {
 				handleJiraRiverResponse(nodeInfo);
 			}
@@ -74,7 +72,7 @@ public abstract class JRMgmBaseActionListener<Request extends JRMgmBaseRequest<?
 	@Override
 	public void onFailure(Throwable e) {
 		try {
-			restChannel.sendResponse(new XContentThrowableRestResponse(restRequest, e));
+			restChannel.sendResponse(new BytesRestResponse(restChannel, e));
 		} catch (IOException e1) {
 			logger.error("Failed to send failure response", e1);
 		}

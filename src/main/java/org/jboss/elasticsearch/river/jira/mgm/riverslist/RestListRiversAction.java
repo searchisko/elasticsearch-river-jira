@@ -14,13 +14,11 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.rest.XContentRestResponse;
-import org.elasticsearch.rest.XContentThrowableRestResponse;
-import org.elasticsearch.rest.action.support.RestXContentBuilder;
 import org.jboss.elasticsearch.river.jira.mgm.RestJRMgmBaseAction;
 
 /**
@@ -55,11 +53,11 @@ public class RestListRiversAction extends RestJRMgmBaseAction {
 								}
 							}
 
-							XContentBuilder builder = RestXContentBuilder.restContentBuilder(restRequest);
+							XContentBuilder builder = restChannel.newBuilder();
 							builder.startObject();
 							builder.field("jira_river_names", allRivers);
 							builder.endObject();
-							restChannel.sendResponse(new XContentRestResponse(restRequest, RestStatus.OK, builder));
+							restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, builder));
 						} catch (Exception e) {
 							onFailure(e);
 						}
@@ -68,7 +66,7 @@ public class RestListRiversAction extends RestJRMgmBaseAction {
 					@Override
 					public void onFailure(Throwable e) {
 						try {
-							restChannel.sendResponse(new XContentThrowableRestResponse(restRequest, e));
+							restChannel.sendResponse(new BytesRestResponse(restChannel, e));
 						} catch (IOException e1) {
 							logger.error("Failed to send failure response", e1);
 						}
