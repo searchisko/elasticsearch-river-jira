@@ -8,13 +8,15 @@ It's implemented as Elasticsearch [river](http://www.elasticsearch.org/guide/en/
 uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) 
 to obtain issues from JIRA instance.
 
-In order to install the plugin into Elasticsearch, simply run: 
-`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.5.6/elasticsearch-river-jira-1.5.6.zip -install elasticsearch-river-jira`.
+In order to install the plugin into Elasticsearch 1.2.x, simply run: 
+`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.6.0/elasticsearch-river-jira-1.6.0.zip -install elasticsearch-river-jira`.
 
     -----------------------------------------------------------------------
     | JIRA River | Elasticsearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
     | master     | 1.2.0            | 5+   | 2             |              |
+    -----------------------------------------------------------------------
+    | 1.6.0      | 1.2.0            | 5+   | 2             | 18.6.2014    |
     -----------------------------------------------------------------------
     | 1.5.6      | 1.0.0            | 5+   | 2             | 6.6.2014     |
     -----------------------------------------------------------------------
@@ -25,10 +27,6 @@ In order to install the plugin into Elasticsearch, simply run:
     | 1.5.3      | 1.0.0            | 5+   | 2             | 23.4.2014    |
     -----------------------------------------------------------------------
     | 1.4.3      | 0.90.5           | 5+   | 2             | 23.4.2014    |
-    -----------------------------------------------------------------------
-    | 1.5.2      | 1.0.0            | 5+   | 2             | 14.4.2014    |
-    -----------------------------------------------------------------------
-    | 1.4.2      | 0.90.5           | 5+   | 2             | 14.4.2014    |
     -----------------------------------------------------------------------
 
 For info about older releases, detailed changelog, planned milestones/enhancements and known bugs see 
