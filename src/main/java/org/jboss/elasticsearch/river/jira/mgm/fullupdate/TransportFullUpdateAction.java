@@ -21,55 +21,50 @@ import org.jboss.elasticsearch.river.jira.mgm.TransportJRMgmBaseAction;
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class TransportFullUpdateAction extends
-    TransportJRMgmBaseAction<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateRequest, NodeFullUpdateResponse> {
+		TransportJRMgmBaseAction<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateRequest, NodeFullUpdateResponse> {
 
-  @Inject
-  public TransportFullUpdateAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
-      ClusterService clusterService, TransportService transportService) {
-    super(settings, clusterName, threadPool, clusterService, transportService);
-  }
+	@Inject
+	public TransportFullUpdateAction(Settings settings, String actionName, ClusterName clusterName,
+			ThreadPool threadPool, ClusterService clusterService, TransportService transportService) {
+		super(settings, actionName, clusterName, threadPool, clusterService, transportService);
+	}
 
-  @Override
-  protected String transportAction() {
-    return FullUpdateAction.NAME;
-  }
+	@Override
+	protected NodeFullUpdateResponse performOperationOnJiraRiver(IJiraRiverMgm river, FullUpdateRequest req,
+			DiscoveryNode node) throws Exception {
+		logger.debug("Go to schedule full reindex for river '{}' and project {}", req.getRiverName(), req.getProjectKey());
+		String ret = river.forceFullReindex(req.getProjectKey());
+		return new NodeFullUpdateResponse(node, true, ret != null, ret);
+	}
 
-  @Override
-  protected NodeFullUpdateResponse performOperationOnJiraRiver(IJiraRiverMgm river, FullUpdateRequest req,
-      DiscoveryNode node) throws Exception {
-    logger.debug("Go to schedule full reindex for river '{}' and project {}", req.getRiverName(), req.getProjectKey());
-    String ret = river.forceFullReindex(req.getProjectKey());
-    return new NodeFullUpdateResponse(node, true, ret != null, ret);
-  }
+	@Override
+	protected FullUpdateRequest newRequest() {
+		return new FullUpdateRequest();
+	}
 
-  @Override
-  protected FullUpdateRequest newRequest() {
-    return new FullUpdateRequest();
-  }
+	@Override
+	protected NodeFullUpdateRequest newNodeRequest() {
+		return new NodeFullUpdateRequest();
+	}
 
-  @Override
-  protected NodeFullUpdateRequest newNodeRequest() {
-    return new NodeFullUpdateRequest();
-  }
+	@Override
+	protected NodeFullUpdateRequest newNodeRequest(String nodeId, FullUpdateRequest request) {
+		return new NodeFullUpdateRequest(nodeId, request);
+	}
 
-  @Override
-  protected NodeFullUpdateRequest newNodeRequest(String nodeId, FullUpdateRequest request) {
-    return new NodeFullUpdateRequest(nodeId, request);
-  }
+	@Override
+	protected NodeFullUpdateResponse newNodeResponse() {
+		return new NodeFullUpdateResponse(clusterService.localNode());
+	}
 
-  @Override
-  protected NodeFullUpdateResponse newNodeResponse() {
-    return new NodeFullUpdateResponse(clusterService.localNode());
-  }
+	@Override
+	protected NodeFullUpdateResponse[] newNodeResponseArray(int len) {
+		return new NodeFullUpdateResponse[len];
+	}
 
-  @Override
-  protected NodeFullUpdateResponse[] newNodeResponseArray(int len) {
-    return new NodeFullUpdateResponse[len];
-  }
-
-  @Override
-  protected FullUpdateResponse newResponse(ClusterName clusterName, NodeFullUpdateResponse[] array) {
-    return new FullUpdateResponse(clusterName, array);
-  }
+	@Override
+	protected FullUpdateResponse newResponse(ClusterName clusterName, NodeFullUpdateResponse[] array) {
+		return new FullUpdateResponse(clusterName, array);
+	}
 
 }

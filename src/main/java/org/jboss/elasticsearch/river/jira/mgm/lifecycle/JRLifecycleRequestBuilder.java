@@ -8,7 +8,6 @@ package org.jboss.elasticsearch.river.jira.mgm.lifecycle;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.nodes.NodesOperationRequestBuilder;
 import org.elasticsearch.client.ClusterAdminClient;
-import org.elasticsearch.client.internal.InternalClusterAdminClient;
 
 /**
  * Request builder to perform lifecycle method of some jira river.
@@ -19,7 +18,7 @@ public class JRLifecycleRequestBuilder extends
 		NodesOperationRequestBuilder<JRLifecycleRequest, JRLifecycleResponse, JRLifecycleRequestBuilder> {
 
 	public JRLifecycleRequestBuilder(ClusterAdminClient client) {
-		super((InternalClusterAdminClient) client, new JRLifecycleRequest());
+		super(client, new JRLifecycleRequest());
 	}
 
 	/**
@@ -50,7 +49,7 @@ public class JRLifecycleRequestBuilder extends
 			throw new IllegalArgumentException("riverName must be provided for request");
 		if (request.getCommand() == null)
 			throw new IllegalArgumentException("command must be provided for request");
-		((InternalClusterAdminClient) client).execute(JRLifecycleAction.INSTANCE, request, listener);
+		client.execute(JRLifecycleAction.INSTANCE, request, listener);
 	}
 
 }

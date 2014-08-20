@@ -33,9 +33,9 @@ public class TransportListRiversAction extends
 	protected final static ESLogger logger = Loggers.getLogger(TransportListRiversAction.class);
 
 	@Inject
-	public TransportListRiversAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
-			ClusterService clusterService, TransportService transportService) {
-		super(settings, clusterName, threadPool, clusterService, transportService);
+	public TransportListRiversAction(Settings settings, String actionName, ClusterName clusterName,
+			ThreadPool threadPool, ClusterService clusterService, TransportService transportService) {
+		super(settings, actionName, clusterName, threadPool, clusterService, transportService);
 	}
 
 	@Override
@@ -64,11 +64,6 @@ public class TransportListRiversAction extends
 	protected NodeListRiversResponse nodeOperation(NodeListRiversRequest nodeRequest) throws ElasticsearchException {
 		logger.debug("Go to look for jira rivers on this node");
 		return new NodeListRiversResponse(clusterService.localNode(), JiraRiver.getRunningInstances());
-	}
-
-	@Override
-	protected String transportAction() {
-		return ListRiversAction.NAME;
 	}
 
 	@Override

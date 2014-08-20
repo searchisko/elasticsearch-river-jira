@@ -32,7 +32,7 @@ public class RestJRStateAction extends RestJRMgmBaseAction {
 	}
 
 	@Override
-	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
+	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel, Client client) {
 
 		JRStateRequest actionRequest = new JRStateRequest(restRequest.param("riverName"));
 

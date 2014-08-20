@@ -16,6 +16,7 @@ import junit.framework.Assert;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
 import org.elasticsearch.common.text.StringText;
 import org.elasticsearch.search.SearchHit;
@@ -84,6 +85,8 @@ public class JIRAProjectIndexerTest {
 
 		List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
 
+		Client client = Mockito.mock(Client.class);
+
 		// test case with empty result list from JIRA search method
 		// test case of 'last update date' reading from store and passing to the JIRA search method
 		{
@@ -125,7 +128,7 @@ public class JIRAProjectIndexerTest {
 			configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
 			when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
 					new ChangedIssuesResults(issues, 0, 50, 3));
-			BulkRequestBuilder brb = new BulkRequestBuilder(null);
+			BulkRequestBuilder brb = new BulkRequestBuilder(client);
 			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brb);
 
 			tested.processUpdate();
@@ -159,6 +162,8 @@ public class JIRAProjectIndexerTest {
 
 		List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
 
+		Client client = Mockito.mock(Client.class);
+
 		// test case with list from JIRA search method containing only one issue with same update time as 'last update date'
 		Date mockDateAfter = DateTimeUtils.parseISODateTime("2012-08-14T08:00:10.000-0400");
 		when(
@@ -169,7 +174,7 @@ public class JIRAProjectIndexerTest {
 		configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
 		when(jiraClientMock.getJIRAChangedIssues("ORG", 0, DateTimeUtils.roundDateTimeToMinutePrecise(mockDateAfter), null))
 				.thenReturn(new ChangedIssuesResults(issues, 0, 50, 1));
-		BulkRequestBuilder brb = new BulkRequestBuilder(null);
+		BulkRequestBuilder brb = new BulkRequestBuilder(client);
 		when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brb);
 
 		tested.processUpdate();
@@ -206,6 +211,8 @@ public class JIRAProjectIndexerTest {
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
+		Client client = Mockito.mock(Client.class);
+		BulkRequestBuilder brb = new BulkRequestBuilder(client);
 
 		List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
 		addIssueMock(issues, "ORG-45", "2012-08-14T08:00:10.000-0400");
@@ -230,7 +237,7 @@ public class JIRAProjectIndexerTest {
 				new ChangedIssuesResults(issues2, 0, 3, 5));
 		when(jiraClientMock.getJIRAChangedIssues("ORG", 0, after3, null)).thenReturn(
 				new ChangedIssuesResults(issues3, 0, 3, 2));
-		when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+		when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brb);
 		configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
 
 		tested.processUpdate();
@@ -275,6 +282,8 @@ public class JIRAProjectIndexerTest {
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
+		Client client = Mockito.mock(Client.class);
+		BulkRequestBuilder brb = new BulkRequestBuilder(client);
 
 		List<Map<String, Object>> issues = new ArrayList<Map<String, Object>>();
 		addIssueMock(issues, "ORG-45", "2012-08-14T08:00:00.000-0400");
@@ -297,7 +306,7 @@ public class JIRAProjectIndexerTest {
 				new ChangedIssuesResults(issues2, 3, 3, 8));
 		when(jiraClientMock.getJIRAChangedIssues("ORG", 6, null, null)).thenReturn(
 				new ChangedIssuesResults(issues3, 6, 3, 8));
-		when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+		when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brb);
 		configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
 
 		tested.processUpdate();
@@ -337,6 +346,10 @@ public class JIRAProjectIndexerTest {
 		addIssueMock(issues, "ORG-46", "2012-08-14T08:00:10.000-0400");
 		addIssueMock(issues, "ORG-47", "2012-08-14T08:00:20.000-0400");
 
+		Client client = Mockito.mock(Client.class);
+		BulkRequestBuilder brb = new BulkRequestBuilder(client);
+		SearchRequestBuilder srb = new SearchRequestBuilder(client);
+
 		// test case with indexing finished OK
 		{
 			when(
@@ -344,7 +357,7 @@ public class JIRAProjectIndexerTest {
 							JIRAProjectIndexer.STORE_PROPERTYNAME_LAST_INDEXED_ISSUE_UPDATE_DATE)).thenReturn(lastUpdatedDate);
 			when(jiraClientMock.getJIRAChangedIssues("ORG", 0, lastUpdatedDate, null)).thenReturn(
 					new ChangedIssuesResults(issues, 0, 50, 3));
-			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brb);
 			configureStructureBuilderMockDefaults(jiraIssueIndexStructureBuilderMock);
 
 			tested.run();
@@ -362,7 +375,7 @@ public class JIRAProjectIndexerTest {
 			when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
 					new ChangedIssuesResults(issues, 0, 50, 4));
 			when(jiraClientMock.getJIRAChangedIssues("ORG", 3, null, null)).thenThrow(new Exception("JIRA call error"));
-			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brb);
 
 			tested.run();
 			verify(esIntegrationMock, times(1)).reportIndexingFinished(
@@ -385,11 +398,10 @@ public class JIRAProjectIndexerTest {
 			// updatedAfter is null here (even some is returned from previous when) because we run full update!
 			when(jiraClientMock.getJIRAChangedIssues("ORG", 0, null, null)).thenReturn(
 					new ChangedIssuesResults(issues, 0, 50, 3));
-			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(new BulkRequestBuilder(null));
+			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brb);
 
 			// prepare delete part
-			when(esIntegrationMock.prepareESScrollSearchRequestBuilder(Mockito.anyString())).thenReturn(
-					new SearchRequestBuilder(null));
+			when(esIntegrationMock.prepareESScrollSearchRequestBuilder(Mockito.anyString())).thenReturn(srb);
 			SearchResponse sr1 = prepareSearchResponse("scrlid1",
 					new InternalSearchHit(1, "ORG-12", new StringText(""), null));
 			when(esIntegrationMock.executeESSearchRequest(Mockito.any(SearchRequestBuilder.class))).thenReturn(sr1);
@@ -439,6 +451,7 @@ public class JIRAProjectIndexerTest {
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", true, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
+		Client client = Mockito.mock(Client.class);
 
 		try {
 			tested.processDelete(null);
@@ -468,7 +481,7 @@ public class JIRAProjectIndexerTest {
 			Date boundDate = DateTimeUtils.parseISODateTime("2012-08-14T07:00:00.000-0400");
 
 			when(jiraIssueIndexStructureBuilderMock.getIssuesSearchIndexName("ORG")).thenReturn(jiraIndexName);
-			SearchRequestBuilder srbmock = new SearchRequestBuilder(null);
+			SearchRequestBuilder srbmock = new SearchRequestBuilder(client);
 			when(esIntegrationMock.prepareESScrollSearchRequestBuilder(jiraIndexName)).thenReturn(srbmock);
 			when(esIntegrationMock.executeESSearchRequest(srbmock)).thenReturn(prepareSearchResponse("scrlid3"));
 
@@ -498,13 +511,13 @@ public class JIRAProjectIndexerTest {
 			Date boundDate = DateTimeUtils.parseISODateTime("2012-08-14T07:00:00.000-0400");
 
 			when(jiraIssueIndexStructureBuilderMock.getIssuesSearchIndexName("ORG")).thenReturn(jiraIndexName);
-			SearchRequestBuilder srbmock = new SearchRequestBuilder(null);
+			SearchRequestBuilder srbmock = new SearchRequestBuilder(client);
 			when(esIntegrationMock.prepareESScrollSearchRequestBuilder(jiraIndexName)).thenReturn(srbmock);
 
 			SearchResponse sr = prepareSearchResponse("scrlid0", new InternalSearchHit(1, "ORG-12", new StringText(""), null));
 			when(esIntegrationMock.executeESSearchRequest(srbmock)).thenReturn(sr);
 
-			BulkRequestBuilder brbmock = new BulkRequestBuilder(null);
+			BulkRequestBuilder brbmock = new BulkRequestBuilder(client);
 			when(esIntegrationMock.prepareESBulkRequestBuilder()).thenReturn(brbmock);
 
 			InternalSearchHit hit1_1 = new InternalSearchHit(1, "ORG-12", new StringText(""), null);

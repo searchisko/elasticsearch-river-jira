@@ -32,12 +32,6 @@ public class TransportListRiversActionTest {
 	public static final ClusterName clusterName = new ClusterName("myCluster");
 
 	@Test
-	public void transportAction() {
-		TransportListRiversAction tested = prepareTestedInstance(clusterName);
-		Assert.assertEquals(ListRiversAction.NAME, tested.transportAction());
-	}
-
-	@Test
 	public void newRequest() {
 		TransportListRiversAction tested = prepareTestedInstance(clusterName);
 		Assert.assertNotNull(tested.newRequest());
@@ -73,49 +67,49 @@ public class TransportListRiversActionTest {
 
 		TransportListRiversAction tested = prepareTestedInstance(clusterName);
 
-        String myRiverName1 = "myRiver";
-        String myRiverName2 = "myRiver2";
+		String myRiverName1 = "myRiver";
+		String myRiverName2 = "myRiver2";
 
-        try {
+		try {
 
-            {
-                NodeListRiversRequest req = Mockito.mock(NodeListRiversRequest.class);
-                NodeListRiversResponse resp = tested.nodeOperation(req);
-                Assert.assertNotNull(resp);
-                Assert.assertNotNull(resp.jiraRiverNames);
-                Assert.assertEquals(0, resp.jiraRiverNames.size());
-            }
+			{
+				NodeListRiversRequest req = Mockito.mock(NodeListRiversRequest.class);
+				NodeListRiversResponse resp = tested.nodeOperation(req);
+				Assert.assertNotNull(resp);
+				Assert.assertNotNull(resp.jiraRiverNames);
+				Assert.assertEquals(0, resp.jiraRiverNames.size());
+			}
 
-            {
-                IJiraRiverMgm jiraRiverMock = Mockito.mock(IJiraRiverMgm.class);
-                RiverName riverName = new RiverName("jira", myRiverName1);
-                Mockito.when(jiraRiverMock.riverName()).thenReturn(riverName);
-                JiraRiver.addRunningInstance(jiraRiverMock);
-                NodeListRiversRequest req = Mockito.mock(NodeListRiversRequest.class);
-                NodeListRiversResponse resp = tested.nodeOperation(req);
-                Assert.assertNotNull(resp);
-                Assert.assertNotNull(resp.jiraRiverNames);
-                Assert.assertEquals(1, resp.jiraRiverNames.size());
-                Assert.assertTrue(resp.jiraRiverNames.contains(myRiverName1));
-            }
+			{
+				IJiraRiverMgm jiraRiverMock = Mockito.mock(IJiraRiverMgm.class);
+				RiverName riverName = new RiverName("jira", myRiverName1);
+				Mockito.when(jiraRiverMock.riverName()).thenReturn(riverName);
+				JiraRiver.addRunningInstance(jiraRiverMock);
+				NodeListRiversRequest req = Mockito.mock(NodeListRiversRequest.class);
+				NodeListRiversResponse resp = tested.nodeOperation(req);
+				Assert.assertNotNull(resp);
+				Assert.assertNotNull(resp.jiraRiverNames);
+				Assert.assertEquals(1, resp.jiraRiverNames.size());
+				Assert.assertTrue(resp.jiraRiverNames.contains(myRiverName1));
+			}
 
-            {
-                IJiraRiverMgm jiraRiverMock = Mockito.mock(IJiraRiverMgm.class);
-                RiverName riverName = new RiverName("jira", myRiverName2);
-                Mockito.when(jiraRiverMock.riverName()).thenReturn(riverName);
-                JiraRiver.addRunningInstance(jiraRiverMock);
-                NodeListRiversRequest req = Mockito.mock(NodeListRiversRequest.class);
-                NodeListRiversResponse resp = tested.nodeOperation(req);
-                Assert.assertNotNull(resp);
-                Assert.assertNotNull(resp.jiraRiverNames);
-                Assert.assertEquals(2, resp.jiraRiverNames.size());
-                Assert.assertTrue(resp.jiraRiverNames.contains(myRiverName1));
-                Assert.assertTrue(resp.jiraRiverNames.contains(myRiverName2));
-            }
+			{
+				IJiraRiverMgm jiraRiverMock = Mockito.mock(IJiraRiverMgm.class);
+				RiverName riverName = new RiverName("jira", myRiverName2);
+				Mockito.when(jiraRiverMock.riverName()).thenReturn(riverName);
+				JiraRiver.addRunningInstance(jiraRiverMock);
+				NodeListRiversRequest req = Mockito.mock(NodeListRiversRequest.class);
+				NodeListRiversResponse resp = tested.nodeOperation(req);
+				Assert.assertNotNull(resp);
+				Assert.assertNotNull(resp.jiraRiverNames);
+				Assert.assertEquals(2, resp.jiraRiverNames.size());
+				Assert.assertTrue(resp.jiraRiverNames.contains(myRiverName1));
+				Assert.assertTrue(resp.jiraRiverNames.contains(myRiverName2));
+			}
 
-        } finally {
-            JiraRiver.removeRunningInstances(myRiverName1, myRiverName2);
-        }
+		} finally {
+			JiraRiver.removeRunningInstances(myRiverName1, myRiverName2);
+		}
 
 	}
 
@@ -128,10 +122,10 @@ public class TransportListRiversActionTest {
 
 	public static TransportListRiversAction prepareTestedInstance(ClusterName clusterName) {
 		Settings settings = Mockito.mock(Settings.class);
-		ThreadPool threadPool = new ThreadPool();
+		ThreadPool threadPool = new ThreadPool("tp");
 		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-		TransportListRiversAction tested = new TransportListRiversAction(settings, clusterName, threadPool, clusterService,
-				transportService);
+		TransportListRiversAction tested = new TransportListRiversAction(settings, ListRiversAction.NAME, clusterName,
+				threadPool, clusterService, transportService);
 		return tested;
 	}
 }

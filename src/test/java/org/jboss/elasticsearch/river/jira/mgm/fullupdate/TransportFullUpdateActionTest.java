@@ -30,12 +30,6 @@ public class TransportFullUpdateActionTest {
 	public static final ClusterName clusterName = new ClusterName("myCluster");
 
 	@Test
-	public void transportAction() {
-		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
-		Assert.assertEquals(FullUpdateAction.NAME, tested.transportAction());
-	}
-
-	@Test
 	public void newRequest() {
 		TransportFullUpdateAction tested = prepareTestedInstance(clusterName);
 		Assert.assertNotNull(tested.newRequest());
@@ -144,10 +138,10 @@ public class TransportFullUpdateActionTest {
 
 	public static TransportFullUpdateAction prepareTestedInstance(ClusterName clusterName) {
 		Settings settings = Mockito.mock(Settings.class);
-		ThreadPool threadPool = new ThreadPool();
+		ThreadPool threadPool = new ThreadPool("testtp");
 		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-		TransportFullUpdateAction tested = new TransportFullUpdateAction(settings, clusterName, threadPool, clusterService,
-				transportService);
+		TransportFullUpdateAction tested = new TransportFullUpdateAction(settings, FullUpdateAction.NAME, clusterName,
+				threadPool, clusterService, transportService);
 		return tested;
 	}
 }

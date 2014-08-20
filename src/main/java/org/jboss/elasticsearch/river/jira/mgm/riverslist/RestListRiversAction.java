@@ -35,7 +35,7 @@ public class RestListRiversAction extends RestJRMgmBaseAction {
 	}
 
 	@Override
-	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
+	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel, Client client) {
 
 		ListRiversRequest actionRequest = new ListRiversRequest();
 

@@ -33,7 +33,7 @@ public class RestJRLifecycleAction extends RestJRMgmBaseAction {
 	}
 
 	@Override
-	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel) {
+	public void handleRequest(final RestRequest restRequest, final RestChannel restChannel, Client client) {
 
 		JRLifecycleCommand command = JRLifecycleCommand.RESTART;
 		if (restRequest.path().endsWith("stop"))

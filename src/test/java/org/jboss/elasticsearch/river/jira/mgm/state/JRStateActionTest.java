@@ -5,7 +5,7 @@
  */
 package org.jboss.elasticsearch.river.jira.mgm.state;
 
-import org.elasticsearch.client.internal.InternalClusterAdminClient;
+import org.elasticsearch.client.ClusterAdminClient;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -24,7 +24,7 @@ public class JRStateActionTest {
 
 	@Test
 	public void newRequestBuilder() {
-		InternalClusterAdminClient client = Mockito.mock(InternalClusterAdminClient.class);
+		ClusterAdminClient client = Mockito.mock(ClusterAdminClient.class);
 
 		JRStateRequestBuilder rb = JRStateAction.INSTANCE.newRequestBuilder(client);
 		Assert.assertNotNull(rb);

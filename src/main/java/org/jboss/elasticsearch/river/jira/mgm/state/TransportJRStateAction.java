@@ -23,55 +23,50 @@ import org.jboss.elasticsearch.river.jira.mgm.TransportJRMgmBaseAction;
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class TransportJRStateAction extends
-    TransportJRMgmBaseAction<JRStateRequest, JRStateResponse, NodeJRStateRequest, NodeJRStateResponse> {
+		TransportJRMgmBaseAction<JRStateRequest, JRStateResponse, NodeJRStateRequest, NodeJRStateResponse> {
 
-  @Inject
-  public TransportJRStateAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
-      ClusterService clusterService, TransportService transportService) {
-    super(settings, clusterName, threadPool, clusterService, transportService);
-  }
+	@Inject
+	public TransportJRStateAction(Settings settings, String actionName, ClusterName clusterName, ThreadPool threadPool,
+			ClusterService clusterService, TransportService transportService) {
+		super(settings, actionName, clusterName, threadPool, clusterService, transportService);
+	}
 
-  @Override
-  protected String transportAction() {
-    return JRStateAction.NAME;
-  }
+	@Override
+	protected NodeJRStateResponse performOperationOnJiraRiver(IJiraRiverMgm river, JRStateRequest req, DiscoveryNode node)
+			throws Exception {
+		logger.debug("Go to get state information from river '{}'", req.getRiverName());
+		String ret = river.getRiverOperationInfo(node, new Date());
+		return new NodeJRStateResponse(node, true, ret);
+	}
 
-  @Override
-  protected NodeJRStateResponse performOperationOnJiraRiver(IJiraRiverMgm river, JRStateRequest req, DiscoveryNode node)
-      throws Exception {
-    logger.debug("Go to get state information from river '{}'", req.getRiverName());
-    String ret = river.getRiverOperationInfo(node, new Date());
-    return new NodeJRStateResponse(node, true, ret);
-  }
+	@Override
+	protected JRStateRequest newRequest() {
+		return new JRStateRequest();
+	}
 
-  @Override
-  protected JRStateRequest newRequest() {
-    return new JRStateRequest();
-  }
+	@Override
+	protected NodeJRStateRequest newNodeRequest() {
+		return new NodeJRStateRequest();
+	}
 
-  @Override
-  protected NodeJRStateRequest newNodeRequest() {
-    return new NodeJRStateRequest();
-  }
+	@Override
+	protected NodeJRStateRequest newNodeRequest(String nodeId, JRStateRequest request) {
+		return new NodeJRStateRequest(nodeId, request);
+	}
 
-  @Override
-  protected NodeJRStateRequest newNodeRequest(String nodeId, JRStateRequest request) {
-    return new NodeJRStateRequest(nodeId, request);
-  }
+	@Override
+	protected NodeJRStateResponse newNodeResponse() {
+		return new NodeJRStateResponse(clusterService.localNode());
+	}
 
-  @Override
-  protected NodeJRStateResponse newNodeResponse() {
-    return new NodeJRStateResponse(clusterService.localNode());
-  }
+	@Override
+	protected NodeJRStateResponse[] newNodeResponseArray(int len) {
+		return new NodeJRStateResponse[len];
+	}
 
-  @Override
-  protected NodeJRStateResponse[] newNodeResponseArray(int len) {
-    return new NodeJRStateResponse[len];
-  }
-
-  @Override
-  protected JRStateResponse newResponse(ClusterName clusterName, NodeJRStateResponse[] array) {
-    return new JRStateResponse(clusterName, array);
-  }
+	@Override
+	protected JRStateResponse newResponse(ClusterName clusterName, NodeJRStateResponse[] array) {
+		return new JRStateResponse(clusterName, array);
+	}
 
 }

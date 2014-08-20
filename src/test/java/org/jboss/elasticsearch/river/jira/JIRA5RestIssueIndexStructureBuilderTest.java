@@ -17,6 +17,7 @@ import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -415,7 +416,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		// case - comments NONE
 		{
 			tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
-			SearchRequestBuilder srb = new SearchRequestBuilder(null);
+			SearchRequestBuilder srb = new SearchRequestBuilder(Mockito.mock(Client.class));
 			tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG",
 					DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
 			Assert.assertArrayEquals(new String[] { "issue_type" }, srb.request().types());
@@ -429,7 +430,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		// case - comments EMBEDDED
 		{
 			tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
-			SearchRequestBuilder srb = new SearchRequestBuilder(null);
+			SearchRequestBuilder srb = new SearchRequestBuilder(Mockito.mock(Client.class));
 			tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG",
 					DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
 			Assert.assertArrayEquals(new String[] { "issue_type" }, srb.request().types());
@@ -444,7 +445,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		{
 			tested.commentIndexingMode = IssueCommentIndexingMode.CHILD;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.EMBEDDED;
-			SearchRequestBuilder srb = new SearchRequestBuilder(null);
+			SearchRequestBuilder srb = new SearchRequestBuilder(Mockito.mock(Client.class));
 			tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG",
 					DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
 			Assert.assertArrayEquals(new String[] { "issue_type", "comment_type" }, srb.request().types());
@@ -459,7 +460,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		{
 			tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.CHILD;
-			SearchRequestBuilder srb = new SearchRequestBuilder(null);
+			SearchRequestBuilder srb = new SearchRequestBuilder(Mockito.mock(Client.class));
 			tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG",
 					DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
 			Assert.assertArrayEquals(new String[] { "issue_type", "comment_type", "changelog_type" }, srb.request().types());
@@ -474,7 +475,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		{
 			tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.STANDALONE;
-			SearchRequestBuilder srb = new SearchRequestBuilder(null);
+			SearchRequestBuilder srb = new SearchRequestBuilder(Mockito.mock(Client.class));
 			tested.buildSearchForIndexedDocumentsNotUpdatedAfter(srb, "ORG",
 					DateTimeUtils.parseISODateTime("2012-09-06T12:22:19Z"));
 			Assert.assertArrayEquals(new String[] { "issue_type", "changelog_type" }, srb.request().types());
@@ -645,9 +646,11 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
 				"issue_type", "http://issues-stg.jboss.org/", null);
 
+		Client client = Mockito.mock(Client.class);
+
 		// case - comments NONE
 		{
-			BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+			BulkRequestBuilder esBulk = new BulkRequestBuilder(client);
 			tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.NONE;
 			tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
@@ -656,7 +659,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 		// case - comments and changelog EMBEDDED
 		{
-			BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+			BulkRequestBuilder esBulk = new BulkRequestBuilder(client);
 			tested.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.EMBEDDED;
 			tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
@@ -665,7 +668,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 		// case - comments CHILD
 		{
-			BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+			BulkRequestBuilder esBulk = new BulkRequestBuilder(client);
 			tested.commentIndexingMode = IssueCommentIndexingMode.CHILD;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.NONE;
 			tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
@@ -674,7 +677,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 		// case - changelog CHILD
 		{
-			BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+			BulkRequestBuilder esBulk = new BulkRequestBuilder(client);
 			tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.CHILD;
 			tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
@@ -683,7 +686,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 		// case - both comments and changelog STANDALONE with comments in issue
 		{
-			BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+			BulkRequestBuilder esBulk = new BulkRequestBuilder(client);
 			tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.STANDALONE;
 			tested.indexIssue(esBulk, "ORG-1501", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501"));
@@ -692,7 +695,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 		// case - comments and changelogs STANDALONE without comments in issue
 		{
-			BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+			BulkRequestBuilder esBulk = new BulkRequestBuilder(client);
 			tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
 			tested.changelogIndexingMode = IssueCommentIndexingMode.STANDALONE;
 			tested.indexIssue(esBulk, "ORG-15013", TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-15013"));
@@ -701,7 +704,7 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 		// case - preprocessor called
 		{
-			BulkRequestBuilder esBulk = new BulkRequestBuilder(null);
+			BulkRequestBuilder esBulk = new BulkRequestBuilder(client);
 			tested.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
 			StructuredContentPreprocessor idp1 = mock(StructuredContentPreprocessor.class);
 			when(idp1.preprocessData(Mockito.anyMap())).thenAnswer(new Answer<Map<String, Object>>() {

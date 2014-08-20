@@ -8,7 +8,7 @@ package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 import junit.framework.Assert;
 
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.client.internal.InternalClusterAdminClient;
+import org.elasticsearch.client.ClusterAdminClient;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -22,7 +22,7 @@ public class FullUpdateRequestBuilderTest {
 	@Test
 	public void test() {
 
-		InternalClusterAdminClient client = Mockito.mock(InternalClusterAdminClient.class);
+		ClusterAdminClient client = Mockito.mock(ClusterAdminClient.class);
 
 		{
 			FullUpdateRequestBuilder tested = new FullUpdateRequestBuilder(client);

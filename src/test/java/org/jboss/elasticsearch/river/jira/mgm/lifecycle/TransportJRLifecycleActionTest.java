@@ -31,12 +31,6 @@ public class TransportJRLifecycleActionTest {
 	public static final ClusterName clusterName = new ClusterName("myCluster");
 
 	@Test
-	public void transportAction() {
-		TransportJRLifecycleAction tested = prepareTestedInstance(clusterName);
-		Assert.assertEquals(JRLifecycleAction.NAME, tested.transportAction());
-	}
-
-	@Test
 	public void newRequest() {
 		TransportJRLifecycleAction tested = prepareTestedInstance(clusterName);
 		Assert.assertNotNull(tested.newRequest());
@@ -126,10 +120,10 @@ public class TransportJRLifecycleActionTest {
 
 	public static TransportJRLifecycleAction prepareTestedInstance(ClusterName clusterName) {
 		Settings settings = Mockito.mock(Settings.class);
-		ThreadPool threadPool = new ThreadPool();
+		ThreadPool threadPool = new ThreadPool("tp");
 		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-		TransportJRLifecycleAction tested = new TransportJRLifecycleAction(settings, clusterName, threadPool,
-				clusterService, transportService);
+		TransportJRLifecycleAction tested = new TransportJRLifecycleAction(settings, JRLifecycleAction.NAME, clusterName,
+				threadPool, clusterService, transportService);
 		return tested;
 	}
 }

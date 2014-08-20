@@ -8,7 +8,6 @@ package org.jboss.elasticsearch.river.jira.mgm.riverslist;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.nodes.NodesOperationRequestBuilder;
 import org.elasticsearch.client.ClusterAdminClient;
-import org.elasticsearch.client.internal.InternalClusterAdminClient;
 
 /**
  * Request builder to get lit of all jira rivers in cluster.
@@ -19,12 +18,12 @@ public class ListRiversRequestBuilder extends
 		NodesOperationRequestBuilder<ListRiversRequest, ListRiversResponse, ListRiversRequestBuilder> {
 
 	public ListRiversRequestBuilder(ClusterAdminClient client) {
-		super((InternalClusterAdminClient) client, new ListRiversRequest());
+		super(client, new ListRiversRequest());
 	}
 
 	@Override
 	protected void doExecute(ActionListener<ListRiversResponse> listener) {
-		((InternalClusterAdminClient) client).execute(ListRiversAction.INSTANCE, request, listener);
+		client.execute(ListRiversAction.INSTANCE, request, listener);
 	}
 
 }

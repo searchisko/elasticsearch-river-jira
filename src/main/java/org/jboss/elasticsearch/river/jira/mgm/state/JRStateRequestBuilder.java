@@ -8,7 +8,6 @@ package org.jboss.elasticsearch.river.jira.mgm.state;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.nodes.NodesOperationRequestBuilder;
 import org.elasticsearch.client.ClusterAdminClient;
-import org.elasticsearch.client.internal.InternalClusterAdminClient;
 
 /**
  * Request builder to get state of some jira river.
@@ -19,7 +18,7 @@ public class JRStateRequestBuilder extends
 		NodesOperationRequestBuilder<JRStateRequest, JRStateResponse, JRStateRequestBuilder> {
 
 	public JRStateRequestBuilder(ClusterAdminClient client) {
-		super((InternalClusterAdminClient) client, new JRStateRequest());
+		super(client, new JRStateRequest());
 	}
 
 	/**
@@ -37,7 +36,7 @@ public class JRStateRequestBuilder extends
 	protected void doExecute(ActionListener<JRStateResponse> listener) {
 		if (request.getRiverName() == null)
 			throw new IllegalArgumentException("riverName must be provided for request");
-		((InternalClusterAdminClient) client).execute(JRStateAction.INSTANCE, request, listener);
+		client.execute(JRStateAction.INSTANCE, request, listener);
 	}
 
 }

@@ -8,7 +8,6 @@ package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.support.nodes.NodesOperationRequestBuilder;
 import org.elasticsearch.client.ClusterAdminClient;
-import org.elasticsearch.client.internal.InternalClusterAdminClient;
 
 /**
  * Request builder to force full index update for some jira river and some or all projects in it.
@@ -19,7 +18,7 @@ public class FullUpdateRequestBuilder extends
 		NodesOperationRequestBuilder<FullUpdateRequest, FullUpdateResponse, FullUpdateRequestBuilder> {
 
 	public FullUpdateRequestBuilder(ClusterAdminClient client) {
-		super((InternalClusterAdminClient) client, new FullUpdateRequest());
+		super(client, new FullUpdateRequest());
 	}
 
 	/**
@@ -49,7 +48,7 @@ public class FullUpdateRequestBuilder extends
 	protected void doExecute(ActionListener<FullUpdateResponse> listener) {
 		if (request.getRiverName() == null)
 			throw new IllegalArgumentException("riverName must be provided for request");
-		((InternalClusterAdminClient) client).execute(FullUpdateAction.INSTANCE, request, listener);
+		client.execute(FullUpdateAction.INSTANCE, request, listener);
 	}
 
 }
