@@ -33,9 +33,9 @@ public class TransportListRiversAction extends
 	protected final static ESLogger logger = Loggers.getLogger(TransportListRiversAction.class);
 
 	@Inject
-	public TransportListRiversAction(Settings settings, String actionName, ClusterName clusterName,
-			ThreadPool threadPool, ClusterService clusterService, TransportService transportService) {
-		super(settings, actionName, clusterName, threadPool, clusterService, transportService);
+	public TransportListRiversAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
+			ClusterService clusterService, TransportService transportService) {
+		super(settings, ListRiversAction.NAME, clusterName, threadPool, clusterService, transportService);
 	}
 
 	@Override

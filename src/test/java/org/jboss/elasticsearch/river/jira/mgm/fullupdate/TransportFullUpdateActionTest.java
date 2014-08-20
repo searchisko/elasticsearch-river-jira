@@ -140,8 +140,8 @@ public class TransportFullUpdateActionTest {
 		Settings settings = Mockito.mock(Settings.class);
 		ThreadPool threadPool = new ThreadPool("testtp");
 		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-		TransportFullUpdateAction tested = new TransportFullUpdateAction(settings, FullUpdateAction.NAME, clusterName,
-				threadPool, clusterService, transportService);
+		TransportFullUpdateAction tested = new TransportFullUpdateAction(settings, clusterName, threadPool, clusterService,
+				transportService);
 		return tested;
 	}
 }

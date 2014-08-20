@@ -24,9 +24,9 @@ public class TransportJRLifecycleAction extends
 		TransportJRMgmBaseAction<JRLifecycleRequest, JRLifecycleResponse, NodeJRLifecycleRequest, NodeJRLifecycleResponse> {
 
 	@Inject
-	public TransportJRLifecycleAction(Settings settings, String actionName, ClusterName clusterName,
-			ThreadPool threadPool, ClusterService clusterService, TransportService transportService) {
-		super(settings, actionName, clusterName, threadPool, clusterService, transportService);
+	public TransportJRLifecycleAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
+			ClusterService clusterService, TransportService transportService) {
+		super(settings, JRLifecycleAction.NAME, clusterName, threadPool, clusterService, transportService);
 	}
 
 	@Override

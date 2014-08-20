@@ -124,8 +124,8 @@ public class TransportListRiversActionTest {
 		Settings settings = Mockito.mock(Settings.class);
 		ThreadPool threadPool = new ThreadPool("tp");
 		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-		TransportListRiversAction tested = new TransportListRiversAction(settings, ListRiversAction.NAME, clusterName,
-				threadPool, clusterService, transportService);
+		TransportListRiversAction tested = new TransportListRiversAction(settings, clusterName, threadPool, clusterService,
+				transportService);
 		return tested;
 	}
 }

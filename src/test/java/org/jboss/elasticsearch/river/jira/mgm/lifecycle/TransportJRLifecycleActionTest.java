@@ -122,8 +122,8 @@ public class TransportJRLifecycleActionTest {
 		Settings settings = Mockito.mock(Settings.class);
 		ThreadPool threadPool = new ThreadPool("tp");
 		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
-		TransportJRLifecycleAction tested = new TransportJRLifecycleAction(settings, JRLifecycleAction.NAME, clusterName,
-				threadPool, clusterService, transportService);
+		TransportJRLifecycleAction tested = new TransportJRLifecycleAction(settings, clusterName, threadPool,
+				clusterService, transportService);
 		return tested;
 	}
 }

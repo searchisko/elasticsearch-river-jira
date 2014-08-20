@@ -26,9 +26,9 @@ public class TransportJRStateAction extends
 		TransportJRMgmBaseAction<JRStateRequest, JRStateResponse, NodeJRStateRequest, NodeJRStateResponse> {
 
 	@Inject
-	public TransportJRStateAction(Settings settings, String actionName, ClusterName clusterName, ThreadPool threadPool,
+	public TransportJRStateAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
 			ClusterService clusterService, TransportService transportService) {
-		super(settings, actionName, clusterName, threadPool, clusterService, transportService);
+		super(settings, JRStateAction.NAME, clusterName, threadPool, clusterService, transportService);
 	}
 
 	@Override

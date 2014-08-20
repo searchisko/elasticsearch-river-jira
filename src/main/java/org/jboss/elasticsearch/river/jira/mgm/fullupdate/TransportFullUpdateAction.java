@@ -24,9 +24,9 @@ public class TransportFullUpdateAction extends
 		TransportJRMgmBaseAction<FullUpdateRequest, FullUpdateResponse, NodeFullUpdateRequest, NodeFullUpdateResponse> {
 
 	@Inject
-	public TransportFullUpdateAction(Settings settings, String actionName, ClusterName clusterName,
-			ThreadPool threadPool, ClusterService clusterService, TransportService transportService) {
-		super(settings, actionName, clusterName, threadPool, clusterService, transportService);
+	public TransportFullUpdateAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
+			ClusterService clusterService, TransportService transportService) {
+		super(settings, FullUpdateAction.NAME, clusterName, threadPool, clusterService, transportService);
 	}
 
 	@Override
