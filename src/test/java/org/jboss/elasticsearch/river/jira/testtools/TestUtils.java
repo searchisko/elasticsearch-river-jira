@@ -10,12 +10,16 @@ import java.io.StringWriter;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.jboss.elasticsearch.river.jira.Utils;
 import org.junit.Assert;
+import org.junit.ComparisonFailure;
 
 /**
  * Helper methods for Unit tests.
@@ -23,6 +27,34 @@ import org.junit.Assert;
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public abstract class TestUtils {
+
+	private static ObjectMapper mapper;
+	static {
+		mapper = new ObjectMapper();
+		mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+	}
+
+	private static JsonNode toJsonNode(String source) {
+		JsonNode node = null;
+		try {
+			node = mapper.readValue(source, JsonNode.class);
+		} catch (IOException e) {
+			Assert.fail("Exception while parsing!: " + e);
+		}
+		return node;
+	}
+
+	/**
+	 * Assert two strings with JSON to be equal.
+	 * 
+	 * @param expected
+	 * @param actual
+	 */
+	public static void assertJsonEqual(String expected, String actual) {
+		if (!toJsonNode(expected).equals(toJsonNode(actual))) {
+			throw new ComparisonFailure("JSON's are not equal", expected, actual);
+		}
+	}
 
 	/**
 	 * Assert passed string is same as content of given file loaded from classpath.
