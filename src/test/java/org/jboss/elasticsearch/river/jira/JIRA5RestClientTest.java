@@ -49,15 +49,17 @@ public class JIRA5RestClientTest {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		IJIRAClient tested = new JIRA5RestClient("https://issues.jboss.org", null, null, 5000, null);
+		String username = null;
+		String pwd = null;
+		IJIRAClient tested = new JIRA5RestClient("https://issues.jboss.org", username, pwd, 50000, null);
 
 		// List<String> projects = tested.getAllJIRAProjects();
 		// System.out.println(projects);
 
 		ChangedIssuesResults ret = tested.getJIRAChangedIssues("ORG", 0,
-				DateTimeUtils.parseISODateTime("2013-02-04T01:00:00Z"), null);
+				DateTimeUtils.parseISODateTime("2014-09-01T01:00:00Z"), null);
 		System.out.println("total: " + ret.getTotal());
-		System.out.println(ret);
+		// System.out.println(ret);
 	}
 
 	@Test

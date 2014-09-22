@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jboss.elasticsearch</groupId>
   <artifactId>elasticsearch-river-jira</artifactId>
-  <version>1.7.0</version>
+  <version>1.7.1</version>
   <packaging>jar</packaging>
   <description>JIRA River for Elasticsearch</description>
   <inceptionYear>2012</inceptionYear>
@@ -71,7 +71,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.2.6</version>
+      <version>4.3.5</version>
     </dependency>
 
     <dependency>

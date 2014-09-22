@@ -14,25 +14,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.apache.http.Consts;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.protocol.ClientContext;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.http.config.ConnectionConfig;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.CoreConnectionPNames;
-import org.apache.http.params.CoreProtocolPNames;
-import org.apache.http.params.HttpParams;
-import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.logging.Loggers;
@@ -51,7 +54,7 @@ public class JIRA5RestClient implements IJIRAClient {
 
 	private static final ESLogger logger = Loggers.getLogger(JIRA5RestClient.class);
 
-	private DefaultHttpClient httpclient;
+	private CloseableHttpClient httpclient;
 
 	protected String jiraRestAPIUrlBase;
 
@@ -85,24 +88,29 @@ public class JIRA5RestClient implements IJIRAClient {
 			throw new SettingsException("Parameter jira/urlBase is malformed " + e.getMessage());
 		}
 
-		PoolingClientConnectionManager connectionManager = new PoolingClientConnectionManager();
-		connectionManager.setDefaultMaxPerRoute(20);
-		connectionManager.setMaxTotal(20);
+		PoolingHttpClientConnectionManager connManager = new PoolingHttpClientConnectionManager();
+		connManager.setDefaultMaxPerRoute(20);
+		connManager.setMaxTotal(20);
 
-		httpclient = new DefaultHttpClient(connectionManager);
-		HttpParams params = httpclient.getParams();
-		params.setParameter(CoreProtocolPNames.HTTP_CONTENT_CHARSET, "UTF-8");
+		ConnectionConfig connectionConfig = ConnectionConfig.custom().setCharset(Consts.UTF_8).build();
+		connManager.setDefaultConnectionConfig(connectionConfig);
+
+		HttpClientBuilder clientBuilder = HttpClients.custom().setConnectionManager(connManager);
+
 		if (timeout != null) {
-			params.setParameter(CoreConnectionPNames.SO_TIMEOUT, timeout);
-			params.setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, timeout);
+			RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(timeout).setConnectTimeout(timeout).build();
+			clientBuilder.setDefaultRequestConfig(requestConfig);
 		}
 
 		if (jiraUsername != null && !"".equals(jiraUsername.trim())) {
 			String host = url.getHost();
-			httpclient.getCredentialsProvider().setCredentials(new AuthScope(host, AuthScope.ANY_PORT),
-					new UsernamePasswordCredentials(jiraUsername, jiraPassword));
+			CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+			credentialsProvider.setCredentials(new AuthScope(host, AuthScope.ANY_PORT), new UsernamePasswordCredentials(
+					jiraUsername, jiraPassword));
+			clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
 			isAuthConfigured = true;
 		}
+		httpclient = clientBuilder.build();
 	}
 
 	/**
@@ -295,6 +303,7 @@ public class JIRA5RestClient implements IJIRAClient {
 		}
 		HttpGet method = new HttpGet(builder.build());
 		method.addHeader("Accept", "application/json");
+		CloseableHttpResponse response = null;
 		try {
 
 			// Preemptive authentication enabled - see
@@ -303,10 +312,10 @@ public class JIRA5RestClient implements IJIRAClient {
 			AuthCache authCache = new BasicAuthCache();
 			BasicScheme basicAuth = new BasicScheme();
 			authCache.put(targetHost, basicAuth);
-			BasicHttpContext localcontext = new BasicHttpContext();
-			localcontext.setAttribute(ClientContext.AUTH_CACHE, authCache);
+			HttpClientContext localContext = HttpClientContext.create();
+			localContext.setAuthCache(authCache);
 
-			HttpResponse response = httpclient.execute(method, localcontext);
+			response = httpclient.execute(targetHost, method, localContext);
 			int statusCode = response.getStatusLine().getStatusCode();
 			byte[] responseContent = null;
 			if (response.getEntity() != null) {
@@ -318,6 +327,8 @@ public class JIRA5RestClient implements IJIRAClient {
 			}
 			return responseContent;
 		} finally {
+			if (response != null)
+				response.close();
 			method.releaseConnection();
 		}
 	}
