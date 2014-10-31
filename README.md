@@ -1,6 +1,9 @@
 JIRA River Plugin for Elasticsearch
 ===================================
 
+[![Build Status](https://travis-ci.org/searchisko/elasticsearch-river-jira.svg?branch=master)](https://travis-ci.org/searchisko/elasticsearch-river-jira)
+[![Coverage Status](https://coveralls.io/repos/searchisko/elasticsearch-river-jira/badge.png?branch=master)](https://coveralls.io/r/searchisko/elasticsearch-river-jira)
+
 The JIRA River Plugin allows index [Atlassian JIRA](http://www.atlassian.com/software/jira) 
 issues and issue comments into [Elasticsearch](http://www.elasticsearch.org). 
 It's implemented as Elasticsearch [river](http://www.elasticsearch.org/guide/en/elasticsearch/rivers/current/index.html) 
