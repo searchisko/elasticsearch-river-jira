@@ -81,6 +81,12 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 	protected long indexFullUpdatePeriod = -1;
 
 	/**
+	 * Cron expression to schedule automatic full update from remote system. Ignore <code>indexFullUpdatePeriod</code> if
+	 * this one is not null.
+	 */
+	protected CronExpression indexFullUpdateCronExpression;
+
+	/**
 	 * Queue of project keys which needs to be reindexed in near future.
 	 * 
 	 * @see JIRAProjectIndexerCoordinator
@@ -110,7 +116,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 	 */
 	public JIRAProjectIndexerCoordinator(IJIRAClient jiraClient, IESIntegration esIntegrationComponent,
 			IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder, long indexUpdatePeriod, int maxIndexingThreads,
-			long indexFullUpdatePeriod) {
+			long indexFullUpdatePeriod, CronExpression indexFullUpdateCronExpression) {
 		super();
 		this.jiraClient = jiraClient;
 		this.esIntegrationComponent = esIntegrationComponent;
@@ -118,6 +124,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 		this.maxIndexingThreads = maxIndexingThreads;
 		this.jiraIssueIndexStructureBuilder = jiraIssueIndexStructureBuilder;
 		this.indexFullUpdatePeriod = indexFullUpdatePeriod;
+		this.indexFullUpdateCronExpression = indexFullUpdateCronExpression;
 	}
 
 	@Override
@@ -264,7 +271,14 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 		if (logger.isDebugEnabled())
 			logger.debug("Project {} last indexing start date is {}. We perform next indexing after {}ms.", projectKey,
 					lastIndexing, indexUpdatePeriod);
-		return lastIndexing == null || lastIndexing.getTime() < ((System.currentTimeMillis() - indexUpdatePeriod));
+		if (lastIndexing == null || lastIndexing.getTime() < ((System.currentTimeMillis() - indexUpdatePeriod))) {
+			return true;
+		}
+		if (indexFullUpdateCronExpression != null || indexFullUpdatePeriod > 0) {
+			// evaluate full update necessary condition here to start it if necessary (added during #55 implementation)
+			return projectIndexFullUpdateNecessary(projectKey);
+		}
+		return false;
 	}
 
 	/**
@@ -277,15 +291,26 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 	protected boolean projectIndexFullUpdateNecessary(String projectKey) throws Exception {
 		if (esIntegrationComponent.readDatetimeValue(projectKey, STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE) != null)
 			return true;
-		if (indexFullUpdatePeriod < 1) {
-			return false;
+		if (indexFullUpdateCronExpression != null) {
+			Date lastFullIndexing = esIntegrationComponent.readDatetimeValue(projectKey,
+					STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE);
+			if (lastFullIndexing == null) {
+				lastFullIndexing = new Date(0);
+			}
+			Date nextFullIndexing = indexFullUpdateCronExpression.getNextValidTimeAfter(lastFullIndexing);
+			return (nextFullIndexing != null && (nextFullIndexing.getTime() < System.currentTimeMillis()));
+		} else {
+
+			if (indexFullUpdatePeriod < 1) {
+				return false;
+			}
+			Date lastIndexing = esIntegrationComponent.readDatetimeValue(projectKey,
+					STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE);
+			if (logger.isDebugEnabled())
+				logger.debug("Project {} last full update date is {}. We perform next full indexing after {}ms.", projectKey,
+						lastIndexing, indexFullUpdatePeriod);
+			return lastIndexing == null || lastIndexing.getTime() < ((System.currentTimeMillis() - indexFullUpdatePeriod));
 		}
-		Date lastIndexing = esIntegrationComponent.readDatetimeValue(projectKey,
-				STORE_PROPERTYNAME_LAST_INDEX_FULL_UPDATE_DATE);
-		if (logger.isDebugEnabled())
-			logger.debug("Project {} last full update date is {}. We perform next full indexing after {}ms.", projectKey,
-					lastIndexing, indexFullUpdatePeriod);
-		return lastIndexing == null || lastIndexing.getTime() < ((System.currentTimeMillis() - indexFullUpdatePeriod));
 	}
 
 	@Override

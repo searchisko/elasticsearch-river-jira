@@ -2,6 +2,7 @@ package org.jboss.elasticsearch.river.jira;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -98,6 +99,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 	 * Config - index full update period [ms]
 	 */
 	protected long indexFullUpdatePeriod = -1;
+
+	/**
+	 * Config - cron expression to schedule automatic full update from remote system.
+	 */
+	protected CronExpression indexFullUpdateCronExpression;
 
 	/**
 	 * Config - name of ElasticSearch index used to store issues from this river
@@ -225,6 +231,14 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 			maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
 			indexUpdatePeriod = Utils.parseTimeValue(jiraSettings, "indexUpdatePeriod", 5, TimeUnit.MINUTES);
 			indexFullUpdatePeriod = Utils.parseTimeValue(jiraSettings, "indexFullUpdatePeriod", 12, TimeUnit.HOURS);
+			String ifuce = Utils.trimToNull((String) jiraSettings.get("indexFullUpdateCronExpression"));
+			if (ifuce != null) {
+				try {
+					this.indexFullUpdateCronExpression = new CronExpression(ifuce);
+				} catch (ParseException e) {
+					throw new SettingsException("Cron expression in indexFullUpdateCronExpression is invalid: " + e.getMessage());
+				}
+			}
 			if (jiraSettings.containsKey("projectKeysIndexed")) {
 				allIndexedProjectsKeys = Utils.parseCsvString(XContentMapValues.nodeStringValue(
 						jiraSettings.get("projectKeysIndexed"), null));
@@ -331,7 +345,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 		closed = false;
 		lastRestartDate = new Date();
 		coordinatorInstance = new JIRAProjectIndexerCoordinator(jiraClient, this, jiraIssueIndexStructureBuilder,
-				indexUpdatePeriod, maxIndexingThreads, indexFullUpdatePeriod);
+				indexUpdatePeriod, maxIndexingThreads, indexFullUpdatePeriod, indexFullUpdateCronExpression);
 		coordinatorThread = acquireIndexingThread("jira_river_coordinator", coordinatorInstance);
 		coordinatorThread.start();
 	}

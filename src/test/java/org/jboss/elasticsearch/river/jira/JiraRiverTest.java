@@ -76,6 +76,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
 		Assert.assertEquals(1, tested.maxIndexingThreads);
 		Assert.assertEquals(5 * 60 * 1000, tested.indexUpdatePeriod);
 		Assert.assertEquals(12 * 60 * 60 * 1000, tested.indexFullUpdatePeriod);
+		Assert.assertNull(tested.indexFullUpdateCronExpression);
 		Assert.assertEquals("my_jira_river", tested.indexName);
 		Assert.assertEquals(JiraRiver.INDEX_ISSUE_TYPE_NAME_DEFAULT, tested.typeName);
 		Assert.assertEquals(50, tested.jiraClient.getListJIRAIssuesMax());
@@ -92,6 +93,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
 		jiraSettings.put("maxIndexingThreads", "5");
 		jiraSettings.put("indexUpdatePeriod", "20m");
 		jiraSettings.put("indexFullUpdatePeriod", "5h");
+		jiraSettings.put("indexFullUpdateCronExpression", "* * 1 * * ?");
 		jiraSettings.put("maxIssuesPerRequest", 20);
 		jiraSettings.put("timeout", "5s");
 		jiraSettings.put("jqlTimeZone", "Europe/Prague");
@@ -104,6 +106,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
 		Assert.assertEquals(5, tested.maxIndexingThreads);
 		Assert.assertEquals(20 * 60 * 1000, tested.indexUpdatePeriod);
 		Assert.assertEquals(5 * 60 * 60 * 1000, tested.indexFullUpdatePeriod);
+		Assert.assertEquals("* * 1 * * ?", tested.indexFullUpdateCronExpression.toString());
 		Assert.assertEquals("my_index_name", tested.indexName);
 		Assert.assertEquals("type_test", tested.typeName);
 		Assert.assertEquals(20, tested.jiraClient.getListJIRAIssuesMax());
@@ -117,6 +120,18 @@ public class JiraRiverTest extends ESRealClientTestBase {
 				((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).issueTypeName);
 		Assert.assertEquals(tested.riverName().getName(),
 				((JIRA5RestIssueIndexStructureBuilder) tested.jiraIssueIndexStructureBuilder).riverName);
+
+		// case - invalid cron expression
+		try {
+			jiraSettings.put("indexFullUpdateCronExpression", "* * * * ? ?");
+			tested = prepareJiraRiverInstanceForTest("https://issues.jboss.org", jiraSettings, toplevelSettingsAdd, false);
+			Assert.fail("SettingsException expected");
+		} catch (SettingsException e) {
+			Assert
+					.assertEquals(
+							"Cron expression in indexFullUpdateCronExpression is invalid: '?' can only be specfied for Day-of-Month or Day-of-Week.",
+							e.getMessage());
+		}
 
 	}
 
