@@ -708,6 +708,54 @@ public class JiraRiverTest extends ESRealClientTestBase {
 	}
 
 	@Test
+	public void forceIncrementalReindex() throws Exception {
+
+		JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+		IJIRAProjectIndexerCoordinator coordinatorMock = mock(IJIRAProjectIndexerCoordinator.class);
+		tested.coordinatorInstance = coordinatorMock;
+
+		// case - all projects but no any exists
+		{
+			tested.allIndexedProjectsKeys = null;
+			Assert.assertEquals("", tested.forceIncrementalReindex(null));
+			Mockito.verifyNoMoreInteractions(coordinatorMock);
+		}
+
+		// case - all projects and some exists
+		{
+			reset(coordinatorMock);
+			tested.allIndexedProjectsKeys = new ArrayList<String>();
+			tested.allIndexedProjectsKeys.add("ORG");
+			tested.allIndexedProjectsKeys.add("AAA");
+			Assert.assertEquals("ORG,AAA", tested.forceIncrementalReindex(null));
+			verify(coordinatorMock).forceIncrementalReindex("ORG");
+			verify(coordinatorMock).forceIncrementalReindex("AAA");
+			Mockito.verifyNoMoreInteractions(coordinatorMock);
+		}
+
+		// case - one project not exists
+		{
+			reset(coordinatorMock);
+			Assert.assertNull(tested.forceIncrementalReindex("BBB"));
+			Mockito.verifyNoMoreInteractions(coordinatorMock);
+
+		}
+
+		// case - one project which exists
+		{
+			reset(coordinatorMock);
+			Assert.assertEquals("ORG", tested.forceIncrementalReindex("ORG"));
+			verify(coordinatorMock).forceIncrementalReindex("ORG");
+			Mockito.verifyNoMoreInteractions(coordinatorMock);
+
+			reset(coordinatorMock);
+			Assert.assertEquals("AAA", tested.forceIncrementalReindex("AAA"));
+			verify(coordinatorMock).forceIncrementalReindex("AAA");
+			Mockito.verifyNoMoreInteractions(coordinatorMock);
+		}
+	}
+
+	@Test
 	public void createLogger() throws Exception {
 
 		JiraRiver tested = prepareJiraRiverInstanceForTest(null);

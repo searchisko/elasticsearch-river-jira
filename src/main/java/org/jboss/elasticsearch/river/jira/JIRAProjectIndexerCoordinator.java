@@ -55,6 +55,14 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 	 */
 	protected static final String STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE = "forceIndexFullUpdateDate";
 
+	/**
+	 * Property value where "incfremental index force date" is stored for JIRA project
+	 * 
+	 * @see IESIntegration#storeDatetimeValue(String, String, Date, BulkRequestBuilder)
+	 * @see IESIntegration#readDatetimeValue(String, String)
+	 */
+	protected static final String STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE = "forceIndexIncrementalUpdateDate";
+
 	protected static final int COORDINATOR_THREAD_WAITS_QUICK = 2 * 1000;
 	protected static final int COORDINATOR_THREAD_WAITS_SLOW = 15 * 1000;
 	protected int coordinatorThreadWaits = COORDINATOR_THREAD_WAITS_QUICK;
@@ -149,7 +157,9 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 					if (esIntegrationComponent.isClosed())
 						return;
 					logger.debug("JIRA river coordinator task is going to sleep for {} ms", coordinatorThreadWaits);
-					Thread.sleep(coordinatorThreadWaits);
+					synchronized (this) {
+						wait(coordinatorThreadWaits);
+					}
 				} catch (InterruptedException e1) {
 					return;
 				}
@@ -264,7 +274,8 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 	 * @throws IOException
 	 */
 	protected boolean projectIndexUpdateNecessary(String projectKey) throws Exception {
-		if (esIntegrationComponent.readDatetimeValue(projectKey, STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE) != null)
+		if (esIntegrationComponent.readDatetimeValue(projectKey, STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE) != null
+				|| esIntegrationComponent.readDatetimeValue(projectKey, STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE) != null)
 			return true;
 
 		Date lastIndexing = esIntegrationComponent.readDatetimeValue(projectKey,
@@ -315,13 +326,29 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 	}
 
 	@Override
-	public void forceFullReindex(String projectKey) throws Exception {
+	public synchronized void forceFullReindex(String projectKey) throws Exception {
 		esIntegrationComponent.storeDatetimeValue(projectKey, STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE, new Date(),
 				null);
+		notify();
+	}
+
+	@Override
+	public synchronized void forceIncrementalReindex(String projectKey) throws Exception {
+		esIntegrationComponent.storeDatetimeValue(projectKey, STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE,
+				new Date(), null);
+		notify();
 	}
 
 	@Override
 	public void reportIndexingFinished(String jiraProjectKey, boolean finishedOK, boolean fullUpdate) {
+		try {
+			esIntegrationComponent
+					.deleteDatetimeValue(jiraProjectKey, STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE);
+		} catch (Exception e) {
+			logger.error("Can't store {} value due: {}", STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE,
+					e.getMessage());
+		}
+
 		synchronized (projectIndexerThreads) {
 			projectIndexerThreads.remove(jiraProjectKey);
 			projectIndexers.remove(jiraProjectKey);

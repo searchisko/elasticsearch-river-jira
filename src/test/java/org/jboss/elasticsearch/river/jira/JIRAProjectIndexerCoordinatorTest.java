@@ -65,6 +65,21 @@ public class JIRAProjectIndexerCoordinatorTest {
 			Assert.assertFalse(tested.projectIndexUpdateNecessary("ORG"));
 		}
 
+		// case - update necessary - date of last update stored and is newer than index update period, but incremental
+		// update is forced
+		{
+			reset(esIntegrationMock);
+			when(
+					esIntegrationMock.readDatetimeValue("ORG",
+							JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_LAST_INDEX_UPDATE_START_DATE)).thenReturn(
+					new Date(System.currentTimeMillis() - indexUpdatePeriod + 1000));
+			when(
+					esIntegrationMock.readDatetimeValue("ORG",
+							JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE)).thenReturn(
+					new Date(System.currentTimeMillis() - 1000));
+			Assert.assertTrue(tested.projectIndexUpdateNecessary("ORG"));
+		}
+
 		// case - update necessary - date of last update stored and is newer than index update period, but full reindex is
 		// forced
 		{
@@ -843,6 +858,32 @@ public class JIRAProjectIndexerCoordinatorTest {
 	}
 
 	@Test
+	public void forceFullReindex() throws Exception {
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
+		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 10, 2, -1,
+				null);
+		Mockito.verify(esIntegrationMock).createLogger(JIRAProjectIndexerCoordinator.class);
+
+		tested.forceFullReindex("AA");
+		verify(esIntegrationMock).storeDatetimeValue(Mockito.eq("AA"),
+				Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE),
+				(Date) Mockito.any(), (BulkRequestBuilder) Mockito.isNull());
+	}
+
+	@Test
+	public void forceIncrementalReindex() throws Exception {
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
+		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 10, 2, -1,
+				null);
+		Mockito.verify(esIntegrationMock).createLogger(JIRAProjectIndexerCoordinator.class);
+
+		tested.forceIncrementalReindex("AA");
+		verify(esIntegrationMock).storeDatetimeValue(Mockito.eq("AA"),
+				Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE),
+				(Date) Mockito.any(), (BulkRequestBuilder) Mockito.isNull());
+	}
+
+	@Test
 	public void reportIndexingFinished() throws Exception {
 		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 10, 2, -1,
@@ -864,6 +905,8 @@ public class JIRAProjectIndexerCoordinatorTest {
 			Assert.assertEquals(1, tested.projectIndexers.size());
 			Assert.assertFalse(tested.projectIndexers.containsKey("ORG"));
 			// no full reindex date stored
+			verify(esIntegrationMock).deleteDatetimeValue(Mockito.eq("ORG"),
+					Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE));
 			Mockito.verifyNoMoreInteractions(esIntegrationMock);
 		}
 
@@ -873,6 +916,8 @@ public class JIRAProjectIndexerCoordinatorTest {
 			Assert.assertEquals(0, tested.projectIndexerThreads.size());
 			Assert.assertEquals(0, tested.projectIndexers.size());
 			// no full reindex date stored
+			verify(esIntegrationMock).deleteDatetimeValue(Mockito.eq("AAA"),
+					Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE));
 			Mockito.verifyZeroInteractions(esIntegrationMock);
 		}
 
@@ -889,6 +934,8 @@ public class JIRAProjectIndexerCoordinatorTest {
 			verify(esIntegrationMock).deleteDatetimeValue(Mockito.eq("AAA"),
 					Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE));
 			Mockito.verify(esIntegrationMock, Mockito.times(3)).createLogger(JIRAProjectIndexer.class);
+			verify(esIntegrationMock, times(2)).deleteDatetimeValue(Mockito.eq("AAA"),
+					Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_INCREMENTAL_UPDATE_DATE));
 			Mockito.verifyNoMoreInteractions(esIntegrationMock);
 		}
 	}

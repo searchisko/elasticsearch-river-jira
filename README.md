@@ -320,6 +320,14 @@ Force full index update for jira project with key `projectKey`:
 
 	curl -XPOST localhost:9200/_river/my_jira_river/_mgm_jr/fullupdate/projectKey
 
+Force incremental index update for all jira projects:
+
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm_jr/incrementalupdate
+
+Force incremental index update for jira project with key `projectKey`:
+
+	curl -XPOST localhost:9200/_river/my_jira_river/_mgm_jr/incrementalupdate/projectKey
+
 List names of all JIRA Rivers running in ES cluster:
 
 	curl -XGET localhost:9200/_jira_river/list

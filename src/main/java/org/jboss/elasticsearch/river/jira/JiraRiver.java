@@ -451,15 +451,6 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 		return closed;
 	}
 
-	/**
-	 * Force full index update for some project(s) in this jira river. Used for REST management operations handling.
-	 * 
-	 * @param jiraProjectKey optional key of project to reindex, if null or empty then all projects are forced to full
-	 *          reindex
-	 * @return CSV list of projects forced to reindex. <code>null</code> if project passed over
-	 *         <code>jiraProjectKey</code> parameter was not found in this indexer
-	 * @throws Exception
-	 */
 	@Override
 	public String forceFullReindex(String jiraProjectKey) throws Exception {
 		if (coordinatorInstance == null)
@@ -478,6 +469,31 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 		} else {
 			if (pkeys != null && pkeys.contains(jiraProjectKey)) {
 				coordinatorInstance.forceFullReindex(jiraProjectKey);
+				return jiraProjectKey;
+			} else {
+				return null;
+			}
+		}
+	}
+
+	@Override
+	public String forceIncrementalReindex(String jiraProjectKey) throws Exception {
+		if (coordinatorInstance == null)
+			return null;
+		List<String> pkeys = getAllIndexedProjectsKeys();
+		if (Utils.isEmpty(jiraProjectKey)) {
+			if (pkeys != null) {
+				for (String k : pkeys) {
+					coordinatorInstance.forceIncrementalReindex(k);
+				}
+				return Utils.createCsvString(pkeys);
+			} else {
+				return "";
+			}
+
+		} else {
+			if (pkeys != null && pkeys.contains(jiraProjectKey)) {
+				coordinatorInstance.forceIncrementalReindex(jiraProjectKey);
 				return jiraProjectKey;
 			} else {
 				return null;
