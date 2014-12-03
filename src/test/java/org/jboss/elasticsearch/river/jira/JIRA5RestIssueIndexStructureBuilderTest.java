@@ -18,10 +18,12 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentGenerator;
+import org.elasticsearch.river.RiverName;
 import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
 import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
 import org.junit.Assert;
@@ -69,8 +71,11 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 	@Test
 	public void configuration_read_ok() {
 
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name",
+		IESIntegration esMock = mockEsIntegrationComponent();
+
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(esMock, "index_name",
 				"type_name", "http://issues-stg.jboss.org", loadTestSettings("/index_structure_configuration_test_ok.json"));
+		Mockito.verify(esMock).createLogger(JIRA5RestIssueIndexStructureBuilder.class);
 		Assert.assertEquals("river_name", tested.riverName);
 		Assert.assertEquals("index_name", tested.indexName);
 		Assert.assertEquals("type_name", tested.issueTypeName);
@@ -126,8 +131,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 	public void configuration_read_validation() {
 
 		try {
-			new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name", "http://issues-stg.jboss.org/",
-					loadTestSettings("/index_structure_configuration_test_err_nojirafield.json"));
+			new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(), "index_name", "type_name",
+					"http://issues-stg.jboss.org/", loadTestSettings("/index_structure_configuration_test_err_nojirafield.json"));
 			Assert.fail("SettingsException must be thrown");
 		} catch (SettingsException e) {
 			System.out.println(e.getMessage());
@@ -135,7 +140,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		}
 
 		try {
-			new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name", "http://issues-stg.jboss.org",
+			new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(), "index_name", "type_name",
+					"http://issues-stg.jboss.org",
 					loadTestSettings("/index_structure_configuration_test_err_emptyjirafield.json"));
 			Assert.fail("SettingsException must be thrown");
 		} catch (SettingsException e) {
@@ -144,7 +150,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		}
 
 		try {
-			new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name", "http://issues-stg.jboss.org/",
+			new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(), "index_name", "type_name",
+					"http://issues-stg.jboss.org/",
 					loadTestSettings("/index_structure_configuration_test_err_unknownvaluefilter.json"));
 			Assert.fail("SettingsException must be thrown");
 		} catch (SettingsException e) {
@@ -155,7 +162,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		}
 
 		try {
-			new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name", "http://issues-stg.jboss.org/",
+			new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(), "index_name", "type_name",
+					"http://issues-stg.jboss.org/",
 					loadTestSettings("/index_structure_configuration_test_err_nojirafieldcomment.json"));
 			Assert.fail("SettingsException must be thrown");
 		} catch (SettingsException e) {
@@ -169,18 +177,18 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 	@Test
 	public void configuration_defaultLoading() {
 
-		assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
-				"http://issues-stg.jboss.org", null));
+		assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"index_name", "type_name", "http://issues-stg.jboss.org", null));
 
 		Map<String, Object> settings = new HashMap<String, Object>();
-		assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
-				"http://issues-stg.jboss.org", settings));
+		assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"index_name", "type_name", "http://issues-stg.jboss.org", settings));
 
 		settings.put(JIRA5RestIssueIndexStructureBuilder.CONFIG_FIELDS, new HashMap());
 		settings.put(JIRA5RestIssueIndexStructureBuilder.CONFIG_FILTERS, new HashMap());
 		settings.put(JIRA5RestIssueIndexStructureBuilder.CONFIG_FIELDRIVERNAME, " ");
-		assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder("river_name", "index_name", "type_name",
-				"http://issues-stg.jboss.org/", settings));
+		assertDefaultConfigurationLoaded(new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"index_name", "type_name", "http://issues-stg.jboss.org/", settings));
 
 	}
 
@@ -243,8 +251,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void addIssueDataPreprocessor() {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
-				"http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				null, null, "http://issues-stg.jboss.org/", null);
 
 		// case - not NPE
 		tested.addIssueDataPreprocessor(null);
@@ -262,8 +270,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void preprocessIssueData() {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
-				"http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				null, null, "http://issues-stg.jboss.org/", null);
 
 		Map<String, Object> issue = null;
 		// case - no NPE and change when no preprocessors defined and issue data are null
@@ -316,8 +324,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void getRequiredJIRACallIssueFields() {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
-				"http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				null, null, "http://issues-stg.jboss.org/", null);
 		tested.commentIndexingMode = IssueCommentIndexingMode.NONE;
 		tested.changelogIndexingMode = IssueCommentIndexingMode.NONE;
 		tested.prepareJiraCallFieldSet();
@@ -407,8 +415,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 	@Test
 	public void buildSearchForIndexedDocumentsNotUpdatedAfter() throws IOException {
 
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
-				"issue_type", "http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"search_index", "issue_type", "http://issues-stg.jboss.org/", null);
 		tested.commentTypeName = "comment_type";
 		tested.changelogTypeName = "changelog_type";
 
@@ -490,8 +498,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void prepareIssueIndexedDocument() throws Exception {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
-				"issue_type", "http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"search_index", "issue_type", "http://issues-stg.jboss.org/", null);
 
 		// case - no comments nor changelogs
 		{
@@ -581,8 +589,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void prepareCommentIndexedDocument() throws Exception {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
-				"issue_type", "http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"search_index", "issue_type", "http://issues-stg.jboss.org/", null);
 		Map<String, Object> issue = TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501");
 		List<Map<String, Object>> comments = tested.extractIssueComments(issue);
 
@@ -597,8 +605,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void prepareChangelogIndexedDocument() throws Exception {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
-				"issue_type", "http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"search_index", "issue_type", "http://issues-stg.jboss.org/", null);
 		Map<String, Object> issue = TestUtils.readJiraJsonIssueDataFromClasspathFile("ORG-1501");
 		List<Map<String, Object>> changelogs = tested.extractIssueChangelogs(issue);
 
@@ -615,8 +623,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void prepareIssueDocumentId() {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
-				"issue_type", "http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"search_index", "issue_type", "http://issues-stg.jboss.org/", null);
 		tested.jiraFieldForIssueDocumentId = null;
 
 		Map<String, Object> issue = new HashMap<String, Object>();
@@ -643,8 +651,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 	@SuppressWarnings("unchecked")
 	@Test
 	public void indexIssue() throws Exception {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder("river_jira", "search_index",
-				"issue_type", "http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				"search_index", "issue_type", "http://issues-stg.jboss.org/", null);
 
 		Client client = Mockito.mock(Client.class);
 
@@ -724,8 +732,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void addValueToTheIndex() throws Exception {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
-				"http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				null, null, "http://issues-stg.jboss.org/", null);
 
 		XContentGenerator xContentGeneratorMock = mock(XContentGenerator.class);
 		XContentBuilder out = XContentBuilder.builder(preparexContentMock(xContentGeneratorMock));
@@ -838,8 +846,8 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void addValueToTheIndexField() throws Exception {
-		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(null, null, null,
-				"http://issues-stg.jboss.org/", null);
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				null, null, "http://issues-stg.jboss.org/", null);
 
 		XContentGenerator xContentGeneratorMock = mock(XContentGenerator.class);
 		XContentBuilder out = XContentBuilder.builder(preparexContentMock(xContentGeneratorMock));
@@ -863,23 +871,26 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 
 	@Test
 	public void getJiraCallFieldName() {
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName(null));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("  "));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("self"));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("key"));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields"));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields."));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields.  "));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields.."));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields..."));
-		Assert.assertNull(JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields..something"));
+		JIRA5RestIssueIndexStructureBuilder tested = new JIRA5RestIssueIndexStructureBuilder(mockEsIntegrationComponent(),
+				null, null, "http://issues-stg.jboss.org/", null);
 
-		Assert.assertEquals("summary", JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields.summary"));
-		Assert.assertEquals("summary", JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields.summary."));
-		Assert.assertEquals("summary", JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName("fields.summary.name"));
-		Assert.assertEquals("summary", JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName(" fields.summary "));
-		Assert.assertEquals("summary", JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName(" fields.summary. "));
-		Assert.assertEquals("summary", JIRA5RestIssueIndexStructureBuilder.getJiraCallFieldName(" fields.summary.name "));
+		Assert.assertNull(tested.getJiraCallFieldName(null));
+		Assert.assertNull(tested.getJiraCallFieldName("  "));
+		Assert.assertNull(tested.getJiraCallFieldName("self"));
+		Assert.assertNull(tested.getJiraCallFieldName("key"));
+		Assert.assertNull(tested.getJiraCallFieldName("fields"));
+		Assert.assertNull(tested.getJiraCallFieldName("fields."));
+		Assert.assertNull(tested.getJiraCallFieldName("fields.  "));
+		Assert.assertNull(tested.getJiraCallFieldName("fields.."));
+		Assert.assertNull(tested.getJiraCallFieldName("fields..."));
+		Assert.assertNull(tested.getJiraCallFieldName("fields..something"));
+
+		Assert.assertEquals("summary", tested.getJiraCallFieldName("fields.summary"));
+		Assert.assertEquals("summary", tested.getJiraCallFieldName("fields.summary."));
+		Assert.assertEquals("summary", tested.getJiraCallFieldName("fields.summary.name"));
+		Assert.assertEquals("summary", tested.getJiraCallFieldName(" fields.summary "));
+		Assert.assertEquals("summary", tested.getJiraCallFieldName(" fields.summary. "));
+		Assert.assertEquals("summary", tested.getJiraCallFieldName(" fields.summary.name "));
 	}
 
 	/**
@@ -894,4 +905,14 @@ public class JIRA5RestIssueIndexStructureBuilderTest {
 		when(xContentMock.createGenerator(Mockito.any(OutputStream.class))).thenReturn(xContentGeneratorMock);
 		return xContentMock;
 	}
+
+	protected IESIntegration mockEsIntegrationComponent() {
+		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		Mockito.when(esIntegrationMock.createLogger(Mockito.any(Class.class))).thenReturn(
+				ESLoggerFactory.getLogger(JIRAProjectIndexerCoordinator.class.getName()));
+		RiverName riverName = new RiverName("jira", "river_name");
+		Mockito.when(esIntegrationMock.riverName()).thenReturn(riverName);
+		return esIntegrationMock;
+	}
+
 }

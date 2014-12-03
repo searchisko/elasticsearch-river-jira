@@ -13,13 +13,17 @@ import java.util.Map;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.river.RiverName;
 import org.elasticsearch.river.RiverSettings;
 import org.jboss.elasticsearch.river.jira.DateTimeUtils;
+import org.jboss.elasticsearch.river.jira.IESIntegration;
 import org.jboss.elasticsearch.river.jira.JIRA5RestIssueIndexStructureBuilder;
+import org.jboss.elasticsearch.river.jira.JIRAProjectIndexerCoordinator;
 import org.jboss.elasticsearch.river.jira.JiraRiver;
+import org.mockito.Mockito;
 
 import static org.mockito.Mockito.mock;
 
@@ -45,8 +49,8 @@ public abstract class ElasticSearchIntegrationTest {
 			RiverSettings rs = new RiverSettings(gs, settings);
 
 			JiraRiver jr = new JiraRiver(new RiverName("rt", "my_jira_river"), rs, client);
-			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder("my_jira_river",
-					"my_jira_index", "jira_issue", "http://issues-stg.jboss.org", null);
+			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(
+					mockEsIntegrationComponent(), "my_jira_index", "jira_issue", "http://issues-stg.jboss.org", null);
 
 			String project = "ORG";
 			// Date date = new Date();
@@ -67,6 +71,15 @@ public abstract class ElasticSearchIntegrationTest {
 		} finally {
 			client.close();
 		}
+	}
+
+	protected static IESIntegration mockEsIntegrationComponent() {
+		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		Mockito.when(esIntegrationMock.createLogger(Mockito.any(Class.class))).thenReturn(
+				ESLoggerFactory.getLogger(JIRAProjectIndexerCoordinator.class.getName()));
+		RiverName riverName = new RiverName("jira", "river_name");
+		Mockito.when(esIntegrationMock.riverName()).thenReturn(riverName);
+		return esIntegrationMock;
 	}
 
 }

@@ -23,6 +23,7 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.node.DiscoveryNode;
+import org.elasticsearch.common.logging.ESLogger;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.transport.DummyTransportAddress;
@@ -49,6 +50,8 @@ import static org.mockito.Mockito.when;
  * @author Vlastimil Elias (velias at redhat dot com)
  */
 public class JiraRiverTest extends ESRealClientTestBase {
+
+	private static final String RIVER_NAME = "my_jira_river";
 
 	@Test
 	public void constructor_config() throws Exception {
@@ -704,6 +707,27 @@ public class JiraRiverTest extends ESRealClientTestBase {
 		}
 	}
 
+	@Test
+	public void createLogger() throws Exception {
+
+		JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+
+		ESLogger logger = tested.createLogger(JIRAProjectIndexerCoordinator.class);
+		Assert.assertNotNull(logger);
+		Assert.assertEquals("org.elasticsearch.org.jboss.elasticsearch.river.jira.JIRAProjectIndexerCoordinator",
+				logger.getName());
+		Assert.assertEquals(" [jira][" + RIVER_NAME + "] ", logger.getPrefix());
+	}
+
+	@Test
+	public void riverName() throws Exception {
+		JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+
+		RiverName rn = tested.riverName();
+		Assert.assertEquals(RIVER_NAME, rn.getName());
+		Assert.assertEquals("jira", rn.getType());
+	}
+
 	/**
 	 * Prepare {@link JiraRiver} instance for unit test, with Mockito moceked jiraClient and elasticSearchClient.
 	 * 
@@ -742,7 +766,7 @@ public class JiraRiverTest extends ESRealClientTestBase {
 		Settings gs = mock(Settings.class);
 		RiverSettings rs = new RiverSettings(gs, settings);
 		Client clientMock = mock(Client.class);
-		JiraRiver tested = new JiraRiver(new RiverName("jira", "my_jira_river"), rs, clientMock);
+		JiraRiver tested = new JiraRiver(new RiverName("jira", RIVER_NAME), rs, clientMock);
 		if (jiraClientMock) {
 			IJIRAClient jClientMock = mock(IJIRAClient.class);
 			tested.jiraClient = jClientMock;

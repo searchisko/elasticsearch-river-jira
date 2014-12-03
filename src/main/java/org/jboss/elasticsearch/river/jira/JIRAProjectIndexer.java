@@ -24,7 +24,7 @@ import org.elasticsearch.search.SearchHit;
  */
 public class JIRAProjectIndexer implements Runnable {
 
-	private static final ESLogger logger = Loggers.getLogger(JIRAProjectIndexer.class);
+	private ESLogger logger = Loggers.getLogger(JIRAProjectIndexer.class);
 
 	/**
 	 * Property value where "last indexed issue update date" is stored
@@ -71,6 +71,7 @@ public class JIRAProjectIndexer implements Runnable {
 			IESIntegration esIntegrationComponent, IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder) {
 		if (projectKey == null || projectKey.trim().length() == 0)
 			throw new IllegalArgumentException("projectKey must be defined");
+		logger = esIntegrationComponent.createLogger(getClass());
 		this.jiraClient = jiraClient;
 		this.projectKey = projectKey;
 		this.esIntegrationComponent = esIntegrationComponent;

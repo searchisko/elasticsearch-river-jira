@@ -5,10 +5,6 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
-import static org.elasticsearch.client.Requests.deleteRequest;
-import static org.elasticsearch.client.Requests.indexRequest;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -30,6 +26,10 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
 
+import static org.elasticsearch.client.Requests.deleteRequest;
+import static org.elasticsearch.client.Requests.indexRequest;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+
 /**
  * JIRA 5 REST API implementation of component responsible to transform issue data obtained from JIRA instance call to
  * the document stored in ElasticSearch index. Intended to cooperate with {@link JIRA5RestClient}.
@@ -43,7 +43,7 @@ import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
  */
 public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStructureBuilder {
 
-	private static final ESLogger logger = Loggers.getLogger(JIRA5RestIssueIndexStructureBuilder.class);
+	private ESLogger logger = Loggers.getLogger(JIRA5RestIssueIndexStructureBuilder.class);
 
 	/**
 	 * JIRA REST response field constant - issue key
@@ -233,10 +233,11 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 	 * @throws SettingsException
 	 */
 	@SuppressWarnings("unchecked")
-	public JIRA5RestIssueIndexStructureBuilder(String riverName, String indexName, String issueTypeName,
+	public JIRA5RestIssueIndexStructureBuilder(IESIntegration esIntegration, String indexName, String issueTypeName,
 			String jiraUrlBase, Map<String, Object> settings) throws SettingsException {
 		super();
-		this.riverName = riverName;
+		logger = esIntegration.createLogger(getClass());
+		this.riverName = esIntegration.riverName().getName();
 		this.indexName = indexName;
 		this.issueTypeName = issueTypeName;
 
@@ -721,7 +722,7 @@ public class JIRA5RestIssueIndexStructureBuilder implements IJIRAIssueIndexStruc
 	 * @return call field name or null
 	 * @see #getRequiredJIRACallIssueFields()
 	 */
-	protected static String getJiraCallFieldName(String fullJiraFieldName) {
+	protected String getJiraCallFieldName(String fullJiraFieldName) {
 		if (Utils.isEmpty(fullJiraFieldName)) {
 			return null;
 		}

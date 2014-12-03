@@ -13,8 +13,11 @@ import java.util.TimeZone;
 import junit.framework.Assert;
 
 import org.apache.http.NameValuePair;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.SettingsException;
+import org.elasticsearch.river.RiverName;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -51,7 +54,8 @@ public class JIRA5RestClientTest {
 
 		String username = null;
 		String pwd = null;
-		IJIRAClient tested = new JIRA5RestClient("https://issues.jboss.org", username, pwd, 50000, null);
+		IJIRAClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), "https://issues.jboss.org", username, pwd,
+				50000, null);
 
 		// List<String> projects = tested.getAllJIRAProjects();
 		// System.out.println(projects);
@@ -65,42 +69,44 @@ public class JIRA5RestClientTest {
 	@Test
 	public void constructor() {
 		try {
-			new JIRA5RestClient(null, null, null, 5000, null);
+			new JIRA5RestClient(mockEsIntegrationComponent(), null, null, null, 5000, null);
 			Assert.fail("SettingsException not thrown");
 		} catch (SettingsException e) {
 			// OK
 		}
 		try {
-			new JIRA5RestClient("  ", null, null, 5000, null);
+			new JIRA5RestClient(mockEsIntegrationComponent(), "  ", null, null, 5000, null);
 			Assert.fail("SettingsException not thrown");
 		} catch (SettingsException e) {
 			// OK
 		}
 		try {
-			new JIRA5RestClient("nonsenseUrl", null, null, 5000, null);
+			new JIRA5RestClient(mockEsIntegrationComponent(), "nonsenseUrl", null, null, 5000, null);
 			Assert.fail("SettingsException not thrown");
 		} catch (SettingsException e) {
 			// OK
 		}
 
-		JIRA5RestClient tested = new JIRA5RestClient("http://issues.jboss.org", null, null, 5000, null);
+		IESIntegration esMock = mockEsIntegrationComponent();
+		JIRA5RestClient tested = new JIRA5RestClient(esMock, "http://issues.jboss.org", null, null, 5000, null);
+		Mockito.verify(esMock).createLogger(JIRA5RestClient.class);
 		Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL("http://issues.jboss.org", null),
 				tested.jiraRestAPIUrlBase);
-		tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, "latest");
+		tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, "latest");
 		Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL(TEST_JIRA_URL, "latest"), tested.jiraRestAPIUrlBase);
 		Assert.assertFalse(tested.isAuthConfigured);
 
-		tested = new JIRA5RestClient(TEST_JIRA_URL, "", "pwd", 5000, null);
+		tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, "", "pwd", 5000, null);
 		Assert.assertFalse(tested.isAuthConfigured);
 
-		tested = new JIRA5RestClient(TEST_JIRA_URL, "uname", "pwd", 5000, null);
+		tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, "uname", "pwd", 5000, null);
 		Assert.assertTrue(tested.isAuthConfigured);
 	}
 
 	@Test
 	public void getAllJIRAProjects() throws Exception {
 
-		IJIRAClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null) {
+		IJIRAClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, null) {
 			@Override
 			protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
 				Assert.assertEquals("project", restOperation);
@@ -122,7 +128,7 @@ public class JIRA5RestClientTest {
 		final Date ua = new Date();
 		final Date ub = new Date();
 
-		IJIRAClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null) {
+		IJIRAClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, null) {
 			@Override
 			protected byte[] performJIRAChangedIssuesREST(String projectKey, int startAt, Date updatedAfter,
 					Date updatedBefore) throws Exception {
@@ -148,7 +154,7 @@ public class JIRA5RestClientTest {
 		final Date ua = new Date();
 		final Date ub = new Date();
 
-		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null) {
+		JIRA5RestClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, null) {
 			@Override
 			protected byte[] performJIRAGetRESTCall(String restOperation, List<NameValuePair> params) throws Exception {
 				Assert.assertEquals("search", restOperation);
@@ -245,7 +251,7 @@ public class JIRA5RestClientTest {
 
 	@Test
 	public void formatJQLDate() throws Exception {
-		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null);
+		JIRA5RestClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, null);
 		Assert.assertNull(tested.formatJQLDate(null));
 
 		Date date1 = JQL_TEST_DATE_FORMAT.parse("2012-08-10 10:52");
@@ -262,7 +268,7 @@ public class JIRA5RestClientTest {
 
 	@Test
 	public void prepareJIRAChangedIssuesJQL() throws Exception {
-		JIRA5RestClient tested = new JIRA5RestClient(TEST_JIRA_URL, null, null, 5000, null);
+		JIRA5RestClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, null);
 		tested.setJQLDateFormatTimezone(JQL_TEST_TIMEZONE);
 		try {
 			tested.prepareJIRAChangedIssuesJQL(null, null, null);
@@ -287,5 +293,14 @@ public class JIRA5RestClientTest {
 						tested.prepareJIRAChangedIssuesJQL("ORG", JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52"),
 								JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:55")));
 
+	}
+
+	protected static IESIntegration mockEsIntegrationComponent() {
+		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		Mockito.when(esIntegrationMock.createLogger(Mockito.any(Class.class))).thenReturn(
+				ESLoggerFactory.getLogger(JIRAProjectIndexerCoordinator.class.getName()));
+		RiverName riverName = new RiverName("jira", "my_river");
+		Mockito.when(esIntegrationMock.riverName()).thenReturn(riverName);
+		return esIntegrationMock;
 	}
 }

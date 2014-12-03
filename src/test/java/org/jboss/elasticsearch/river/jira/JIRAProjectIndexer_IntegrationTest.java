@@ -5,9 +5,6 @@
  */
 package org.jboss.elasticsearch.river.jira;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +18,7 @@ import junit.framework.Assert;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
@@ -32,6 +30,9 @@ import org.jboss.elasticsearch.river.jira.testtools.ESRealClientTestBase;
 import org.jboss.elasticsearch.river.jira.testtools.TestUtils;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * jUnit test for {@link JIRAProjectIndexer} which tests search index update processes against embedded inmemory elastic
@@ -62,8 +63,8 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 			jiraRiverMock.activityLogIndexName = CFG_INDEX_NAME_ACTIVITY;
 			jiraRiverMock.activityLogTypeName = CFG_TYPE_ACTIVITY;
 
-			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
-					CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(
+					mockEsIntegrationComponent(), CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
 			structureBuilder.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
 			structureBuilder.changelogIndexingMode = IssueCommentIndexingMode.EMBEDDED;
 			initIndexStructures(client, structureBuilder.commentIndexingMode, structureBuilder.changelogIndexingMode);
@@ -134,8 +135,8 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 			JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
 			IJIRAClient jClientMock = jiraRiverMock.jiraClient;
 
-			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
-					CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(
+					mockEsIntegrationComponent(), CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
 			structureBuilder.commentIndexingMode = IssueCommentIndexingMode.CHILD;
 			initIndexStructures(client, structureBuilder.commentIndexingMode, structureBuilder.changelogIndexingMode);
 
@@ -213,8 +214,8 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 			JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
 			IJIRAClient jClientMock = jiraRiverMock.jiraClient;
 
-			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
-					CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(
+					mockEsIntegrationComponent(), CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
 			structureBuilder.commentIndexingMode = IssueCommentIndexingMode.CHILD;
 			structureBuilder.changelogIndexingMode = IssueCommentIndexingMode.CHILD;
 			initIndexStructures(client, structureBuilder.commentIndexingMode, structureBuilder.changelogIndexingMode);
@@ -297,8 +298,8 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 			JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
 			IJIRAClient jClientMock = jiraRiverMock.jiraClient;
 
-			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
-					CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(
+					mockEsIntegrationComponent(), CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
 			structureBuilder.commentIndexingMode = IssueCommentIndexingMode.EMBEDDED;
 			structureBuilder.changelogIndexingMode = IssueCommentIndexingMode.EMBEDDED;
 			initIndexStructures(client, structureBuilder.commentIndexingMode, structureBuilder.changelogIndexingMode);
@@ -365,8 +366,8 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 			JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
 			IJIRAClient jClientMock = jiraRiverMock.jiraClient;
 
-			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
-					CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(
+					mockEsIntegrationComponent(), CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
 			structureBuilder.commentIndexingMode = IssueCommentIndexingMode.CHILD;
 			structureBuilder.changelogIndexingMode = IssueCommentIndexingMode.CHILD;
 			initIndexStructures(client, structureBuilder.commentIndexingMode, structureBuilder.changelogIndexingMode);
@@ -446,8 +447,8 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 			JiraRiver jiraRiverMock = initJiraRiverInstanceForTest(client);
 			IJIRAClient jClientMock = jiraRiverMock.jiraClient;
 
-			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(CFG_RIVER_NAME,
-					CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
+			JIRA5RestIssueIndexStructureBuilder structureBuilder = new JIRA5RestIssueIndexStructureBuilder(
+					mockEsIntegrationComponent(), CFG_INDEX_NAME, CFG_TYPE_ISSUE, "http://issues.jboss.org", null);
 			structureBuilder.commentIndexingMode = IssueCommentIndexingMode.STANDALONE;
 			initIndexStructures(client, structureBuilder.commentIndexingMode, structureBuilder.changelogIndexingMode);
 			initDocumentsForProjectAAA(jiraRiverMock, structureBuilder);
@@ -688,6 +689,15 @@ public class JIRAProjectIndexer_IntegrationTest extends ESRealClientTestBase {
 		when(jiraClientMock.getJIRAChangedIssues("AAA", 0, null, null)).thenReturn(changedIssues);
 		tested.run();
 		jiraRiverMock.refreshSearchIndex(CFG_INDEX_NAME);
+	}
+
+	protected IESIntegration mockEsIntegrationComponent() {
+		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		Mockito.when(esIntegrationMock.createLogger(Mockito.any(Class.class))).thenReturn(
+				ESLoggerFactory.getLogger(JIRAProjectIndexerCoordinator.class.getName()));
+		RiverName riverName = new RiverName("jira", CFG_RIVER_NAME);
+		Mockito.when(esIntegrationMock.riverName()).thenReturn(riverName);
+		return esIntegrationMock;
 	}
 
 }

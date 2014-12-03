@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.jboss.elasticsearch.river.jira.testtools.MockThread;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,7 +33,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 	public void projectIndexUpdateNecessary() throws Exception {
 		int indexUpdatePeriod = 60 * 1000;
 
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null,
 				indexUpdatePeriod, 2, -1, null);
 
@@ -113,7 +114,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 	public void projectIndexFullUpdateNecessary() throws Exception {
 		int indexFullUpdatePeriod = 60 * 1000;
 
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 1000, 2,
 				-1, null);
 		tested.setIndexFullUpdatePeriod(0);
@@ -331,7 +332,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 	@Test
 	public void fillProjectKeysToIndexQueue() throws Exception {
 		int indexUpdatePeriod = 60 * 1000;
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null,
 				indexUpdatePeriod, 2, -1, null);
 		Assert.assertTrue(tested.projectKeysToIndexQueue.isEmpty());
@@ -386,7 +387,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 		// case - some project available for index update, but in processing already, so do not schedule it for processing
 		// now
 		{
-			reset(esIntegrationMock);
+			esIntegrationMock = mockEsIntegrationComponent();
 			tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, indexUpdatePeriod, 2, -1, null);
 			tested.projectIndexerThreads.put("ORG", new Thread());
 			when(
@@ -406,7 +407,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 
 		// case - some project available for index update, but in queue already, so do not schedule it for processing now
 		{
-			reset(esIntegrationMock);
+			esIntegrationMock = mockEsIntegrationComponent();
 			tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, indexUpdatePeriod, 2, -1, null);
 			tested.projectKeysToIndexQueue.add("ORG");
 			when(
@@ -575,7 +576,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 	@Test
 	public void startIndexers_reserveIndexingThreadSlotForIncremental() throws Exception {
 
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 100000, 2,
 				-1, null);
 		Assert.assertTrue(tested.projectKeysToIndexQueue.isEmpty());
@@ -700,11 +701,12 @@ public class JIRAProjectIndexerCoordinatorTest {
 
 	@Test
 	public void run() throws Exception {
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 100000, 2,
 				-1, null);
 		when(esIntegrationMock.acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class))).thenReturn(
 				new MockThread());
+		Mockito.verify(esIntegrationMock).createLogger(JIRAProjectIndexerCoordinator.class);
 
 		// case - close flag is set, so interrupt all indexers and free them
 		{
@@ -752,11 +754,12 @@ public class JIRAProjectIndexerCoordinatorTest {
 
 	@Test
 	public void processLoopTask() throws Exception {
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 100000, 2,
 				-1, null);
 		when(esIntegrationMock.acquireIndexingThread(Mockito.any(String.class), Mockito.any(Runnable.class))).thenReturn(
 				new MockThread());
+		Mockito.verify(esIntegrationMock).createLogger(JIRAProjectIndexerCoordinator.class);
 
 		// case - projectKeysToIndexQueue is empty so call fillProjectKeysToIndexQueue() and then call startIndexers()
 		{
@@ -841,13 +844,17 @@ public class JIRAProjectIndexerCoordinatorTest {
 
 	@Test
 	public void reportIndexingFinished() throws Exception {
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 10, 2, -1,
 				null);
+		Mockito.verify(esIntegrationMock).createLogger(JIRAProjectIndexerCoordinator.class);
+
 		tested.projectIndexerThreads.put("ORG", new Thread());
 		tested.projectIndexerThreads.put("AAA", new Thread());
 		tested.projectIndexers.put("ORG", new JIRAProjectIndexer("ORG", false, null, esIntegrationMock, null));
 		tested.projectIndexers.put("AAA", new JIRAProjectIndexer("AAA", false, null, esIntegrationMock, null));
+
+		Mockito.verify(esIntegrationMock, Mockito.times(2)).createLogger(JIRAProjectIndexer.class);
 
 		// case - incremental indexing with success
 		{
@@ -857,7 +864,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 			Assert.assertEquals(1, tested.projectIndexers.size());
 			Assert.assertFalse(tested.projectIndexers.containsKey("ORG"));
 			// no full reindex date stored
-			Mockito.verifyZeroInteractions(esIntegrationMock);
+			Mockito.verifyNoMoreInteractions(esIntegrationMock);
 		}
 
 		// case - full indexing without success
@@ -881,6 +888,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 					(Date) Mockito.any(), (BulkRequestBuilder) Mockito.isNull());
 			verify(esIntegrationMock).deleteDatetimeValue(Mockito.eq("AAA"),
 					Mockito.eq(JIRAProjectIndexerCoordinator.STORE_PROPERTYNAME_FORCE_INDEX_FULL_UPDATE_DATE));
+			Mockito.verify(esIntegrationMock, Mockito.times(3)).createLogger(JIRAProjectIndexer.class);
 			Mockito.verifyNoMoreInteractions(esIntegrationMock);
 		}
 	}
@@ -888,7 +896,7 @@ public class JIRAProjectIndexerCoordinatorTest {
 	@Test
 	public void getCurrentProjectIndexingInfo() {
 
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		JIRAProjectIndexerCoordinator tested = new JIRAProjectIndexerCoordinator(null, esIntegrationMock, null, 10, 2, -1,
 				null);
 
@@ -907,6 +915,13 @@ public class JIRAProjectIndexerCoordinatorTest {
 			Assert.assertEquals("II", l.get(0).projectKey);
 			Assert.assertEquals("III", l.get(1).projectKey);
 		}
+	}
+
+	protected IESIntegration mockEsIntegrationComponent() {
+		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		Mockito.when(esIntegrationMock.createLogger(Mockito.any(Class.class))).thenReturn(
+				ESLoggerFactory.getLogger(JIRAProjectIndexerCoordinator.class.getName()));
+		return esIntegrationMock;
 	}
 
 }

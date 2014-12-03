@@ -52,7 +52,7 @@ import org.elasticsearch.common.xcontent.XContentType;
  */
 public class JIRA5RestClient implements IJIRAClient {
 
-	private static final ESLogger logger = Loggers.getLogger(JIRA5RestClient.class);
+	private ESLogger logger = Loggers.getLogger(JIRA5RestClient.class);
 
 	private CloseableHttpClient httpclient;
 
@@ -73,8 +73,9 @@ public class JIRA5RestClient implements IJIRAClient {
 	 * @param timeout JIRA http/s connection timeout in milliseconds
 	 * @param restApiVersion version of REST API to use, default is 2
 	 */
-	public JIRA5RestClient(String jiraUrlBase, String jiraUsername, String jiraPassword, Integer timeout,
-			String restApiVersion) {
+	public JIRA5RestClient(IESIntegration esIntegration, String jiraUrlBase, String jiraUsername, String jiraPassword,
+			Integer timeout, String restApiVersion) {
+		logger = esIntegration.createLogger(getClass());
 
 		jiraRestAPIUrlBase = prepareAPIURLFromBaseURL(jiraUrlBase, restApiVersion);
 		if (jiraRestAPIUrlBase == null) {

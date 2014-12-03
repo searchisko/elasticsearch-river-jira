@@ -23,6 +23,8 @@ import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.inject.Inject;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.SettingsException;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.util.concurrent.EsExecutors;
@@ -219,9 +221,9 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 			}
 			Integer timeout = new Long(Utils.parseTimeValue(jiraSettings, "timeout", 5, TimeUnit.SECONDS)).intValue();
 			jiraUser = XContentMapValues.nodeStringValue(jiraSettings.get("username"), "Anonymous access");
-			jiraClient = new JIRA5RestClient(jiraUrlBase, XContentMapValues.nodeStringValue(jiraSettings.get("username"),
-					null), XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null), timeout,
-					XContentMapValues.nodeStringValue(jiraSettings.get("restApiVersion"), null));
+			jiraClient = new JIRA5RestClient(this, jiraUrlBase, XContentMapValues.nodeStringValue(
+					jiraSettings.get("username"), null), XContentMapValues.nodeStringValue(jiraSettings.get("pwd"), null),
+					timeout, XContentMapValues.nodeStringValue(jiraSettings.get("restApiVersion"), null));
 			jiraClient.setListJIRAIssuesMax(XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIssuesPerRequest"), 50));
 			if (jiraSettings.get("jqlTimeZone") != null) {
 				TimeZone tz = TimeZone.getTimeZone(XContentMapValues.nodeStringValue(jiraSettings.get("jqlTimeZone"), null));
@@ -278,8 +280,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 					INDEX_ACTIVITY_TYPE_NAME_DEFAULT));
 		}
 
-		jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(riverName.getName(), indexName, typeName,
-				jiraUrlBase, indexSettings);
+		jiraIssueIndexStructureBuilder = new JIRA5RestIssueIndexStructureBuilder(this, indexName, typeName, jiraUrlBase,
+				indexSettings);
 		preparePreprocessors(indexSettings, jiraIssueIndexStructureBuilder);
 
 		jiraClient.setIndexStructureBuilder(jiraIssueIndexStructureBuilder);
@@ -815,6 +817,11 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 	public SearchResponse executeESScrollSearchNextRequest(SearchResponse scrollResp) {
 		return client.prepareSearchScroll(scrollResp.getScrollId()).setScroll(new TimeValue(ES_SCROLL_KEEPALIVE)).execute()
 				.actionGet();
+	}
+
+	@Override
+	public ESLogger createLogger(Class<?> clazz) {
+		return Loggers.getLogger(clazz, settings.globalSettings(), riverName);
 	}
 
 }

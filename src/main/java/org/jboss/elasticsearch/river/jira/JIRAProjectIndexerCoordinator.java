@@ -26,7 +26,7 @@ import org.elasticsearch.common.logging.Loggers;
  */
 public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordinator {
 
-	private static final ESLogger logger = Loggers.getLogger(JIRAProjectIndexerCoordinator.class);
+	private ESLogger logger = Loggers.getLogger(JIRAProjectIndexerCoordinator.class);
 
 	/**
 	 * Property value where "last index update start date" is stored for JIRA project
@@ -118,6 +118,7 @@ public class JIRAProjectIndexerCoordinator implements IJIRAProjectIndexerCoordin
 			IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilder, long indexUpdatePeriod, int maxIndexingThreads,
 			long indexFullUpdatePeriod, CronExpression indexFullUpdateCronExpression) {
 		super();
+		logger = esIntegrationComponent.createLogger(JIRAProjectIndexerCoordinator.class);
 		this.jiraClient = jiraClient;
 		this.esIntegrationComponent = esIntegrationComponent;
 		this.indexUpdatePeriod = indexUpdatePeriod;

@@ -18,6 +18,7 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.joda.time.format.ISODateTimeFormat;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.text.StringText;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.internal.InternalSearchHit;
@@ -52,8 +53,9 @@ public class JIRAProjectIndexerTest {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		IJIRAClient jiraClient = new JIRA5RestClient("https://issues.jboss.org", null, null, 7000, null);
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
+
+		IJIRAClient jiraClient = new JIRA5RestClient(esIntegrationMock, "https://issues.jboss.org", null, null, 7000, null);
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClient, esIntegrationMock,
@@ -63,14 +65,17 @@ public class JIRAProjectIndexerTest {
 
 	@Test
 	public void constructor() {
-		IJIRAClient jiraClient = new JIRA5RestClient("https://issues.jboss.org", null, null, 7000, null);
+		IESIntegration esMock = mockEsIntegrationComponent();
+
+		IJIRAClient jiraClient = new JIRA5RestClient(esMock, "https://issues.jboss.org", null, null, 7000, null);
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
-		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", true, jiraClient, null,
+		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", true, jiraClient, esMock,
 				jiraIssueIndexStructureBuilderMock);
 		Assert.assertEquals("ORG", tested.projectKey);
 		Assert.assertTrue(tested.indexingInfo.fullUpdate);
 		Assert.assertEquals(jiraClient, tested.jiraClient);
 		Assert.assertEquals(jiraIssueIndexStructureBuilderMock, tested.jiraIssueIndexStructureBuilder);
+		Mockito.verify(esMock).createLogger(JIRAProjectIndexer.class);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -78,7 +83,7 @@ public class JIRAProjectIndexerTest {
 	public void processUpdate_Basic() throws Exception {
 
 		IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
@@ -155,7 +160,7 @@ public class JIRAProjectIndexerTest {
 	public void processUpdate_NoLastIsuueIndexedAgain() throws Exception {
 
 		IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
@@ -207,7 +212,7 @@ public class JIRAProjectIndexerTest {
 
 		// test case with more than one "page" of results from JIRA search method with different updated dates
 		IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
@@ -278,7 +283,7 @@ public class JIRAProjectIndexerTest {
 		// test case with more than one "page" of results from JIRA search method with same updated dates so pagination in
 		// JIRA is used. "same updated dates" means on minute precise basis due JQL limitations!!!
 		IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
@@ -334,7 +339,7 @@ public class JIRAProjectIndexerTest {
 	@Test
 	public void run() throws Exception {
 		IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", false, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
@@ -384,7 +389,7 @@ public class JIRAProjectIndexerTest {
 
 		// case - run issues delete on full update!!!
 		{
-			reset(esIntegrationMock);
+			esIntegrationMock = mockEsIntegrationComponent();
 			reset(jiraClientMock);
 
 			tested = new JIRAProjectIndexer("ORG", true, jiraClientMock, esIntegrationMock,
@@ -447,11 +452,13 @@ public class JIRAProjectIndexerTest {
 	@Test
 	public void processDelete() throws Exception {
 		IJIRAClient jiraClientMock = mock(IJIRAClient.class);
-		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		IESIntegration esIntegrationMock = mockEsIntegrationComponent();
 		IJIRAIssueIndexStructureBuilder jiraIssueIndexStructureBuilderMock = mock(IJIRAIssueIndexStructureBuilder.class);
 		JIRAProjectIndexer tested = new JIRAProjectIndexer("ORG", true, jiraClientMock, esIntegrationMock,
 				jiraIssueIndexStructureBuilderMock);
 		Client client = Mockito.mock(Client.class);
+
+		Mockito.verify(esIntegrationMock).createLogger(JIRAProjectIndexer.class);
 
 		try {
 			tested.processDelete(null);
@@ -466,7 +473,7 @@ public class JIRAProjectIndexerTest {
 			tested.processDelete(new Date());
 			Assert.assertEquals(0, tested.indexingInfo.issuesDeleted);
 			Mockito.verifyZeroInteractions(jiraClientMock);
-			Mockito.verifyZeroInteractions(esIntegrationMock);
+			Mockito.verifyNoMoreInteractions(esIntegrationMock);
 			Mockito.verifyZeroInteractions(jiraIssueIndexStructureBuilderMock);
 		}
 
@@ -580,6 +587,13 @@ public class JIRAProjectIndexerTest {
 		issues.add(issue);
 		issue.put("key", key);
 		issue.put("updated", updated);
+	}
+
+	protected static IESIntegration mockEsIntegrationComponent() {
+		IESIntegration esIntegrationMock = mock(IESIntegration.class);
+		Mockito.when(esIntegrationMock.createLogger(Mockito.any(Class.class))).thenReturn(
+				ESLoggerFactory.getLogger(JIRAProjectIndexerCoordinator.class.getName()));
+		return esIntegrationMock;
 	}
 
 }
