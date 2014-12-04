@@ -27,7 +27,7 @@ public class RestFullUpdateAction extends RestJRMgmBaseAction {
 
 	@Inject
 	protected RestFullUpdateAction(Settings settings, Client client, RestController controller) {
-		super(settings, client);
+		super(settings, controller, client);
 		String baseUrl = baseRestMgmUrl();
 		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "fullupdate", this);
 		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "fullupdate/{projectKey}",

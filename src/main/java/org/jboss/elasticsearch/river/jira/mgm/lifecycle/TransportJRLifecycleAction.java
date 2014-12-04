@@ -5,6 +5,7 @@
  */
 package org.jboss.elasticsearch.river.jira.mgm.lifecycle;
 
+import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -25,8 +26,8 @@ public class TransportJRLifecycleAction extends
 
 	@Inject
 	public TransportJRLifecycleAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
-			ClusterService clusterService, TransportService transportService) {
-		super(settings, JRLifecycleAction.NAME, clusterName, threadPool, clusterService, transportService);
+			ClusterService clusterService, TransportService transportService, ActionFilters actionFilters) {
+		super(settings, JRLifecycleAction.NAME, clusterName, threadPool, clusterService, transportService, actionFilters);
 	}
 
 	@Override

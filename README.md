@@ -14,10 +14,15 @@ to obtain issues from JIRA instance.
 In order to install the plugin into Elasticsearch 1.3.x, simply run: 
 `bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.7.2/elasticsearch-river-jira-1.7.2.zip -install elasticsearch-river-jira`.
 
+In order to install the plugin into Elasticsearch 1.4.x, simply run: 
+`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.8.0/elasticsearch-river-jira-1.8.0.zip -install elasticsearch-river-jira`.
+
     -----------------------------------------------------------------------
     | JIRA River | Elasticsearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
-    | master     | 1.3.0            | 5+   | 2             |              |
+    | master     | 1.4.0            | 5+   | 2             |              |
+    -----------------------------------------------------------------------
+    | 1.8.0      | 1.4.0            | 5+   | 2             | 4.12.2014    |
     -----------------------------------------------------------------------
     | 1.7.2      | 1.3.0            | 5+   | 2             | 4.12.2014    |
     -----------------------------------------------------------------------
@@ -32,10 +37,6 @@ In order to install the plugin into Elasticsearch 1.3.x, simply run:
     | 1.5.5      | 1.0.0            | 5+   | 2             | 20.5.2014    |
     -----------------------------------------------------------------------
     | 1.4.5      | 0.90.5           | 5+   | 2             | 20.5.2014    |
-    -----------------------------------------------------------------------
-    | 1.5.3      | 1.0.0            | 5+   | 2             | 23.4.2014    |
-    -----------------------------------------------------------------------
-    | 1.4.3      | 0.90.5           | 5+   | 2             | 23.4.2014    |
     -----------------------------------------------------------------------
 
 For info about older releases, detailed changelog, planned milestones/enhancements and known bugs see 

@@ -26,7 +26,7 @@ public class RestJRStateAction extends RestJRMgmBaseAction {
 
 	@Inject
 	protected RestJRStateAction(Settings settings, Client client, RestController controller) {
-		super(settings, client);
+		super(settings, controller, client);
 		String baseUrl = baseRestMgmUrl();
 		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.GET, baseUrl + "state", this);
 	}

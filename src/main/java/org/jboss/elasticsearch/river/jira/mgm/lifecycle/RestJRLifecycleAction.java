@@ -26,7 +26,7 @@ public class RestJRLifecycleAction extends RestJRMgmBaseAction {
 
 	@Inject
 	protected RestJRLifecycleAction(Settings settings, Client client, RestController controller) {
-		super(settings, client);
+		super(settings, controller, client);
 		String baseUrl = baseRestMgmUrl();
 		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "stop", this);
 		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "restart", this);

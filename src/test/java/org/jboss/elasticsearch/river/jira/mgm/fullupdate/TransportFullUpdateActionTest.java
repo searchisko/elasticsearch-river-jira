@@ -8,6 +8,7 @@ package org.jboss.elasticsearch.river.jira.mgm.fullupdate;
 import junit.framework.Assert;
 
 import org.elasticsearch.Version;
+import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -140,8 +141,9 @@ public class TransportFullUpdateActionTest {
 		Settings settings = Mockito.mock(Settings.class);
 		ThreadPool threadPool = new ThreadPool("testtp");
 		TransportService transportService = new TransportService(Mockito.mock(Transport.class), threadPool);
+		ActionFilters actionFilters = Mockito.mock(ActionFilters.class);
 		TransportFullUpdateAction tested = new TransportFullUpdateAction(settings, clusterName, threadPool, clusterService,
-				transportService);
+				transportService, actionFilters);
 		return tested;
 	}
 }

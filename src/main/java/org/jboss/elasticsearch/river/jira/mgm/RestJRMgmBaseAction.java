@@ -8,6 +8,7 @@ package org.jboss.elasticsearch.river.jira.mgm;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.BaseRestHandler;
+import org.elasticsearch.rest.RestController;
 import org.elasticsearch.river.RiverIndexName;
 
 /**
@@ -17,8 +18,8 @@ import org.elasticsearch.river.RiverIndexName;
  */
 public abstract class RestJRMgmBaseAction extends BaseRestHandler {
 
-	protected RestJRMgmBaseAction(Settings settings, Client client) {
-		super(settings, client);
+	protected RestJRMgmBaseAction(Settings settings, RestController controller, Client client) {
+		super(settings, controller, client);
 	}
 
 	/**

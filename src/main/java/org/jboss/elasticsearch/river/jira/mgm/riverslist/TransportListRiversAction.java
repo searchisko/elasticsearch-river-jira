@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
@@ -34,8 +35,8 @@ public class TransportListRiversAction extends
 
 	@Inject
 	public TransportListRiversAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
-			ClusterService clusterService, TransportService transportService) {
-		super(settings, ListRiversAction.NAME, clusterName, threadPool, clusterService, transportService);
+			ClusterService clusterService, TransportService transportService, ActionFilters actionFilters) {
+		super(settings, ListRiversAction.NAME, clusterName, threadPool, clusterService, transportService, actionFilters);
 	}
 
 	@Override

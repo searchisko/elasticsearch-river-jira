@@ -7,6 +7,7 @@ package org.jboss.elasticsearch.river.jira.mgm.state;
 
 import java.util.Date;
 
+import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -27,8 +28,8 @@ public class TransportJRStateAction extends
 
 	@Inject
 	public TransportJRStateAction(Settings settings, ClusterName clusterName, ThreadPool threadPool,
-			ClusterService clusterService, TransportService transportService) {
-		super(settings, JRStateAction.NAME, clusterName, threadPool, clusterService, transportService);
+			ClusterService clusterService, TransportService transportService, ActionFilters actionFilters) {
+		super(settings, JRStateAction.NAME, clusterName, threadPool, clusterService, transportService, actionFilters);
 	}
 
 	@Override

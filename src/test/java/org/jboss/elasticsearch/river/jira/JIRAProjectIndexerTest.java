@@ -570,7 +570,7 @@ public class JIRAProjectIndexerTest {
 
 	private SearchResponse prepareSearchResponse(String scrollId, InternalSearchHit... hits) {
 		InternalSearchHits hitsi = new InternalSearchHits(hits, hits.length, 10f);
-		InternalSearchResponse sr1i = new InternalSearchResponse(hitsi, null, null, null, false);
+		InternalSearchResponse sr1i = new InternalSearchResponse(hitsi, null, null, null, false, null);
 		SearchResponse sr1 = new SearchResponse(sr1i, scrollId, 1, 1, 100, null);
 		return sr1;
 	}

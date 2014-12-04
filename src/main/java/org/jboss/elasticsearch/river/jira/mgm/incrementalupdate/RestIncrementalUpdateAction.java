@@ -27,7 +27,7 @@ public class RestIncrementalUpdateAction extends RestJRMgmBaseAction {
 
 	@Inject
 	protected RestIncrementalUpdateAction(Settings settings, Client client, RestController controller) {
-		super(settings, client);
+		super(settings, controller, client);
 		String baseUrl = baseRestMgmUrl();
 		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl + "incrementalupdate", this);
 		controller.registerHandler(org.elasticsearch.rest.RestRequest.Method.POST, baseUrl

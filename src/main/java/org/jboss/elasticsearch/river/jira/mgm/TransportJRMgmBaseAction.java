@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.support.ActionFilters;
 import org.elasticsearch.action.support.nodes.TransportNodesOperationAction;
 import org.elasticsearch.cluster.ClusterName;
 import org.elasticsearch.cluster.ClusterService;
@@ -36,8 +37,8 @@ public abstract class TransportJRMgmBaseAction<Request extends JRMgmBaseRequest,
 
 	@Inject
 	public TransportJRMgmBaseAction(Settings settings, String actionName, ClusterName clusterName, ThreadPool threadPool,
-			ClusterService clusterService, TransportService transportService) {
-		super(settings, actionName, clusterName, threadPool, clusterService, transportService);
+			ClusterService clusterService, TransportService transportService, ActionFilters actionFilters) {
+		super(settings, actionName, clusterName, threadPool, clusterService, transportService, actionFilters);
 		logger = Loggers.getLogger(getClass());
 	}
 
