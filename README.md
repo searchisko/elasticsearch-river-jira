@@ -179,6 +179,7 @@ If you use update activity logging then you can create index and mapping for it 
 	{
 	    "jira_river_indexupdate" : {
 	        "properties" : {
+	            "river_name"  : {"type" : "string", "analyzer" : "keyword"},
 	            "project_key" : {"type" : "string", "analyzer" : "keyword"},
 	            "update_type" : {"type" : "string", "analyzer" : "keyword"},
 	            "result"      : {"type" : "string", "analyzer" : "keyword"}

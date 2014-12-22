@@ -11,6 +11,7 @@ import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
@@ -110,6 +111,18 @@ public abstract class ESRealClientTestBase {
 	public void indexCreate(String indexName) {
 		client.admin().indices().create(new CreateIndexRequest(indexName)).actionGet();
 		client.admin().cluster().health((new ClusterHealthRequest(indexName)).waitForYellowStatus()).actionGet();
+	}
+
+	/**
+	 * Create mapping in in-memory client.
+	 * 
+	 * @param indexName
+	 * @param indexType
+	 * @param mappingSource
+	 */
+	public void indexCreateMapping(String indexName, String indexType, String mappingSource) {
+		client.admin().indices().putMapping(new PutMappingRequest(indexName).type(indexType).source(mappingSource))
+				.actionGet();
 	}
 
 }

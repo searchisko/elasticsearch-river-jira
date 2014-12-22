@@ -38,6 +38,8 @@ import org.jboss.elasticsearch.tools.content.StructuredContentPreprocessor;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -52,6 +54,8 @@ import static org.mockito.Mockito.when;
 public class JiraRiverTest extends ESRealClientTestBase {
 
 	private static final String RIVER_NAME = "my_jira_river";
+	private static final String KEY_1 = "AAA";
+	private static final String KEY_2 = "AAB";
 
 	@Test
 	public void constructor_config() throws Exception {
@@ -774,6 +778,66 @@ public class JiraRiverTest extends ESRealClientTestBase {
 		RiverName rn = tested.riverName();
 		Assert.assertEquals(RIVER_NAME, rn.getName());
 		Assert.assertEquals("jira", rn.getType());
+	}
+
+	@Test
+	public void writeActivityLogRecord_getLastSpaceIndexingInfo() throws Exception {
+		JiraRiver tested = prepareJiraRiverInstanceForTest(null);
+		tested.activityLogIndexName = "alindex";
+		tested.activityLogTypeName = "altype";
+		try {
+			tested.client = prepareESClientForUnitTest();
+
+			indexCreate(tested.activityLogIndexName);
+			indexCreateMapping(tested.activityLogIndexName, tested.activityLogTypeName, "{\n" + "	    \""
+					+ tested.activityLogTypeName + "\" : {\n" + "	        \"properties\" : {\n"
+					+ "	            \"river_name\"  : {\"type\" : \"string\", \"analyzer\" : \"keyword\"},\n"
+					+ "	            \"project_key\"   : {\"type\" : \"string\", \"analyzer\" : \"keyword\"},\n"
+					+ "	            \"update_type\" : {\"type\" : \"string\", \"analyzer\" : \"keyword\"},\n"
+					+ "	            \"result\"      : {\"type\" : \"string\", \"analyzer\" : \"keyword\"}\n" + "	         }\n"
+					+ "	    }\n" + "	}");
+
+			// older record to be sure latest one is readed
+			ProjectIndexingInfo indexingInfo1Older = new ProjectIndexingInfo(KEY_1, false, 5, 2, 1,
+					DateTimeUtils.parseISODateTimeWithMinutePrecise("2014-12-22T12:53"), true, 60000, null);
+			indexingInfo1Older.finishedOK = true;
+			tested.writeActivityLogRecord(indexingInfo1Older);
+
+			ProjectIndexingInfo indexingInfo1 = new ProjectIndexingInfo(KEY_1, false, 5, 2, 1,
+					DateTimeUtils.parseISODateTimeWithMinutePrecise("2014-12-22T12:55"), true, 60000, null);
+			indexingInfo1.finishedOK = true;
+			tested.writeActivityLogRecord(indexingInfo1);
+
+			// #56 - newer record from another river name to be sure correct one is readed
+			ProjectIndexingInfo indexingInfo1OtherRiver = new ProjectIndexingInfo(KEY_1, false, 5, 2, 1,
+					DateTimeUtils.parseISODateTimeWithMinutePrecise("2014-12-22T12:56"), true, 60000, null);
+			indexingInfo1OtherRiver.finishedOK = true;
+			tested.client.prepareIndex(tested.activityLogIndexName, tested.activityLogTypeName)
+					.setSource(indexingInfo1OtherRiver.buildDocument(jsonBuilder(), "other_river", true, true)).execute()
+					.actionGet();
+
+			ProjectIndexingInfo indexingInfo2 = new ProjectIndexingInfo(KEY_2, false, 8, 1, 0,
+					DateTimeUtils.parseISODateTimeWithMinutePrecise("2014-12-22T12:56"), false, 60000, "error");
+			indexingInfo2.finishedOK = true;
+			tested.writeActivityLogRecord(indexingInfo2);
+
+			assertLastInfo(tested, indexingInfo1);
+			assertLastInfo(tested, indexingInfo2);
+
+		} finally {
+			finalizeESClientForUnitTest();
+		}
+	}
+
+	private void assertLastInfo(JiraRiver tested, ProjectIndexingInfo indexingInfoExpected) {
+		ProjectIndexingInfo indexingInfoReal = tested.getLastProjectIndexingInfo(indexingInfoExpected.projectKey);
+		Assert.assertNotNull(indexingInfoReal);
+		Assert.assertEquals(indexingInfoExpected.startDate, indexingInfoReal.startDate);
+		Assert.assertEquals(indexingInfoExpected.issuesDeleted, indexingInfoReal.issuesDeleted);
+		Assert.assertEquals(indexingInfoExpected.issuesUpdated, indexingInfoReal.issuesUpdated);
+		Assert.assertEquals(indexingInfoExpected.finishedOK, indexingInfoReal.finishedOK);
+		Assert.assertEquals(indexingInfoExpected.fullUpdate, indexingInfoReal.fullUpdate);
+		Assert.assertEquals(indexingInfoExpected.timeElapsed, indexingInfoReal.timeElapsed);
 	}
 
 	/**

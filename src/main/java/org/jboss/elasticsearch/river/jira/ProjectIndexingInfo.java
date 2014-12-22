@@ -28,6 +28,8 @@ public class ProjectIndexingInfo {
 	public static final String DOCFIELD_UPDATE_TYPE = "update_type";
 	public static final String DOCFIELD_START_DATE = "start_date";
 	public static final String DOCFIELD_PROJECT_KEY = "project_key";
+	public static final String DOCFIELD_RIVER_NAME = "river_name";
+
 	/**
 	 * Key of JIRA project this indexing is for.
 	 */
@@ -114,9 +116,11 @@ public class ProjectIndexingInfo {
 	 * @return builder same as on input.
 	 * @throws IOException
 	 */
-	public XContentBuilder buildDocument(XContentBuilder builder, boolean printProjectKey, boolean printFinalStatus)
-			throws IOException {
+	public XContentBuilder buildDocument(XContentBuilder builder, String riverName, boolean printProjectKey,
+			boolean printFinalStatus) throws IOException {
 		builder.startObject();
+		if (riverName != null)
+			builder.field(DOCFIELD_RIVER_NAME, riverName);
 		if (printProjectKey)
 			builder.field(DOCFIELD_PROJECT_KEY, projectKey);
 

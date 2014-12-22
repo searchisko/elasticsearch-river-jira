@@ -26,19 +26,19 @@ public class ProjectIndexingInfoTest {
 
 		TestUtils.assertJsonEqual(TestUtils.readStringFromClasspathFile("/asserts/ProjectIndexingInfoTest_1.json"),
 				new ProjectIndexingInfo("ORG", true, 10, 1, 1, DateTimeUtils.parseISODateTime("2012-09-10T12:55:58Z"), true,
-						1250, null).buildDocument(XContentFactory.jsonBuilder(), true, true).string());
+						1250, null).buildDocument(XContentFactory.jsonBuilder(), null, true, true).string());
 
 		TestUtils.assertJsonEqual(TestUtils.readStringFromClasspathFile("/asserts/ProjectIndexingInfoTest_2.json"),
 				new ProjectIndexingInfo("ORG", true, 10, 1, 1, DateTimeUtils.parseISODateTime("2012-09-10T12:56:50Z"), false,
-						125, "Error message").buildDocument(XContentFactory.jsonBuilder(), true, true).string());
+						125, "Error message").buildDocument(XContentFactory.jsonBuilder(), "my_river", true, true).string());
 
 		TestUtils.assertJsonEqual(TestUtils.readStringFromClasspathFile("/asserts/ProjectIndexingInfoTest_3.json"),
 				new ProjectIndexingInfo("ORG", true, 10, 1, 1, DateTimeUtils.parseISODateTime("2012-09-10T12:55:58Z"), true,
-						1250, null).buildDocument(XContentFactory.jsonBuilder(), false, true).string());
+						1250, null).buildDocument(XContentFactory.jsonBuilder(), "my_river", false, true).string());
 
 		TestUtils.assertJsonEqual(TestUtils.readStringFromClasspathFile("/asserts/ProjectIndexingInfoTest_4.json"),
 				new ProjectIndexingInfo("ORG", true, 10, 1, 1, DateTimeUtils.parseISODateTime("2012-09-10T12:55:58Z"), true,
-						1250, null).buildDocument(XContentFactory.jsonBuilder(), false, false).string());
+						1250, null).buildDocument(XContentFactory.jsonBuilder(), null, false, false).string());
 	}
 
 	@Test
@@ -51,7 +51,7 @@ public class ProjectIndexingInfoTest {
 
 	private void readFromDocumentInternalTest(ProjectIndexingInfo src) throws IOException {
 		ProjectIndexingInfo result = ProjectIndexingInfo.readFromDocument(XContentFactory.xContent(XContentType.JSON)
-				.createParser(src.buildDocument(XContentFactory.jsonBuilder(), true, true).string()).mapAndClose());
+				.createParser(src.buildDocument(XContentFactory.jsonBuilder(), null, true, true).string()).mapAndClose());
 
 		Assert.assertEquals(src.projectKey, result.projectKey);
 		Assert.assertEquals(src.fullUpdate, result.fullUpdate);

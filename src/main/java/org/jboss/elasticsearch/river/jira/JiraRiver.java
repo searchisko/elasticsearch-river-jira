@@ -532,7 +532,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 			if (currProjectIndexingInfo != null) {
 				builder.startArray("current_indexing");
 				for (ProjectIndexingInfo pi : currProjectIndexingInfo) {
-					pi.buildDocument(builder, true, false);
+					pi.buildDocument(builder, null, true, false);
 				}
 				builder.endArray();
 			}
@@ -546,7 +546,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 				ProjectIndexingInfo lastIndexing = getLastProjectIndexingInfo(projectKey);
 				if (lastIndexing != null) {
 					builder.field("last_indexing");
-					lastIndexing.buildDocument(builder, false, true);
+					lastIndexing.buildDocument(builder, null, false, true);
 				}
 				builder.endObject();
 			}
@@ -565,8 +565,13 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 		if (lastIndexing == null && activityLogIndexName != null) {
 			try {
 				refreshSearchIndex(activityLogIndexName);
-				SearchResponse sr = client.prepareSearch(activityLogIndexName).setTypes(activityLogTypeName)
-						.setPostFilter(FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_PROJECT_KEY, projectKey))
+				SearchResponse sr = client
+						.prepareSearch(activityLogIndexName)
+						.setTypes(activityLogTypeName)
+						.setPostFilter(
+								FilterBuilders.andFilter(
+										FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_PROJECT_KEY, projectKey),
+										FilterBuilders.termFilter(ProjectIndexingInfo.DOCFIELD_RIVER_NAME, riverName().getName())))
 						.setQuery(QueryBuilders.matchAllQuery()).addSort(ProjectIndexingInfo.DOCFIELD_START_DATE, SortOrder.DESC)
 						.addField("_source").setSize(1).execute().actionGet();
 				if (sr.getHits().getTotalHits() > 0) {
@@ -667,7 +672,8 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 		if (activityLogIndexName != null) {
 			try {
 				client.prepareIndex(activityLogIndexName, activityLogTypeName)
-						.setSource(indexingInfo.buildDocument(jsonBuilder(), true, true)).execute().actionGet();
+						.setSource(indexingInfo.buildDocument(jsonBuilder(), riverName().getName(), true, true)).execute()
+						.actionGet();
 			} catch (Exception e) {
 				logger.error("Error during index update result writing to the audit log {}", e.getMessage());
 			}
