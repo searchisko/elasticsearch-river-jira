@@ -15,12 +15,14 @@ In order to install the plugin into Elasticsearch 1.3.x, simply run:
 `bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.7.2/elasticsearch-river-jira-1.7.2.zip -install elasticsearch-river-jira`.
 
 In order to install the plugin into Elasticsearch 1.4.x, simply run: 
-`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.8.2/elasticsearch-river-jira-1.8.2.zip -install elasticsearch-river-jira`.
+`bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.8.3/elasticsearch-river-jira-1.8.3.zip -install elasticsearch-river-jira`.
 
     -----------------------------------------------------------------------
     | JIRA River | Elasticsearch    | JIRA | JIRA REST API | Release date |
     -----------------------------------------------------------------------
     | master     | 1.4.0            | 5+   | 2             |              |
+    -----------------------------------------------------------------------
+    | 1.8.3      | 1.4.0            | 5+   | 2             | 26.01.2015   |
     -----------------------------------------------------------------------
     | 1.8.2      | 1.4.0            | 5+   | 2             | 23.12.2014   |
     -----------------------------------------------------------------------
