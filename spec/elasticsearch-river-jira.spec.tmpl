@@ -1,7 +1,7 @@
 %define  _deploy_dir /services/elasticsearch/plugins/river_jira
 
 Name:           elasticsearch-river-jira
-Version:        1.4.5
+Version:        1.8.3
 Release:        ${release}.el6
 Summary:        JIRA River for ElasticSearch
 
@@ -42,6 +42,9 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Feb 26 2015 Lukas Vlcek <lvlcek at, redhat.com> 1.8.3
+- Upgrade RPM release to version 1.8.3
+
 * Mon Jun 9 2014 Lukas Vlcek <lvlcek at, redhat.com> 1.4.5
 - Upgrade RPM release to version 1.4.5
 
