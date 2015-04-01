@@ -11,6 +11,8 @@ It's implemented as Elasticsearch [river](http://www.elasticsearch.org/guide/en/
 uses [JIRA REST API](https://developer.atlassian.com/display/JIRADEV/JIRA+REST+APIs) 
 to obtain issues from JIRA instance.
 
+**Please note that Rivers are going to be [deprecated from Elasticsearch 1.5](https://www.elastic.co/blog/deprecating_rivers).**
+
 In order to install the plugin into Elasticsearch 1.3.x, simply run: 
 `bin/plugin -url https://repository.jboss.org/nexus/content/groups/public-jboss/org/jboss/elasticsearch/elasticsearch-river-jira/1.7.2/elasticsearch-river-jira-1.7.2.zip -install elasticsearch-river-jira`.
 
