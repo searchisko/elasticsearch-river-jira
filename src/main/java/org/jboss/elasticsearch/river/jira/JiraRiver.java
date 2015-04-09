@@ -230,6 +230,9 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 				jiraJqlTimezone = tz.getDisplayName();
 				jiraClient.setJQLDateFormatTimezone(tz);
 			}
+            if (jiraSettings.get("jqlTemplate") != null) {
+                jiraClient.setJqlTemplate(XContentMapValues.nodeStringValue(jiraSettings.get("jqlTemplate"), "project='%s'%s%s ORDER BY updated ASC"));
+            }
 			maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
 			indexUpdatePeriod = Utils.parseTimeValue(jiraSettings, "indexUpdatePeriod", 5, TimeUnit.MINUTES);
 			indexFullUpdatePeriod = Utils.parseTimeValue(jiraSettings, "indexFullUpdatePeriod", 12, TimeUnit.HOURS);

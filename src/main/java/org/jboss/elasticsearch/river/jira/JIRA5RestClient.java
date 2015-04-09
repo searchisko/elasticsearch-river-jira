@@ -67,7 +67,7 @@ public class JIRA5RestClient implements IJIRAClient {
 	/**
 	 * Constructor to create and configure remote JIRA REST API client.
 	 * 
-	 * @param jiraRestAPIUrlBase JIRA API URL used to call JIRA (see {@link #prepareAPIURLFromBaseURL(String)})
+	 * @param jiraUrlBase JIRA API URL used to call JIRA (see {@link #prepareAPIURLFromBaseURL(String, String)})
 	 * @param jiraUsername optional username to authenticate into JIRA
 	 * @param jiraPassword optional password to authenticate into JIRA
 	 * @param timeout JIRA http/s connection timeout in milliseconds
@@ -200,7 +200,7 @@ public class JIRA5RestClient implements IJIRAClient {
 	}
 
 	/**
-	 * Performs JIRA REST call for {@link #getJIRAChangedIssues(String)}.
+	 * Performs JIRA REST call for {@link #getJIRAChangedIssues(String, int, Date, Date)}.
 	 * 
 	 * @param projectKey mandatory key of JIRA project to get issues for
 	 * @param startAt the index of the first issue to return (0-based)
@@ -208,7 +208,7 @@ public class JIRA5RestClient implements IJIRAClient {
 	 * @param updatedBefore optional parameter to return issues updated only before given date.
 	 * @return data returned from JIRA REST call (JSON formatted)
 	 * @throws Exception
-	 * @see {@link #getJIRAChangedIssues(String)}
+	 * @see {@link #getJIRAChangedIssues(String, int, Date, Date)}
 	 */
 	protected byte[] performJIRAChangedIssuesREST(String projectKey, int startAt, Date updatedAfter, Date updatedBefore)
 			throws Exception {
@@ -233,33 +233,43 @@ public class JIRA5RestClient implements IJIRAClient {
 	}
 
 	/**
-	 * Prepare JQL (JIRA Query Language) query text used to implement {@link #getJIRAChangedIssues(String, Date)}
+	 * Prepare JQL (JIRA Query Language) query text used to implement {@link #getJIRAChangedIssues(String, int, Date, Date)}
 	 * operation.
+     * This JQL may be customized by jira/jqlTemplate parameter.
 	 * 
 	 * @param projectKey mandatory key of JIRA project to get issues for
 	 * @param updatedAfter optional parameter to return issues updated only after given date.
 	 * @param updatedBefore optional parameter to return issues updated only before given date.
 	 * @return JQL string for given conditions
 	 * @throws IllegalArgumentException if some input parameter is illegal
-	 * @see #getJIRAChangedIssues(String, Date)
-	 * @see #performJIRAChangedIssuesREST(String, Date)
+	 * @see #getJIRAChangedIssues(String, int, Date, Date)
+	 * @see #performJIRAChangedIssuesREST(String, int, Date, Date)
 	 */
 	protected String prepareJIRAChangedIssuesJQL(String projectKey, Date updatedAfter, Date updatedBefore) {
 		if (Utils.isEmpty(projectKey)) {
 			throw new IllegalArgumentException("projectKey must be defined");
 		}
-		StringBuilder sb = new StringBuilder();
-		sb.append("project='").append(projectKey).append("'");
-		if (updatedAfter != null) {
-			sb.append(" and updatedDate >= \"").append(formatJQLDate(updatedAfter)).append("\"");
+        StringBuilder criterionAfter = new StringBuilder();
+        if (updatedAfter != null) {
+			criterionAfter.append(" and updatedDate >= \"").append(formatJQLDate(updatedAfter)).append("\"");
 		}
-		if (updatedBefore != null) {
-			sb.append(" and updatedDate <= \"").append(formatJQLDate(updatedBefore)).append("\"");
+        StringBuilder criterionBefore = new StringBuilder();
+        if (updatedBefore != null) {
+			criterionBefore.append(" and updatedDate <= \"").append(formatJQLDate(updatedBefore)).append("\"");
 		}
-		sb.append(" ORDER BY updated ASC");
-		logger.debug("JIRA JQL string: {}", sb.toString());
-		return sb.toString();
+
+        String result = String.format(JQL_TEMPLATE, projectKey, criterionAfter, criterionBefore);
+
+        logger.debug("JIRA JQL string: {}", result);
+		return result;
 	}
+
+    private static String JQL_TEMPLATE = "project='%s'%s%s ORDER BY updated ASC";
+
+    @Override
+    public void setJqlTemplate(String jqlTemplate) {
+        JQL_TEMPLATE = jqlTemplate;
+    }
 
 	private static final String JQL_DATE_FORMAT_PATTERN = "yyyy-MM-dd HH:mm";
 

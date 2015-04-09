@@ -74,6 +74,7 @@ Creating the JIRA river can be done using:
 	        "indexUpdatePeriod"     : "5m",
 	        "indexFullUpdatePeriod" : "1h",
 	        "maxIndexingThreads"    : 2
+	        "jqlTempate"            : "project='%s'%s%s ORDER BY updated ASC"
 	    },
 	    "index" : {
 	        "index" : "my_jira_index",
@@ -101,6 +102,7 @@ Full list of options with description is here:
 * `jira/indexFullUpdatePeriod` time value, defines how often is search index updated from JIRA instance in full update mode. Optional, default 12 hours. You can use `0` to disable automatic full updates. Full update updates all issues in search index from JIRA, and removes issues deleted in JIRA from search index also. This brings more load to both JIRA and Elasticsearch servers, and may run for long time in case of JIRA instance with many issues. Incremental updates are performed between full updates as defined by `indexUpdatePeriod` parameter.
 * `jira/indexFullUpdateCronExpression` contains [Quartz Cron Expression](http://www.quartz-scheduler.org/documentation/quartz-1.x/tutorials/crontrigger) defining when is full index update performed. Optional, if defined then `indexFullUpdatePeriod` is not used. Available from version 1.7.2.
 * `jira/maxIndexingThreads` defines maximal number of parallel indexing threads running for this river. Optional, default 1. This setting influences load on both JIRA and Elasticsearch servers during indexing. Threads are started per JIRA project update. If there is more threads allowed, then one is always dedicated for incremental updates only (so full updates do not block incremental updates for another projects).
+* `jira/jqlTemplate` optional parameter that defines template that is used for creating JQL to query updates for certain project and time period. For example if your usecase only needs to see issues of type BUG you may rewrite this template to "issueType='Bug' AND project='%s'%s%s ORDER BY updated ASC". First %s is replaced with project key, second %s will be replaced by ' AND updatedDate >= "yyyy-MM-dd HH:mm"' or empty string and third %s will be replaced by ' AND updatedDate <= "yyyy-MM-dd HH:mm"' or empty string. Bare in mind that it is up to user to put quotation symbols around project key. Most cases work without quotation, but project keys that are also reserved words will give you errors.
 * `index/index` defines name of search [index](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/glossary.html#glossary-index) where JIRA issues are stored. Parameter is optional, name of river is used if omitted. See related notes later!
 * `index/type` defines [type](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/glossary.html#glossary-type) used when issue is stored into search index. Parameter is optional, `jira_issue` is used if omitted. See related notes later!
 * `index/field_river_name`, `index/field_project_key`, `index/field_issue_key`, `index/field_jira_url` `index/fields`, `index/value_filters`, `index/jira_field_issue_document_id` can be used to change structure of indexed issue document. See 'JIRA issue index document structure' chapter.

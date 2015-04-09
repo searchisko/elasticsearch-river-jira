@@ -34,7 +34,24 @@ public interface IJIRAClient {
 	ChangedIssuesResults getJIRAChangedIssues(String projectKey, int startAt, Date updatedAfter, Date updatedBefore)
 			throws Exception;
 
-	/**
+    /**
+     * Configuration - Set JQL Template used while querying issues from jira.
+     * This should include '%s' (w/o quotes) as placeholders for PROJECT KEY, AFTER CRITERION and BEFORE CRITERION
+     *
+     * For example such template: "project='%s' %s %s ORDER BY updated ASC"
+     * When populated with following strings:
+     * 1) MYPROJECT
+     * 2) AND updatedDate >= "2013-12-24 23:59"
+     * 3) AND updatedDate <= "2014-12-24 23:59"
+     * Would become: "project='MYPROJECT' AND updatedDate >= "2013-12-24 23:59" AND updatedDate <= "2014-12-24 23:59" ORDER BY updated ASC"
+     * Also note that in case of rendering JQL according to template, program may not need to insert AFTER and BEFORE criterions.
+     * In such cases empty string is inserted instead. Therefore template may not depend on criterions being nonempty strings.
+     *
+     * @param jqlTemplate suitable String for usage as format in String.format(format, args)
+     */
+    void setJqlTemplate(String jqlTemplate);
+
+    /**
 	 * Configuration - Set Timezone used to format date into JQL.
 	 * 
 	 * @param zone to set
