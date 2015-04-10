@@ -91,7 +91,7 @@ public class JIRA5RestClientTest {
 		JIRA5RestClient tested = new JIRA5RestClient(esMock, "http://issues.jboss.org", null, null, 5000, null);
 		Mockito.verify(esMock).createLogger(JIRA5RestClient.class);
 		Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL("http://issues.jboss.org", null),
-				tested.jiraRestAPIUrlBase);
+                tested.jiraRestAPIUrlBase);
 		tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, "latest");
 		Assert.assertEquals(JIRA5RestClient.prepareAPIURLFromBaseURL(TEST_JIRA_URL, "latest"), tested.jiraRestAPIUrlBase);
 		Assert.assertFalse(tested.isAuthConfigured);
@@ -270,6 +270,7 @@ public class JIRA5RestClientTest {
 	public void prepareJIRAChangedIssuesJQL() throws Exception {
 		JIRA5RestClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, null);
 		tested.setJQLDateFormatTimezone(JQL_TEST_TIMEZONE);
+        tested.setJqlTemplate(JiraRiver.DEFAULT_JQL_TEMPLATE);
 		try {
 			tested.prepareJIRAChangedIssuesJQL(null, null, null);
 			Assert.fail("IllegalArgumentException not thrown if project key is missing");
@@ -284,18 +285,52 @@ public class JIRA5RestClientTest {
 		}
 		Assert.assertEquals("project='ORG' ORDER BY updated ASC", tested.prepareJIRAChangedIssuesJQL("ORG", null, null));
 		Assert.assertEquals("project='ORG' and updatedDate >= \"2012-08-10 22:52\" ORDER BY updated ASC",
-				tested.prepareJIRAChangedIssuesJQL("ORG", JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52"), null));
+                tested.prepareJIRAChangedIssuesJQL("ORG", JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52"), null));
 		Assert.assertEquals("project='ORG' and updatedDate <= \"2012-08-10 22:55\" ORDER BY updated ASC",
 				tested.prepareJIRAChangedIssuesJQL("ORG", null, JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:55")));
 		Assert
 				.assertEquals(
-						"project='ORG' and updatedDate >= \"2012-08-10 22:52\" and updatedDate <= \"2012-08-10 22:55\" ORDER BY updated ASC",
-						tested.prepareJIRAChangedIssuesJQL("ORG", JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52"),
-								JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:55")));
+                        "project='ORG' and updatedDate >= \"2012-08-10 22:52\" and updatedDate <= \"2012-08-10 22:55\" ORDER BY updated ASC",
+                        tested.prepareJIRAChangedIssuesJQL("ORG", JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52"),
+                                JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:55")));
 
 	}
 
-	protected static IESIntegration mockEsIntegrationComponent() {
+	@Test
+	public void prepareJIRAChangedIssuesJQLWithTemplate() throws Exception {
+		JIRA5RestClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, null);
+		tested.setJQLDateFormatTimezone(JQL_TEST_TIMEZONE);
+        tested.setJqlTemplate("assignee=currentUser() AND project='%s' AND issueType='Bug'%s AND priority='P1 - Critical'%s ORDER BY updated ASC");
+		try {
+			tested.prepareJIRAChangedIssuesJQL(null, null, null);
+			Assert.fail("IllegalArgumentException not thrown if project key is missing");
+		} catch (IllegalArgumentException e) {
+			// OK
+		}
+		try {
+			tested.prepareJIRAChangedIssuesJQL("  ", null, null);
+			Assert.fail("IllegalArgumentException not thrown if project key is missing");
+		} catch (IllegalArgumentException e) {
+			// OK
+		}
+        Date updatedAfter = JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:52");
+        Date updatedBefore = JQL_TEST_DATE_FORMAT.parse("2012-08-10 22:55");
+        Assert.assertEquals(
+                "assignee=currentUser() AND project='ORG' AND issueType='Bug' AND priority='P1 - Critical' ORDER BY updated ASC",
+                tested.prepareJIRAChangedIssuesJQL("ORG", null, null));
+        Assert.assertEquals(
+                "assignee=currentUser() AND project='ORG' AND issueType='Bug' and updatedDate >= \"2012-08-10 22:52\" AND priority='P1 - Critical' ORDER BY updated ASC",
+				tested.prepareJIRAChangedIssuesJQL("ORG", updatedAfter, null));
+        Assert.assertEquals(
+                "assignee=currentUser() AND project='ORG' AND issueType='Bug' AND priority='P1 - Critical' and updatedDate <= \"2012-08-10 22:55\" ORDER BY updated ASC",
+				tested.prepareJIRAChangedIssuesJQL("ORG", null, updatedBefore));
+		Assert.assertEquals(
+                "assignee=currentUser() AND project='ORG' AND issueType='Bug' and updatedDate >= \"2012-08-10 22:52\" AND priority='P1 - Critical' and updatedDate <= \"2012-08-10 22:55\" ORDER BY updated ASC",
+                tested.prepareJIRAChangedIssuesJQL("ORG", updatedAfter, updatedBefore));
+
+    }
+
+    protected static IESIntegration mockEsIntegrationComponent() {
 		IESIntegration esIntegrationMock = mock(IESIntegration.class);
 		Mockito.when(esIntegrationMock.createLogger(Mockito.any(Class.class))).thenReturn(
 				ESLoggerFactory.getLogger(JIRAProjectIndexerCoordinator.class.getName()));
