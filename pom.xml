@@ -5,7 +5,7 @@
 		<modelVersion>4.0.0</modelVersion>
 		<groupId>org.jboss.elasticsearch</groupId>
 		<artifactId>elasticsearch-river-jira</artifactId>
-		<version>1.8.3</version>
+		<version>1.8.4</version>
 		<packaging>jar</packaging>
 		<description>JIRA River for Elasticsearch</description>
 		<inceptionYear>2012</inceptionYear>
