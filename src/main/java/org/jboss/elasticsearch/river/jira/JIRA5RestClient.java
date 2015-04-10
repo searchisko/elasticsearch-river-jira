@@ -258,17 +258,17 @@ public class JIRA5RestClient implements IJIRAClient {
 			criterionBefore.append(" and updatedDate <= \"").append(formatJQLDate(updatedBefore)).append("\"");
 		}
 
-        String result = String.format(JQL_TEMPLATE, projectKey, criterionAfter, criterionBefore);
+        String result = String.format(jqlTemplate, projectKey, criterionAfter, criterionBefore);
 
         logger.debug("JIRA JQL string: {}", result);
 		return result;
 	}
 
-    private static String JQL_TEMPLATE = JiraRiver.DEFAULT_JQL_TEMPLATE;
+    private static String jqlTemplate = JiraRiver.DEFAULT_JQL_TEMPLATE;
 
     @Override
     public void setJqlTemplate(String jqlTemplate) {
-        JQL_TEMPLATE = jqlTemplate;
+        JIRA5RestClient.jqlTemplate = jqlTemplate;
     }
 
 	private static final String JQL_DATE_FORMAT_PATTERN = "yyyy-MM-dd HH:mm";
