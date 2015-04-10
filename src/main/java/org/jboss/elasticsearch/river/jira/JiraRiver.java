@@ -50,7 +50,8 @@ import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
  */
 public class JiraRiver extends AbstractRiverComponent implements River, IESIntegration, IJiraRiverMgm {
 
-	/**
+    public static final String DEFAULT_JQL_TEMPLATE = "project='%s'%s%s ORDER BY updated ASC";
+    /**
 	 * Map of running river instances. Used for management operations dispatching. See {@link #getRunningInstance(String)}
 	 */
 	protected static Map<String, IJiraRiverMgm> riverInstances = new HashMap<String, IJiraRiverMgm>();
@@ -230,9 +231,7 @@ public class JiraRiver extends AbstractRiverComponent implements River, IESInteg
 				jiraJqlTimezone = tz.getDisplayName();
 				jiraClient.setJQLDateFormatTimezone(tz);
 			}
-            if (jiraSettings.get("jqlTemplate") != null) {
-                jiraClient.setJqlTemplate(XContentMapValues.nodeStringValue(jiraSettings.get("jqlTemplate"), "project='%s'%s%s ORDER BY updated ASC"));
-            }
+            jiraClient.setJqlTemplate(XContentMapValues.nodeStringValue(jiraSettings.get("jqlTemplate"), DEFAULT_JQL_TEMPLATE));
 			maxIndexingThreads = XContentMapValues.nodeIntegerValue(jiraSettings.get("maxIndexingThreads"), 1);
 			indexUpdatePeriod = Utils.parseTimeValue(jiraSettings, "indexUpdatePeriod", 5, TimeUnit.MINUTES);
 			indexFullUpdatePeriod = Utils.parseTimeValue(jiraSettings, "indexFullUpdatePeriod", 12, TimeUnit.HOURS);

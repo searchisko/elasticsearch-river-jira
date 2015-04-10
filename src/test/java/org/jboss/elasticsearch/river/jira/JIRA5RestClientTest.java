@@ -270,6 +270,7 @@ public class JIRA5RestClientTest {
 	public void prepareJIRAChangedIssuesJQL() throws Exception {
 		JIRA5RestClient tested = new JIRA5RestClient(mockEsIntegrationComponent(), TEST_JIRA_URL, null, null, 5000, null);
 		tested.setJQLDateFormatTimezone(JQL_TEST_TIMEZONE);
+        tested.setJqlTemplate(JiraRiver.DEFAULT_JQL_TEMPLATE);
 		try {
 			tested.prepareJIRAChangedIssuesJQL(null, null, null);
 			Assert.fail("IllegalArgumentException not thrown if project key is missing");

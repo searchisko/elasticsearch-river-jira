@@ -264,7 +264,7 @@ public class JIRA5RestClient implements IJIRAClient {
 		return result;
 	}
 
-    private static String JQL_TEMPLATE = "project='%s'%s%s ORDER BY updated ASC";
+    private static String JQL_TEMPLATE = JiraRiver.DEFAULT_JQL_TEMPLATE;
 
     @Override
     public void setJqlTemplate(String jqlTemplate) {
